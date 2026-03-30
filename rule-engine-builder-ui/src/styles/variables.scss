@@ -1,0 +1,16 @@
+$--color-primary: #B30000;
+$--font-path: "~element-ui/lib/theme-chalk/fonts";
+
+$menuText: #161617;
+$menuActiveText: #B30000;
+$menuBg: #E9EBF0;
+$menuHover: #F4F5F7;
+$sideBarWidth: 210px;
+
+:export {
+  menuText: $menuText;
+  menuActiveText: $menuActiveText;
+  menuBg: $menuBg;
+  menuHover: $menuHover;
+  sideBarWidth: $sideBarWidth;
+}

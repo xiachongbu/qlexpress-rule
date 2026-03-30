@@ -1,0 +1,54 @@
+server:
+  port: 7070
+
+# ============================================================
+# 规则引擎客户端配置（示例：信贷 / 交易风控场景）
+# ============================================================
+rule-engine:
+  client:
+    server-url: http://localhost:8080
+    app-name: risk-control-example
+    token: ${PROJECT_ACCESS_TOKEN:demo-token-change-me}
+    l1-cache-max-size: 500
+    http-timeout-ms: 3000
+    project-id: 1
+    # 是否开启表达式追踪，默认 true；生产环境如不需要追踪信息可设为 false 以提升性能
+    trace-enabled: true
+
+# ============================================================
+# Redis 配置 - SDK 通过 Redis Pub/Sub 接收规则推送
+# 需要与 rule-engine-server 使用同一个 Redis 实例
+# ============================================================
+spring:
+  # 默认不启用 Kafka（避免误配外网地址）；需要执行日志上报时再引入 spring.kafka 并删除下行 exclude
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:123456}
+    database: 0
+    timeout: 3000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 4
+        min-idle: 1
+
+# ============================================================
+# Actuator 健康检查
+# ============================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.bjjw.rule.client: DEBUG
+    com.bjjw.rule.example: DEBUG

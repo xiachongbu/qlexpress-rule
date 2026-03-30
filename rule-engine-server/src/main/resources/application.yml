@@ -1,0 +1,60 @@
+server:
+  port: 8080
+  servlet:
+    session:
+      timeout: 60m
+
+spring:
+  application:
+    name: rule-engine-server
+  # 未配置 Kafka 时排除自动装配，避免启动期连接失败；需要日志入 Kafka 时请配置 spring.kafka
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/rule_engine?useUnicode=true&allowMultiQueries=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:root}
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    # 无密码时留空或删除本行
+    password: ${REDIS_PASSWORD:}
+    connect-timeout: 2000
+    timeout: 3000
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: 1000ms
+      shutdown-timeout: 200ms
+
+rule-engine:
+  # 启用 Kafka 消费执行日志时，与 spring.kafka 一并配置；参见 README
+  kafka:
+    log-topic: rule-execution-log
+  # 管理端（Vue 控制台）用户名密码登录；false 时不校验会话，与改造前行为一致
+  console-login:
+    enabled: true
+    # 需会话校验的路径（Ant）；默认覆盖管理 API
+    include-patterns:
+      - /api/rule/**
+    # 匿名放行：同步、日志上报、认证接口等
+    exclude-patterns:
+      - /api/auth/**
+      - /api/rule/sync/**
+      - /api/rule/log/report
+    session-username-attribute: RULE_CONSOLE_USERNAME
+    # 未自定义 ConsoleLoginAuthenticator Bean 时使用以下账号登录；生产环境请改为环境变量或 BCrypt
+    builtin:
+      username: ${CONSOLE_USERNAME:admin}
+      password: ${CONSOLE_PASSWORD:admin}
+      password-encoding: PLAIN
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto

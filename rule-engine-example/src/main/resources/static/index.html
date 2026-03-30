@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>规则引擎示例 - 综合风控（与 data-example.sql 一致）</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;background:#f0f2f5;color:#303133;line-height:1.6}
+.header{background:linear-gradient(135deg,#1a9bfc 0%,#0056b3 100%);color:#fff;padding:32px 0;text-align:center}
+.header h1{font-size:28px;font-weight:700;letter-spacing:1px}
+.header p{font-size:14px;opacity:.85;margin-top:6px}
+.container{max-width:1200px;margin:0 auto;padding:24px 16px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;border-bottom:2px solid #e4e7ed;padding-bottom:12px}
+.tab{padding:8px 20px;border-radius:6px 6px 0 0;cursor:pointer;font-size:14px;font-weight:500;background:#fff;border:1px solid #e4e7ed;border-bottom:none;color:#606266;transition:all .2s}
+.tab:hover{color:#1a9bfc;background:#f0f7ff}
+.tab.active{color:#fff;background:#1a9bfc;border-color:#1a9bfc}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.card{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px;overflow:hidden}
+.card-head{padding:16px 20px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
+.badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:600}
+.badge-table{background:#e6f7ff;color:#1890ff}
+.badge-tree{background:#f0f5ff;color:#2f54eb}
+.badge-flow{background:#fff7e6;color:#fa8c16}
+.badge-cross{background:#f9f0ff;color:#722ed1}
+.badge-score{background:#f6ffed;color:#52c41a}
+.badge-object{background:#fff0f6;color:#eb2f96}
+.badge-java{background:#fff1f0;color:#f5222d}
+.badge-bean{background:#fcffe6;color:#7cb305}
+.badge-script{background:#e6fffb;color:#13c2c2}
+.badge-cross-adv{background:#f9f0ff;color:#531dab}
+.badge-score-adv{background:#fcffe6;color:#389e0d}
+.badge-ql-script{background:#e6fffb;color:#006d75}
+.card-body{padding:20px}
+.form-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px}
+.form-group{flex:1;min-width:180px}
+.form-group label{display:block;font-size:12px;color:#909399;margin-bottom:4px;font-weight:500}
+.form-group input,.form-group select{width:100%;padding:8px 12px;border:1px solid #dcdfe6;border-radius:4px;font-size:13px;color:#303133;outline:none;transition:border .2s}
+.form-group input:focus,.form-group select:focus{border-color:#1a9bfc}
+.btn-row{display:flex;gap:10px;margin-top:16px}
+.btn{padding:8px 24px;border:none;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:#1a9bfc;color:#fff}
+.btn-primary:hover{background:#0680de}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.result-panel{margin-top:16px;display:none}
+.result-panel.show{display:block}
+.result-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.result-label{font-size:12px;color:#909399;font-weight:500}
+.result-status{font-size:12px;font-weight:600;padding:2px 8px;border-radius:3px}
+.result-ok{background:#f6ffed;color:#52c41a}
+.result-err{background:#fff2f0;color:#ff4d4f}
+.result-time{font-size:11px;color:#bfbfbf}
+.result-body{background:#f5f7fa;border:1px solid #ebeef5;border-radius:4px;padding:12px;font-family:'Consolas','Monaco',monospace;font-size:12px;line-height:1.7;max-height:400px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+.result-highlight{background:#fffbe6;border-color:#ffe58f}
+.func-table{width:100%;border-collapse:collapse;font-size:13px}
+.func-table th{background:#fafafa;padding:10px 14px;border:1px solid #ebeef5;font-weight:600;color:#606266;text-align:left}
+.func-table td{padding:10px 14px;border:1px solid #ebeef5;color:#303133}
+.func-table .ft-code{font-family:'Consolas',monospace;color:#1890ff;font-weight:600}
+.func-table .ft-type{font-weight:600}
+.func-table .ft-type-script{color:#13c2c2}
+.func-table .ft-type-java{color:#f5222d}
+.func-table .ft-type-bean{color:#7cb305}
+.arch-info{padding:16px 20px;background:#f0f7ff;border-radius:6px;font-size:13px;line-height:2;color:#595959;margin-bottom:20px}
+.arch-info code{background:#e6f7ff;padding:1px 6px;border-radius:3px;font-family:'Consolas',monospace;color:#1890ff;font-size:12px}
+.loading{display:inline-block;width:16px;height:16px;border:2px solid #e4e7ed;border-top-color:#1a9bfc;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-left:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.section-title{font-size:18px;font-weight:700;color:#303133;margin-bottom:16px;padding-left:12px;border-left:3px solid #1a9bfc}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>QLExpress 规则引擎 - 综合风控示例项目</h1>
+  <p>规则编码与命名与 <code>rule-engine-server</code> 的 <code>data-example.sql</code> 中示例一致（项目 RISK_DEMO）</p>
+</div>
+
+<div class="container">
+  <div class="arch-info">
+    <strong>架构说明：</strong>
+    本页面运行在 <code>rule-engine-example</code> (端口 7070)，
+    <strong>所有规则均通过 <code>RuleEngineClient</code> 客户端 SDK 在本地执行</strong>。
+    SDK 启动时自动从服务端同步函数定义：SCRIPT 函数发布时已拼进编译脚本；
+    JAVA/BEAN 函数根据 <code>implClass</code> / <code>implBeanName</code> 在客户端自动注册。
+    服务端更新函数时通过 Redis 推送，客户端实时热更新。
+  </div>
+
+  <div class="tabs" id="mainTabs">
+    <div class="tab active" data-tab="models">五种决策模型</div>
+    <div class="tab" data-tab="risk-ext">扩展风控示例</div>
+    <div class="tab" data-tab="object">对象传入</div>
+    <div class="tab" data-tab="functions">函数调用</div>
+    <div class="tab" data-tab="funcMgmt">函数管理</div>
+  </div>
+
+  <!-- ==================== 五种决策模型 ==================== -->
+  <div class="tab-panel active" id="panel-models">
+
+    <!-- 决策表 -->
+    <div class="card" id="card-table">
+      <div class="card-head">
+        <div class="card-title"><span class="badge badge-table">决策表</span> 客群×产品线定价表 (RC_PRICING_TABLE)</div>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>客群类型 (taxpayerType)</label>
+            <select id="f-table-taxpayer">
+              <option value="一般纳税人">一般纳税人</option>
+              <option value="小规模纳税人">小规模纳税人</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>产品条线 (goodsCategory)</label>
+            <select id="f-table-goods">
+              <option value="货物">货物</option>
+              <option value="服务">服务</option>
+              <option value="不动产">不动产</option>
+              <option value="无形资产">无形资产</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="runTable()">执行查询</button>
+        </div>
+        <div class="result-panel" id="res-table"></div>
+      </div>
+    </div>
+
+    <!-- 决策树 -->
+    <div class="card" id="card-tree">
+      <div class="card-head">
+        <div class="card-title"><span class="badge badge-tree">决策树</span> 客户信用分层 (RC_CREDIT_TREE)</div>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group"><label>年营收(万元)</label><input type="number" id="f-tree-revenue" value="5000"></div>
+          <div class="form-group"><label>合规内控评分 (taxComplianceScore)</label><input type="number" id="f-tree-score" value="85"></div>
+          <div class="form-group"><label>合作/经营年限 (yearsInBusiness)</label><input type="number" id="f-tree-years" value="10"></div>
+          <div class="form-group">
+            <label>是否存在严重违规 (hasViolation)</label>
+            <select id="f-tree-violation"><option value="false">否</option><option value="true">是</option></select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="runTree()">执行判定</button>
+        </div>
+        <div class="result-panel" id="res-tree"></div>
+      </div>
+    </div>
+
+    <!-- 决策流 -->
+    <div class="card" id="card-flow">
+      <div class="card-head">
+        <div class="card-title"><span class="badge badge-flow">决策流</span> 敞口与费用试算流程 (RC_EXPOSURE_FLOW) <span class="badge badge-script" style="margin-left:4px">含 roundTax 函数</span></div>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>客群类型 (taxpayerType)</label>
+            <select id="f-flow-taxpayer"><option value="一般纳税人">一般纳税人</option><option value="小规模纳税人">小规模纳税人</option></select>
+          </div>
+          <div class="form-group"><label>交易金额(含税口径) (totalAmount)</label><input type="number" id="f-flow-amount" value="113000"></div>
+          <div class="form-group">
+            <label>产品条线 (goodsCategory)</label>
+            <select id="f-flow-goods"><option value="货物">货物</option><option value="服务">服务</option><option value="不动产">不动产</option><option value="无形资产">无形资产</option></select>
+          </div>
+          <div class="form-group">
+            <label>是否适用减免政策 (isExempt)</label>
+            <select id="f-flow-exempt"><option value="false">否</option><option value="true">是</option></select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="runFlow()">执行试算</button>
+        </div>
+        <div class="result-panel" id="res-flow"></div>
+      </div>
+    </div>
+
+    <!-- 交叉表 -->
+    <div class="card" id="card-cross">
+      <div class="card-head">
+        <div class="card-title"><span class="badge badge-cross">交叉表</span> 二维风险参数矩阵 (RC_RATE_MATRIX)</div>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>客群类型 (taxpayerType)</label>
+            <select id="f-cross-taxpayer"><option value="一般纳税人">一般纳税人</option><option value="小规模纳税人">小规模纳税人</option></select>
+          </div>
+          <div class="form-group">
+            <label>产品条线 (goodsCategory)</label>
+            <select id="f-cross-goods"><option value="货物">货物</option><option value="服务">服务</option><option value="不动产">不动产</option><option value="无形资产">无形资产</option></select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="runCross()">查表执行</button>
+        </div>
+        <div class="result-panel" id="res-cross"></div>
+      </div>
+    </div>
+
+    <!-- 评分卡 -->
+    <div class="card" id="card-score">
+      <div class="card-head">
+        <div class="card-title"><span class="badge badge-score">评分卡</span> 综合风险评分卡 (RC_RISK_SCORECARD)</div>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>内部信用等级 (creditLevel)</label>
+            <select id="f-score-credit"><option value="A">A</option><option value="B" selected>B</option><option value="C">C</option><option value="D">D</option></select>
+          </div>
+          <div class="form-group"><label>年营收(万元) (annualRevenue)</label><input type="number" id="f-score-revenue" value="3000"></div>
+          <div class="form-group"><label>合作/经营年限 (yearsInBusiness)</label><input type="number" id="f-score-years" value="5"></div>
+          <div class="form-group"><label>指标偏离度 (taxBurdenDeviation)</label><input type="number" id="f-score-deviation" value="0.15" step="0.01"></div>
+          <div class="form-group"><label>历史风险事件次数 (violationCount)</label><input type="number" id="f-score-violations" value="1"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="runScore()">执行评估</button>
+        </div>
+        <div class="result-panel" id="res-score"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 对象传入 ==================== -->
+
+  <!-- ==================== 扩展风控示例（新增三种模型类型） ==================== -->
+  <div class="tab-panel" id="panel-risk-ext">
+    <div class="section-title">扩展风控示例 — 三种新规则类型</div>
+
+    <!-- 复杂交叉表 -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="badge badge-cross-adv">复杂交叉表</span> 多维场景定价矩阵 (RC_MULTI_DIM_RATE)</div>
+      </div>
+      <div class="card-body">
+        <div class="arch-info" style="margin-bottom:16px">
+          <strong>复杂交叉表：</strong>支持多维行列交叉 + 区间匹配。本示例为 4 维交叉：
+          <code>业务类型</code> × <code>结算方式</code> × <code>客户类型</code> × <code>纳税人资格</code>，
+          在多维矩阵中查找适用的组合定价系数。
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>业务类型</label>
+            <select id="f-mdr-service">
+              <option value="基础通信">基础通信</option>
+              <option value="增值业务">增值业务</option>
+              <option value="宽带接入">宽带接入</option>
+              <option value="ICT服务">ICT服务</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>结算方式</label>
+            <select id="f-mdr-payment">
+              <option value="预付费">预付费</option>
+              <option value="后付费" selected>后付费</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>客户类型</label>
+            <select id="f-mdr-customer">
+              <option value="企业客户">企业客户</option>
+              <option value="个人客户">个人客户</option>
+              <option value="政企客户">政企客户</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>纳税人资格</label>
+            <select id="f-mdr-taxpayer">
+              <option value="一般纳税人">一般纳税人</option>
+              <option value="小规模纳税人">小规模纳税人</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="runMultiDimRate()" style="background:#531dab">查询多维组合定价系数</button>
+        </div>
+        <div class="result-panel" id="res-mdr"></div>
+      </div>
+    </div>
+
+    <!-- 复杂评分卡 -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="badge badge-score-adv">复杂评分卡</span> 交易票据异常评分 (RC_INVOICE_FRAUD_SCORE)</div>
+      </div>
+      <div class="card-body">
+        <div class="arch-info" style="margin-bottom:16px">
+          <strong>复杂评分卡：</strong>支持分组维度 + 结构化条件。评分维度按组分类：
+          <code>客户基础信息</code>（客户等级 + 月消费金额）、
+          <code>发票合规指标</code>（开票偏差率 + 红冲比例）、
+          <code>合规风险指标</code>（零税率占比 + 跨地区开票比例），
+          同维度内互斥取分，维度间累加，最后按阈值输出风险等级。
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>客户等级</label>
+            <select id="f-ifs-level">
+              <option value="钻石">钻石</option>
+              <option value="金" selected>金</option>
+              <option value="银">银</option>
+              <option value="铜">铜</option>
+            </select>
+          </div>
+          <div class="form-group"><label>月消费金额(元)</label><input type="number" id="f-ifs-consumption" value="5000"></div>
+          <div class="form-group"><label>开票偏差率</label><input type="number" id="f-ifs-deviation" value="0.05" step="0.01"></div>
+          <div class="form-group"><label>红冲发票比例</label><input type="number" id="f-ifs-redinvoice" value="0.02" step="0.01"></div>
+          <div class="form-group"><label>零税率发票占比</label><input type="number" id="f-ifs-zerorate" value="0.01" step="0.01"></div>
+          <div class="form-group"><label>跨地区开票比例</label><input type="number" id="f-ifs-crossregion" value="0.08" step="0.01"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="runInvoiceFraudScore()" style="background:#389e0d">风险评估</button>
+        </div>
+        <div class="result-panel" id="res-ifs"></div>
+      </div>
+    </div>
+
+    <!-- QL脚本 -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="badge badge-ql-script">QL脚本</span> 混业组合计费脚本 (RC_BLEND_CALC_SCRIPT)</div>
+      </div>
+      <div class="card-body">
+        <div class="arch-info" style="margin-bottom:16px">
+          <strong>QL脚本：</strong>技术人员直接编写 QLExpress 脚本。本示例演示低费率产品线(9%)与高费率产品线(6%)按比例分拆计费，
+          支持小规模纳税人简易计税(3%)。脚本直接存储并执行，无需可视化设计器。
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>纳税人资格</label>
+            <select id="f-bcs-taxpayer">
+              <option value="一般纳税人">一般纳税人</option>
+              <option value="小规模纳税人">小规模纳税人</option>
+            </select>
+          </div>
+          <div class="form-group"><label>含税账单金额(元)</label><input type="number" id="f-bcs-amount" value="100000"></div>
+          <div class="form-group"><label>基础通信占比</label><input type="number" id="f-bcs-basic" value="0.6" step="0.1"></div>
+          <div class="form-group"><label>增值业务占比</label><input type="number" id="f-bcs-vas" value="0.4" step="0.1"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="runBlendCalcScript()" style="background:#006d75">执行脚本计算</button>
+        </div>
+        <div class="result-panel" id="res-bcs"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 原有对象传入 ==================== -->
+  <div class="tab-panel" id="panel-object">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="badge badge-object">对象传入</span> 对象传入定价 (RC_PRICING_BY_OBJECT)</div>
+      </div>
+      <div class="card-body">
+        <div class="arch-info" style="margin-bottom:16px">
+          <strong>对象传入说明：</strong>将多个参数封装为 <code>ctx</code> 对象传入规则引擎，规则脚本通过
+          <code>taxpayerType</code>、<code>goodsCategory</code> 访问属性。
+          对应数据对象定义：<code>TaxContext</code>（rule_data_object 表）。
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>taxpayerType（客群类型）</label>
+            <select id="f-obj-taxpayer"><option value="一般纳税人">一般纳税人</option><option value="小规模纳税人">小规模纳税人</option></select>
+          </div>
+          <div class="form-group">
+            <label>goodsCategory（产品条线）</label>
+            <select id="f-obj-goods"><option value="货物">货物</option><option value="服务">服务</option><option value="不动产">不动产</option><option value="无形资产">无形资产</option></select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="runObject()">执行查询</button>
+        </div>
+        <div class="result-panel" id="res-object"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 函数调用 ==================== -->
+  <div class="tab-panel" id="panel-functions">
+    <div class="section-title">三种函数类型演示</div>
+
+    <!-- SCRIPT 函数 -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="badge badge-script">SCRIPT</span> roundTax（经 RC_EXPOSURE_FLOW 演示）</div>
+      </div>
+      <div class="card-body">
+        <div class="arch-info" style="margin-bottom:16px">
+          <strong>SCRIPT 函数：</strong>服务端发布规则时自动将 SCRIPT 函数定义拼进 compiledScript，
+          客户端同步后直接执行，无需额外注册。同时 SDK 启动时也会通过 <code>addFunctionsDefinedInScript</code> 注册。
+          <code>RC_EXPOSURE_FLOW</code> 决策流的「计算税额」节点调用了 <code>roundTax(taxAmount)</code>。
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>客群类型 (taxpayerType)</label>
+            <select id="f-script-taxpayer"><option value="一般纳税人">一般纳税人</option><option value="小规模纳税人">小规模纳税人</option></select>
+          </div>
+          <div class="form-group"><label>交易金额(含税口径) (totalAmount)</label><input type="number" id="f-script-amount" value="113000"></div>
+          <div class="form-group">
+            <label>产品条线 (goodsCategory)</label>
+            <select id="f-script-goods"><option value="货物">货物</option><option value="服务">服务</option></select>
+          </div>
+          <div class="form-group">
+            <label>是否适用减免政策 (isExempt)</label>
+            <select id="f-script-exempt"><option value="false">否</option><option value="true">是</option></select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="runScript()" style="background:#13c2c2">本地执行 SCRIPT 函数</button>
+        </div>
+        <div class="result-panel" id="res-script"></div>
+      </div>
+    </div>
+
+    <!-- JAVA 函数 -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="badge badge-java">JAVA</span> JAVA 函数试算 (RC_FLOW_JAVA_SAMPLE) — calculateVAT</div>
+      </div>
+      <div class="card-body">
+        <div class="arch-info" style="margin-bottom:16px">
+          <strong>JAVA 函数：</strong>SDK 启动时从服务端同步函数定义，根据 <code>implClass</code> 反射实例化
+          <code>com.bjjw.rule.example.functions.TaxFunctions</code>，自动注册 <code>calculateVAT</code> 到本地引擎。
+          规则脚本中写 <code>taxAmount = calculateVAT(totalAmount, taxRate)</code>，在客户端本地执行。
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>含税金额 (totalAmount)</label><input type="number" id="f-java-amount" value="113000"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="runJava()" style="background:#f5222d">本地执行 JAVA 函数规则</button>
+        </div>
+        <div class="result-panel" id="res-java"></div>
+      </div>
+    </div>
+
+    <!-- BEAN 函数 -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="badge badge-bean">BEAN</span> Spring Bean 试算 (RC_FLOW_BEAN_SAMPLE) — calcTaxByBean</div>
+      </div>
+      <div class="card-body">
+        <div class="arch-info" style="margin-bottom:16px">
+          <strong>BEAN 函数：</strong>SDK 启动时从服务端同步函数定义，根据 <code>implBeanName</code> 从 Spring 容器获取
+          <code>taxFunctions</code> Bean，自动注册 <code>calcTaxByBean</code> 到本地引擎。
+          规则脚本中写 <code>taxAmount = calcTaxByBean(totalAmount, taxRate)</code>，在客户端本地执行。
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>含税金额 (totalAmount)</label><input type="number" id="f-bean-amount" value="113000"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="runBean()" style="background:#7cb305">本地执行 BEAN 函数规则</button>
+        </div>
+        <div class="result-panel" id="res-bean"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 函数管理 ==================== -->
+  <div class="tab-panel" id="panel-funcMgmt">
+    <div class="section-title">客户端已注册函数</div>
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">FunctionConfig 注册的函数列表</div>
+        <button class="btn btn-primary" onclick="loadFunctions()" style="font-size:12px;padding:6px 16px">加载</button>
+      </div>
+      <div class="card-body">
+        <div id="func-table-wrap">
+          <table class="func-table">
+            <thead><tr><th>函数编码</th><th>函数名称</th><th>类型</th><th>参数</th><th>返回类型</th><th>说明</th></tr></thead>
+            <tbody id="func-tbody">
+              <tr><td colspan="6" style="text-align:center;color:#bfbfbf">点击"加载"查看客户端 SDK 已注册的函数</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var BASE = '';
+
+/* ---- Tab 切换 ---- */
+document.getElementById('mainTabs').addEventListener('click', function(e) {
+  var tab = e.target.closest('.tab');
+  if (!tab) return;
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active') });
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active') });
+  tab.classList.add('active');
+  document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+});
+
+/* ---- 通用请求 ---- */
+function api(url, body, panelId, cb) {
+  var panel = document.getElementById(panelId);
+  panel.className = 'result-panel show';
+  panel.innerHTML = '<div class="result-header"><span class="result-label">请求中...<span class="loading"></span></span></div>';
+  var opts = { method: 'POST', headers: {'Content-Type':'application/json'} };
+  if (body !== null) opts.body = JSON.stringify(body);
+  if (body === null) opts.method = 'GET';
+  fetch(BASE + url, opts)
+    .then(function(r){ return r.json() })
+    .then(function(data){
+      var ok = data.success !== false;
+      var time = data.executeTimeMs || (data.data && data.data.executeTimeMs) || '';
+      var html = '<div class="result-header">' +
+        '<span class="result-label">执行结果</span>' +
+        '<span>' + (time ? '<span class="result-time">耗时 ' + time + 'ms</span> ' : '') +
+        '<span class="result-status ' + (ok ? 'result-ok' : 'result-err') + '">' + (ok ? '成功' : '失败') + '</span></span></div>' +
+        '<div class="result-body' + (ok ? '' : ' result-highlight') + '">' + syntaxHL(JSON.stringify(data, null, 2)) + '</div>';
+      panel.innerHTML = html;
+      if (cb) cb(data);
+    })
+    .catch(function(err){
+      panel.innerHTML = '<div class="result-header"><span class="result-status result-err">请求失败</span></div>' +
+        '<div class="result-body result-highlight">' + err.message + '</div>';
+    });
+}
+
+function syntaxHL(json) {
+  return json.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"([^"]+)":/g, '<span style="color:#1890ff">"$1"</span>:')
+    .replace(/: "([^"]*)"/g, ': <span style="color:#52c41a">"$1"</span>')
+    .replace(/: (\d+\.?\d*)/g, ': <span style="color:#fa8c16">$1</span>')
+    .replace(/: (true|false)/g, ': <span style="color:#722ed1">$1</span>')
+    .replace(/: null/g, ': <span style="color:#bfbfbf">null</span>');
+}
+
+/* ---- 决策表 ---- */
+function runTable() {
+  var body = { taxpayerType: v('f-table-taxpayer'), goodsCategory: v('f-table-goods') };
+  api('/api/example/tax-rate', body, 'res-table');
+}
+
+/* ---- 决策树 ---- */
+function runTree() {
+  var body = {
+    annualRevenue: +v('f-tree-revenue'), taxComplianceScore: +v('f-tree-score'),
+    yearsInBusiness: +v('f-tree-years'), hasViolation: v('f-tree-violation') === 'true'
+  };
+  api('/api/example/taxpayer-classify', body, 'res-tree');
+}
+
+/* ---- 决策流 ---- */
+function runFlow() {
+  var body = {
+    taxpayerType: v('f-flow-taxpayer'), totalAmount: +v('f-flow-amount'),
+    goodsCategory: v('f-flow-goods'), isExempt: v('f-flow-exempt') === 'true'
+  };
+  api('/api/example/tax-calc', body, 'res-flow');
+}
+
+/* ---- 交叉表 ---- */
+function runCross() {
+  var body = { taxpayerType: v('f-cross-taxpayer'), goodsCategory: v('f-cross-goods') };
+  api('/api/example/rate-lookup', body, 'res-cross');
+}
+
+/* ---- 评分卡 ---- */
+function runScore() {
+  var body = {
+    creditLevel: v('f-score-credit'), annualRevenue: +v('f-score-revenue'),
+    yearsInBusiness: +v('f-score-years'), taxBurdenDeviation: +v('f-score-deviation'),
+    violationCount: +v('f-score-violations')
+  };
+  api('/api/example/risk-assess', body, 'res-score');
+}
+
+/* ---- 对象传入 ---- */
+function runObject() {
+  var body = {  taxpayerType: v('f-obj-taxpayer'), goodsCategory: v('f-obj-goods')  };
+  api('/api/example/tax-rate-by-context', body, 'res-object');
+}
+
+/* ---- 多维定价交叉表 ---- */
+function runMultiDimRate() {
+  var body = {
+    serviceType: v('f-mdr-service'), paymentMode: v('f-mdr-payment'),
+    customerType: v('f-mdr-customer'), taxpayerQualification: v('f-mdr-taxpayer')
+  };
+  api('/api/example/risk/multi-dim-rate', body, 'res-mdr');
+}
+
+/* ---- 票据异常评分卡 ---- */
+function runInvoiceFraudScore() {
+  var body = {
+    customerLevel: v('f-ifs-level'), monthlyConsumption: +v('f-ifs-consumption'),
+    invoiceDeviationRate: +v('f-ifs-deviation'), redInvoiceRatio: +v('f-ifs-redinvoice'),
+    zeroRateInvoiceRatio: +v('f-ifs-zerorate'), crossRegionInvoiceRatio: +v('f-ifs-crossregion')
+  };
+  api('/api/example/risk/invoice-fraud-score', body, 'res-ifs');
+}
+
+/* ---- 混业计费 QL 脚本 ---- */
+function runBlendCalcScript() {
+  var body = {
+    taxpayerQualification: v('f-bcs-taxpayer'), billingAmount: +v('f-bcs-amount'),
+    basicServiceRatio: +v('f-bcs-basic'), vasServiceRatio: +v('f-bcs-vas')
+  };
+  api('/api/example/risk/blend-calc', body, 'res-bcs');
+}
+
+/* ---- SCRIPT 函数 ---- */
+function runScript() {
+  var body = {
+    taxpayerType: v('f-script-taxpayer'), totalAmount: +v('f-script-amount'),
+    goodsCategory: v('f-script-goods'), isExempt: v('f-script-exempt') === 'true'
+  };
+  api('/api/example/calc-vat-script', body, 'res-script');
+}
+
+/* ---- JAVA 函数 ---- */
+function runJava() {
+  api('/api/example/calc-vat-java', { totalAmount: +v('f-java-amount') }, 'res-java');
+}
+
+/* ---- BEAN 函数 ---- */
+function runBean() {
+  api('/api/example/calc-vat-bean', { totalAmount: +v('f-bean-amount') }, 'res-bean');
+}
+
+/* ---- 函数列表 ---- */
+function loadFunctions() {
+  fetch(BASE + '/api/example/functions')
+    .then(function(r){ return r.json() })
+    .then(function(resp){
+      var list = resp.data || [];
+      var tbody = document.getElementById('func-tbody');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#bfbfbf">暂无已注册函数</td></tr>';
+        return;
+      }
+      var html = '';
+      var typeClass = { SCRIPT:'ft-type-script', JAVA:'ft-type-java', BEAN:'ft-type-bean' };
+      for (var i = 0; i < list.length; i++) {
+        var f = list[i];
+        html += '<tr>' +
+          '<td class="ft-code">' + (f.funcCode||'') + '</td>' +
+          '<td>' + (f.funcName||'') + '</td>' +
+          '<td class="ft-type ' + (typeClass[f.implType]||'') + '">' + (f.implType||'') + '</td>' +
+          '<td>' + (f.params||'') + '</td>' +
+          '<td>' + (f.returnType||'') + '</td>' +
+          '<td>' + (f.description||'') + '</td></tr>';
+      }
+      tbody.innerHTML = html;
+    })
+    .catch(function(err){
+      document.getElementById('func-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:#ff4d4f">加载失败: ' + err.message + '</td></tr>';
+    });
+}
+
+function v(id) { return document.getElementById(id).value; }
+</script>
+</body>
+</html>
