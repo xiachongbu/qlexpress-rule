@@ -3,7 +3,6 @@ package com.bjjw.rule.client.function;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.qlexpress4.Express4Runner;
 import com.alibaba.qlexpress4.QLOptions;
 import com.bjjw.rule.core.function.AggregateBuiltinFunctionRegistry;
 import com.bjjw.rule.core.engine.QLExpressEngine;
@@ -12,16 +11,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 客户端函数注册器 —— 根据服务端同步的函数元数据，自动注册到本地 QLExpress 引擎。
  *
  * <p>支持三种函数类型：
  * <ul>
- *   <li>SCRIPT：通过 addOrReplaceFunctionsDefinedInScript 注册 QLExpress 脚本函数</li>
- *   <li>JAVA：反射实例化类，通过 addOrReplaceFunctionOfServiceMethod 注册</li>
- *   <li>BEAN：从 Spring 容器获取 Bean，通过 addOrReplaceFunctionOfServiceMethod 注册</li>
+ *   <li>SCRIPT：通过 addVarArgsFunction 注册 QLExpress 脚本函数</li>
+ *   <li>JAVA：反射实例化类，通过 addFunctionOfServiceMethod 注册</li>
+ *   <li>BEAN：从 Spring 容器获取 Bean，通过 addFunctionOfServiceMethod 注册</li>
  * </ul>
  * 所有注册方法均使用 addOrReplace 语义，同名函数会被覆盖以支持热更新。
  * </p>
@@ -80,8 +81,8 @@ public class ClientFunctionRegistrar {
      * 通过 RulePushMessage 字段注册单个函数（Redis 推送场景）
      */
     public void registerFromPush(String funcCode, String implType, String implScript,
-                                  String implClass, String implMethod, String implBeanName,
-                                  String paramsJson) {
+                                 String implClass, String implMethod, String implBeanName,
+                                 String paramsJson) {
         JSONObject func = new JSONObject();
         func.put("funcCode", funcCode);
         func.put("implType", implType);
@@ -100,16 +101,16 @@ public class ClientFunctionRegistrar {
         if (script == null || script.trim().isEmpty()) return;
 
         List<String> paramNames = extractParamNames(func.getString("paramsJson"));
-        StringBuilder sb = new StringBuilder();
-        sb.append("function ").append(funcCode).append("(");
-        for (int i = 0; i < paramNames.size(); i++) {
-            if (i > 0) sb.append(", ");
-            sb.append(paramNames.get(i));
-        }
-        sb.append(") {\n    ").append(script.trim().replace("\n", "\n    ")).append("\n}\n");
+        String trimmedScript = script.trim();
 
-        engine.getRunner().addOrReplaceFunctionsDefinedInScript(
-                sb.toString(), null, QLOptions.builder().cache(false).build());
+        engine.getRunner().addVarArgsFunction(funcCode, params -> {
+            Map<String, Object> context = new HashMap<>();
+            for (int i = 0; i < paramNames.size(); i++) {
+                context.put(paramNames.get(i), i < params.length ? params[i] : null);
+            }
+            return engine.getRunner().execute(trimmedScript, context,
+                    QLOptions.builder().cache(true).build()).getResult();
+        });
         log.info("[ClientFuncReg] 注册/更新 SCRIPT 函数: {}", funcCode);
     }
 
@@ -127,7 +128,7 @@ public class ClientFunctionRegistrar {
         Class<?> clazz = Class.forName(className);
         Object instance = clazz.getDeclaredConstructor().newInstance();
         Class<?>[] paramTypes = resolveParamTypes(func.getString("paramsJson"));
-        engine.getRunner().addOrReplaceFunctionOfServiceMethod(funcCode, instance, methodName, paramTypes);
+        engine.getRunner().addFunctionOfServiceMethod(funcCode, instance, methodName, paramTypes);
         log.info("[ClientFuncReg] 注册/更新 JAVA 函数: {} -> {}.{}", funcCode, className, methodName);
     }
 
@@ -149,7 +150,7 @@ public class ClientFunctionRegistrar {
         try {
             Object bean = applicationContext.getBean(beanName);
             Class<?>[] paramTypes = resolveParamTypes(func.getString("paramsJson"));
-            engine.getRunner().addOrReplaceFunctionOfServiceMethod(funcCode, bean, methodName, paramTypes);
+            engine.getRunner().addFunctionOfServiceMethod(funcCode, bean, methodName, paramTypes);
             log.info("[ClientFuncReg] 注册/更新 BEAN 函数: {} -> {}.{}", funcCode, beanName, methodName);
         } catch (Exception e) {
             log.warn("[ClientFuncReg] BEAN 函数 {} 注册失败（Bean '{}' 可能不存在）: {}", funcCode, beanName, e.getMessage());
