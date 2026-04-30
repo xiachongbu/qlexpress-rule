@@ -22,10 +22,10 @@ public final class AggregateBuiltinFunctionRegistry {
         if (runner == null) {
             return;
         }
-        runner.addOrReplaceFunctionOfServiceMethod("sum", DELEGATE, "sum", SINGLE_OBJECT);
-        runner.addOrReplaceFunctionOfServiceMethod("count", DELEGATE, "count", SINGLE_OBJECT);
-        runner.addOrReplaceFunctionOfServiceMethod("max", DELEGATE, "max", SINGLE_OBJECT);
-        runner.addOrReplaceFunctionOfServiceMethod("min", DELEGATE, "min", SINGLE_OBJECT);
-        runner.addOrReplaceFunctionOfServiceMethod("avg", DELEGATE, "avg", SINGLE_OBJECT);
+        runner.addFunctionOfServiceMethod("sum", DELEGATE, "sum", SINGLE_OBJECT);
+        runner.addFunctionOfServiceMethod("count", DELEGATE, "count", SINGLE_OBJECT);
+        runner.addFunctionOfServiceMethod("max", DELEGATE, "max", SINGLE_OBJECT);
+        runner.addFunctionOfServiceMethod("min", DELEGATE, "min", SINGLE_OBJECT);
+        runner.addFunctionOfServiceMethod("avg", DELEGATE, "avg", SINGLE_OBJECT);
     }
 }
