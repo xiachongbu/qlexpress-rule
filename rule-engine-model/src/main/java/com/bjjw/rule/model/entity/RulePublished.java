@@ -13,6 +13,8 @@ public class RulePublished {
     private Long definitionId;
     /** 规则所属项目编码 */
     private String projectCode;
+    /** 作用域省份：0 全国默认，其它为业务 compId */
+    private String compId;
     private Integer version;
     private String modelType;
     private String compiledScript;

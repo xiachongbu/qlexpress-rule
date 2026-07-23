@@ -46,7 +46,7 @@ public class RiskAssessService {
      * @return 评分结果，包含总分和风险等级
      */
     public Map<String, Object> assessRisk(RiskAssessQuery query) {
-        RuleResult result = ruleClient.execute(RULE_CODE, query);
+        RuleResult result = ruleClient.execute(RULE_CODE, query, null);
 
         if (!result.isSuccess()) {
             log.error("评分卡执行失败 [{}]: {}", RULE_CODE, result.getErrorMessage());

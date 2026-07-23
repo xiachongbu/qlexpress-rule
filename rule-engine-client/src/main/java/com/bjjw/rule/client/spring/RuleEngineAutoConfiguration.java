@@ -16,8 +16,16 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.util.StringUtils;
 
+/**
+ * 规则引擎客户端自动装配。
+ * <p>配置 {@code rule-engine.client.server-url} 后触发；需容器中存在 {@link RedisConnectionFactory}
+ * （或 {@link StringRedisTemplate}）用于 L1/L2 缓存。若存在 {@link KafkaTemplate}，则执行日志走 Kafka 上报，
+ * 否则回退为 HTTP 上报。</p>
+ */
 @Configuration
 @ConditionalOnProperty(prefix = "rule-engine.client", name = "server-url")
 @AutoConfigureAfter({RedisAutoConfiguration.class, KafkaAutoConfiguration.class})
@@ -29,6 +37,9 @@ public class RuleEngineAutoConfiguration {
         return new RuleEngineClientProperties();
     }
 
+    /**
+     * 存在 {@link KafkaTemplate} 时注册基于 Kafka 的执行日志上报器。
+     */
     @Configuration
     @ConditionalOnClass(KafkaTemplate.class)
     @ConditionalOnBean(KafkaTemplate.class)
@@ -44,11 +55,19 @@ public class RuleEngineAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    @ConditionalOnBean(RedisConnectionFactory.class)
     public RuleEngineClient ruleEngineClient(RuleEngineClientProperties props,
-                                              RedisConnectionFactory connectionFactory,
-                                              ApplicationContext applicationContext,
-                                              ObjectProvider<ExecutionLogReporter> logReporterProvider) {
+                                             ObjectProvider<RedisConnectionFactory> connectionFactoryProvider,
+                                             ObjectProvider<StringRedisTemplate> stringRedisTemplateProvider,
+                                             ApplicationContext applicationContext,
+                                             ObjectProvider<ExecutionLogReporter> logReporterProvider) {
+        RedisConnectionFactory connectionFactory = resolveRedisConnectionFactory(
+                props, applicationContext, connectionFactoryProvider, stringRedisTemplateProvider);
+        if (connectionFactory == null) {
+            throw new IllegalStateException(
+                    "规则引擎客户端需要 Redis：请提供 RedisConnectionFactory 或 StringRedisTemplate，"
+                            + "或通过 rule-engine.client.redis-connection-factory-bean-name / string-redis-template-bean-name 指定 Bean 名称。");
+        }
+
         RuleEngineClient.Builder builder = RuleEngineClient.builder()
                 .serverUrl(props.getServerUrl())
                 .appName(props.getAppName())
@@ -58,7 +77,9 @@ public class RuleEngineAutoConfiguration {
                 .l1CacheMaxSize(props.getL1CacheMaxSize())
                 .httpTimeoutMs(props.getHttpTimeoutMs())
                 .projectId(props.getProjectId())
-                .traceEnabled(props.isTraceEnabled());
+                .traceEnabled(props.isTraceEnabled())
+                .l2RedisCacheEnabled(props.isL2RedisCacheEnabled())
+                .warmUpOnStart(props.isWarmUpOnStart());
 
         ExecutionLogReporter reporter = logReporterProvider.getIfAvailable();
         if (reporter != null) {
@@ -68,5 +89,32 @@ public class RuleEngineAutoConfiguration {
         RuleEngineClient client = builder.build();
         client.start();
         return client;
+    }
+
+    /**
+     * 解析 Redis 连接工厂：显式 Bean 名 → 按类型 → StringRedisTemplate 的连接工厂。
+     */
+    private static RedisConnectionFactory resolveRedisConnectionFactory(
+            RuleEngineClientProperties props,
+            ApplicationContext applicationContext,
+            ObjectProvider<RedisConnectionFactory> connectionFactoryProvider,
+            ObjectProvider<StringRedisTemplate> stringRedisTemplateProvider) {
+        if (StringUtils.hasText(props.getRedisConnectionFactoryBeanName())) {
+            return applicationContext.getBean(props.getRedisConnectionFactoryBeanName(), RedisConnectionFactory.class);
+        }
+        if (StringUtils.hasText(props.getStringRedisTemplateBeanName())) {
+            StringRedisTemplate tpl = applicationContext.getBean(
+                    props.getStringRedisTemplateBeanName(), StringRedisTemplate.class);
+            return tpl.getConnectionFactory();
+        }
+        RedisConnectionFactory factory = connectionFactoryProvider.getIfAvailable();
+        if (factory != null) {
+            return factory;
+        }
+        StringRedisTemplate stringRedisTemplate = stringRedisTemplateProvider.getIfAvailable();
+        if (stringRedisTemplate != null) {
+            return stringRedisTemplate.getConnectionFactory();
+        }
+        return null;
     }
 }

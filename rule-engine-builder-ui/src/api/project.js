@@ -1,7 +1,8 @@
 import request from './request'
 
-export function listProjects(params) {
-  return request({ url: '/rule/project/list', method: 'get', params })
+/** 项目分页列表（POST + JSON） */
+export function listProjects(data) {
+  return request({ url: '/rule/project/list', method: 'post', data })
 }
 
 export function getProject(id) {

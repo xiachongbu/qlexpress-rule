@@ -2,6 +2,7 @@ package com.bjjw.rule.client.sync;
 
 import com.alibaba.fastjson.JSON;
 import com.bjjw.rule.client.cache.CachedRule;
+import com.bjjw.rule.client.cache.CachedRuleSet;
 import com.bjjw.rule.client.cache.L1MemoryCache;
 import com.bjjw.rule.client.function.ClientFunctionRegistrar;
 import com.bjjw.rule.model.dto.RulePushMessage;
@@ -13,7 +14,8 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 
-import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 
 /**
  * Redis订阅器 - 使用Spring Data Redis实现
@@ -53,12 +55,12 @@ public class RedisSubscriber {
             container.setConnectionFactory(connectionFactory);
 
             container.addMessageListener(new RuleMessageListener(),
-                    Arrays.asList(new ChannelTopic(channel), new ChannelTopic("rule:push:broadcast")));
+                    Collections.singletonList(new ChannelTopic(channel)));
 
             container.afterPropertiesSet();
             container.start();
 
-            log.info("Redis subscriber started on channels: {}, rule:push:broadcast", channel);
+            log.info("Redis subscriber started on channel: {}", channel);
         } catch (Exception e) {
             log.error("Failed to start Redis subscriber: {}", e.getMessage(), e);
         }
@@ -76,7 +78,7 @@ public class RedisSubscriber {
     private class RuleMessageListener implements MessageListener {
         @Override
         public void onMessage(Message message, byte[] pattern) {
-            String body = new String(message.getBody());
+            String body = new String(message.getBody(), StandardCharsets.UTF_8);
             handleMessage(body);
         }
     }
@@ -84,25 +86,46 @@ public class RedisSubscriber {
     private void handleMessage(String message) {
         try {
             RulePushMessage push = JSON.parseObject(message, RulePushMessage.class);
+
+            // 防御性过滤：projectCode 与本客户端 appName 不匹配则跳过
+            if (!appName.equals(push.getProjectCode())) {
+                log.debug("Skipping push message for project={}, current appName={}", push.getProjectCode(), appName);
+                return;
+            }
+
             String action = push.getAction();
 
             if ("PUBLISH".equals(action)) {
-                CachedRule cached = new CachedRule();
-                cached.setRuleCode(push.getRuleCode());
-                cached.setProjectCode(push.getProjectCode());
-                cached.setVersion(push.getVersion() != null ? push.getVersion() : 0);
-                cached.setModelType(push.getModelType());
-                cached.setCompiledScript(push.getCompiledScript());
-                cached.setCompiledType(push.getCompiledType());
-                cached.setModelJson(push.getModelJson());
-                cached.setLastUpdateTime(System.currentTimeMillis());
-                cache.put(cached);
-                log.info("Rule updated via Redis push: {} v{}", push.getRuleCode(), push.getVersion());
+                // 多作用域下 L1 按 ruleCode+compId 分键，推送后删除该规则全部作用域条目
+                cache.removeAllForRule(push.getRuleCode());
+                // 如果推送携带完整规则数据，直接预热 L1 避免冷启动延迟
+                CachedRule cached = RulePushMessageConverter.toCachedRule(push);
+                if (cached != null && cached.getCompiledScript() != null) {
+                    cache.put(push.getRuleCode(), push.getCompId(), cached);
+                }
+                log.info("Rule invalidated via Redis push: {} v{} compId={}",
+                        push.getRuleCode(), push.getVersion(), push.getCompId());
 
             } else if ("UNPUBLISH".equals(action) || "DELETE".equals(action)) {
-                cache.remove(push.getRuleCode());
+                cache.removeAllForRule(push.getRuleCode());
                 log.info("Rule removed via Redis push: {}", push.getRuleCode());
 
+            } else if ("SET_PUBLISH".equals(action)) {
+                if (push.getSetCode() != null) {
+                    cache.removeAllForSet(push.getSetCode());
+                    // 如果推送携带完整规则集数据，直接预热 L1
+                    CachedRuleSet cachedSet = RulePushMessageConverter.toCachedRuleSet(push);
+                    if (cachedSet != null) {
+                        cache.putSet(push.getSetCode(), push.getCompId(), cachedSet);
+                    }
+                    log.info("Rule set invalidated via Redis push: {} v{} compId={}",
+                            push.getSetCode(), push.getVersion(), push.getCompId());
+                }
+            } else if ("SET_UNPUBLISH".equals(action)) {
+                if (push.getSetCode() != null) {
+                    cache.removeAllForSet(push.getSetCode());
+                    log.info("Rule set removed via Redis push: {}", push.getSetCode());
+                }
             } else if ("FUNC_UPDATE".equals(action)) {
                 if (functionRegistrar != null && push.getFuncCode() != null) {
                     functionRegistrar.registerFromPush(

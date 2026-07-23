@@ -30,7 +30,7 @@ public class MultiDimRateService {
      * @return 定价系数，未命中时可能为 null
      */
     public BigDecimal queryRate(MultiDimRateQuery query) {
-        RuleResult result = ruleClient.execute(RULE_CODE, query);
+        RuleResult result = ruleClient.execute(RULE_CODE, query, null);
 
         if (!result.isSuccess()) {
             log.error("复杂交叉表执行失败 [{}]: {}", RULE_CODE, result.getErrorMessage());

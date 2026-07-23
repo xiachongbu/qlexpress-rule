@@ -31,7 +31,7 @@ public class BlendCalcScriptService {
      * @return 含 result、success、executeTimeMs 的包装 Map
      */
     public Map<String, Object> executeBlendCalc(BlendCalcScriptQuery query) {
-        RuleResult result = ruleClient.execute(RULE_CODE, query);
+        RuleResult result = ruleClient.execute(RULE_CODE, query, null);
 
         if (!result.isSuccess()) {
             log.error("QL脚本执行失败 [{}]: {}", RULE_CODE, result.getErrorMessage());

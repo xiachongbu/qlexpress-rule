@@ -33,7 +33,7 @@ public class TaxRateByCtxService {
      * @return 风险定价费率
      */
     public Object queryTaxRate(TaxRateByCtxQuery query) {
-        RuleResult result = ruleClient.execute(RULE_CODE, query);
+        RuleResult result = ruleClient.execute(RULE_CODE, query, null);
 
         if (!result.isSuccess()) {
             log.error("对象传入规则执行失败 [{}]: {}", RULE_CODE, result.getErrorMessage());

@@ -7,18 +7,18 @@
           <span class="c-op">{{ opText }}</span>
           <span class="c-name">{{ rightText }}</span>
         </span>
-        <span class="nd-res" :class="resCls" v-if="node.evaluated">{{ resText }}</span>
-        <span class="nd-res is-skip" v-else>未执行</span>
+        <span v-if="node.evaluated" class="nd-res" :class="resCls">{{ resText }}</span>
+        <span v-else class="nd-res is-skip">未执行</span>
       </div>
     </template>
 
     <template v-else>
-      <div class="nd-box" v-if="showSelf">
+      <div v-if="showSelf" class="nd-box">
         <span class="nd-txt">{{ nodeLabel }}</span>
-        <span class="nd-res" :class="resCls" v-if="showRes">{{ resText }}</span>
-        <span class="nd-res is-skip" v-else-if="!node.evaluated && !isSkipType">未执行</span>
+        <span v-if="showRes" class="nd-res" :class="resCls">{{ resText }}</span>
+        <span v-else-if="!node.evaluated && !isSkipType" class="nd-res is-skip">未执行</span>
       </div>
-      <div class="nd-kids" v-if="kids.length > 0" :class="{ 'no-stem': !showSelf }">
+      <div v-if="kids.length > 0" class="nd-kids" :class="{ 'no-stem': !showSelf }">
         <trace-node v-for="(c, i) in kids" :key="i" :node="c" :var-map="varMap" />
       </div>
     </template>
@@ -34,8 +34,8 @@ var OP_CN = {
 }
 var CMP = ['==', '!=', '>', '>=', '<', '<=']
 
-function leaf (n) { return n && (n.type === 'VARIABLE' || n.type === 'VALUE' || n.type === 'PRIMARY') }
-function fv (v) {
+function leaf(n) { return n && (n.type === 'VARIABLE' || n.type === 'VALUE' || n.type === 'PRIMARY') }
+function fv(v) {
   if (v === true) return '真'
   if (v === false) return '假'
   if (v === null || v === undefined) return '空'
@@ -46,19 +46,19 @@ export default {
   name: 'TraceNode',
   props: {
     node: { type: Object, required: true },
-    varMap: { type: Object, default: function () { return {} } }
+    varMap: { type: Object, default: function() { return {} } }
   },
   computed: {
-    isSkipType: function () {
+    isSkipType: function() {
       return this.node.type === 'BLOCK' || this.node.type === 'STATEMENT'
     },
-    isInlineCompare: function () {
+    isInlineCompare: function() {
       if (this.node.type !== 'OPERATOR') return false
       if (CMP.indexOf(this.node.token) === -1) return false
       var ch = this.node.children || []
       return ch.length === 2 && leaf(ch[0]) && leaf(ch[1])
     },
-    leftText: function () {
+    leftText: function() {
       var c = this.node.children[0]
       if (c.type === 'VARIABLE') {
         var l = this.varMap[c.token] || c.token
@@ -66,7 +66,7 @@ export default {
       }
       return fv(c.value !== undefined ? c.value : c.token)
     },
-    rightText: function () {
+    rightText: function() {
       var c = this.node.children[1]
       if (c.type === 'VARIABLE') {
         var l = this.varMap[c.token] || c.token
@@ -74,9 +74,9 @@ export default {
       }
       return fv(c.value !== undefined ? c.value : c.token)
     },
-    opText: function () { return OP_CN[this.node.token] || this.node.token },
-    nodeLabel: function () {
-      var type = this.node.type, token = this.node.token
+    opText: function() { return OP_CN[this.node.token] || this.node.token },
+    nodeLabel: function() {
+      var type = this.node.type; var token = this.node.token
       if (type === 'OPERATOR') {
         var cn = OP_CN[token]
         return cn ? cn + '(' + token + ')' : token
@@ -91,20 +91,20 @@ export default {
       if (this.isSkipType) return ''
       return token || type
     },
-    showSelf: function () { return !this.isSkipType },
-    showRes: function () {
+    showSelf: function() { return !this.isSkipType },
+    showRes: function() {
       if (!this.node.evaluated) return false
       if (this.isSkipType || this.node.type === 'VARIABLE') return false
       return true
     },
-    resCls: function () {
+    resCls: function() {
       var v = this.node.value
       if (v === true) return 'is-true'
       if (v === false) return 'is-false'
       return 'is-val'
     },
-    resText: function () { return '→ ' + fv(this.node.value) },
-    kids: function () {
+    resText: function() { return '→ ' + fv(this.node.value) },
+    kids: function() {
       if (!this.node.children) return []
       var r = []
       for (var i = 0; i < this.node.children.length; i++) {

@@ -28,7 +28,8 @@ public class HttpLogReporter implements ExecutionLogReporter {
     @Override
     public void report(List<RuleExecutionLog> logs) {
         try {
-            RequestBody body = RequestBody.create(JSON.toJSONString(logs), JSON_TYPE);
+            // 使用 (MediaType, String) 重载：与 OkHttp 3.x 及 4.x 均兼容；4.x 中 (String, MediaType) 为另一套 API
+            RequestBody body = RequestBody.create(JSON_TYPE, JSON.toJSONString(logs));
             Request request = new Request.Builder().url(reportUrl).post(body).build();
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {

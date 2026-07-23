@@ -136,7 +136,7 @@ public class ActionDataCompiler {
         if (empty(target) || empty(condVar)) return "";
         String op = b.getString("condOp");
         if (empty(op)) op = "==";
-        String cond = condVar + " " + op + " " + wrapValue(b.getString("condValue"));
+        String cond = QlCompareExpression.emitStructuredCondition(condVar, op, b.getString("condValue"));
         String tv = b.getString("trueValue");
         String fv = b.getString("falseValue");
         return pad(indent) + target + " = " + cond + " ? " + (empty(tv) ? "\"\"" : tv) + " : " + (empty(fv) ? "\"\"" : fv);
@@ -187,12 +187,15 @@ public class ActionDataCompiler {
         return sb.toString();
     }
 
+    /**
+     * 条件分支上的可视化条件 → QL 布尔表达式。
+     */
     private static String buildCond(JSONObject branch) {
         String v = branch.getString("condVar");
         if (empty(v)) return "true";
         String op = branch.getString("condOp");
         if (empty(op)) op = "==";
-        return v + " " + op + " " + wrapValue(branch.getString("condValue"));
+        return QlCompareExpression.emitStructuredCondition(v, op, branch.getString("condValue"));
     }
 
     private static String wrapValue(String val) {

@@ -11,288 +11,303 @@
         <el-button size="small" icon="el-icon-plus" @click="addGroup">添加维度组</el-button>
         <el-divider direction="vertical" />
         <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <design-version-switcher
+          :definition-id="definitionId"
+          :scope-comp-id="scopeCompId"
+          @apply-model="onApplyDesignSnapshot"
+        />
         <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">编译</el-button>
         <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
       </div>
     </div>
 
-    <!-- 基础配置 -->
-    <div class="asc-card asc-base-config">
-      <div class="asc-card-title"><i class="el-icon-setting" /> 基础配置</div>
-      <div class="base-config-row">
-        <div class="base-config-item">
-          <span class="base-config-label">初始分数</span>
-          <el-input-number v-model="model.initialScore" :min="0" :max="10000" size="small" style="width:130px;" />
-        </div>
-        <div class="base-config-item">
-          <span class="base-config-label">结果变量</span>
-          <var-picker
-            v-if="varPickerOptions.length"
-            :vars="varPickerOptions"
-            :value="model.resultVar.varCode"
-            placeholder="选择结果变量..."
-            width="200px"
-            @select="onResultVarSelect"
-          />
-          <template v-else>
-            <el-input v-model="model.resultVar.varCode" size="small" placeholder="如 totalScore" style="width:160px;" />
-            <span style="margin:0 4px;color:#999;">|</span>
-            <el-input v-model="model.resultVar.varLabel" size="small" placeholder="如 总评分" style="width:140px;" />
-          </template>
-        </div>
-      </div>
-    </div>
-
-    <!-- 维度组列表 -->
-    <div
-      v-for="(group, gi) in model.dimensionGroups"
-      :key="gi"
-      class="asc-card asc-group"
-    >
-      <div class="asc-group-header">
-        <div class="asc-group-left" @click="toggleGroup(gi)">
-          <i :class="group._collapsed ? 'el-icon-arrow-right' : 'el-icon-arrow-down'" />
-          <el-input
-            v-model="group.groupLabel"
-            size="small"
-            placeholder="维度组名称（如 客户基础信息）"
-            class="group-label-input"
-            @click.native.stop
-          />
-          <el-tag size="mini" type="info">{{ (group.dimensions || []).length }} 维度</el-tag>
-          <div class="group-weight-summary" @click.stop>
-            <span class="weight-label">组权重</span>
-            <el-input-number
-              v-model="group.weight"
-              :min="0"
-              :max="2"
-              :step="0.1"
-              :precision="2"
-              size="mini"
-              controls-position="right"
-              style="width:100px;"
-            />
+    <div v-loading="scopeContentLoading">
+      <!-- 基础配置 -->
+      <div class="asc-card asc-base-config">
+        <div class="asc-card-title"><i class="el-icon-setting" /> 基础配置</div>
+        <div class="base-config-row">
+          <div class="base-config-item">
+            <span class="base-config-label">初始分数</span>
+            <el-input-number v-model="model.initialScore" :min="0" :max="10000" size="small" style="width:130px;" />
           </div>
-        </div>
-        <div class="asc-group-right">
-          <el-button size="small" icon="el-icon-plus" @click="addDimension(gi)">添加维度</el-button>
-          <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="removeGroup(gi)" />
-        </div>
-      </div>
-
-      <div v-show="!group._collapsed" class="asc-group-body">
-        <div
-          v-for="(dim, di) in group.dimensions"
-          :key="di"
-          class="asc-dimension"
-        >
-          <div class="dim-header">
-            <span class="dim-index">{{ gi + 1 }}.{{ di + 1 }}</span>
-            <el-input v-model="dim.varLabel" size="small" placeholder="维度名称" style="width:160px;" />
+          <div class="base-config-item">
+            <span class="base-config-label">结果变量</span>
             <var-picker
               v-if="varPickerOptions.length"
               :vars="varPickerOptions"
-              :value="dim.varCode"
-              placeholder="主变量..."
-              width="180px"
-              @select="v => onDimVarSelect(gi, di, v)"
+              :value="model.resultVar.varCode"
+              placeholder="选择结果变量..."
+              width="200px"
+              @select="onResultVarSelect"
             />
-            <el-input v-else v-model="dim.varCode" size="small" placeholder="变量编码" style="width:140px;" />
-            <div class="dim-weight-area">
-              <span class="item-field-label">权重</span>
+            <template v-else>
+              <el-input v-model="model.resultVar.varCode" size="small" placeholder="如 totalScore" style="width:160px;" />
+              <span style="margin:0 4px;color:#999;">|</span>
+              <el-input v-model="model.resultVar.varLabel" size="small" placeholder="如 总评分" style="width:140px;" />
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- 维度组列表 -->
+      <div
+        v-for="(group, gi) in model.dimensionGroups"
+        :key="gi"
+        class="asc-card asc-group"
+      >
+        <div class="asc-group-header">
+          <div class="asc-group-left" @click="toggleGroup(gi)">
+            <i :class="group._collapsed ? 'el-icon-arrow-right' : 'el-icon-arrow-down'" />
+            <el-input
+              v-model="group.groupLabel"
+              size="small"
+              placeholder="维度组名称（如 客户基础信息）"
+              class="group-label-input"
+              @click.native.stop
+            />
+            <el-tag size="mini" type="info">{{ (group.dimensions || []).length }} 维度</el-tag>
+            <div class="group-weight-summary" @click.stop>
+              <span class="weight-label">组权重</span>
               <el-input-number
-                v-model="dim.weight"
+                v-model="group.weight"
                 :min="0"
                 :max="2"
-                :step="0.05"
+                :step="0.1"
                 :precision="2"
                 size="mini"
                 controls-position="right"
-                style="width:90px;"
+                style="width:100px;"
               />
             </div>
-            <el-button size="mini" icon="el-icon-plus" @click="addRule(gi, di)">添加规则</el-button>
-            <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C;" @click="removeDimension(gi, di)" />
+          </div>
+          <div class="asc-group-right">
+            <el-button size="small" @click="addDimension(gi)">添加维度</el-button>
+            <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="removeGroup(gi)" />
+          </div>
+        </div>
+
+        <div v-show="!group._collapsed" class="asc-group-body">
+          <div
+            v-for="(dim, di) in group.dimensions"
+            :key="di"
+            class="asc-dimension"
+          >
+            <div class="dim-header">
+              <span class="dim-index">{{ gi + 1 }}.{{ di + 1 }}</span>
+              <el-input v-model="dim.varLabel" size="small" placeholder="维度名称" style="width:160px;" />
+              <var-picker
+                v-if="varPickerOptions.length"
+                :vars="varPickerOptions"
+                :value="dim.varCode"
+                placeholder="主变量..."
+                width="180px"
+                @select="v => onDimVarSelect(gi, di, v)"
+              />
+              <el-input v-else v-model="dim.varCode" size="small" placeholder="变量编码" style="width:140px;" />
+              <div class="dim-weight-area">
+                <span class="item-field-label">权重</span>
+                <el-input-number
+                  v-model="dim.weight"
+                  :min="0"
+                  :max="2"
+                  :step="0.05"
+                  :precision="2"
+                  size="mini"
+                  controls-position="right"
+                  style="width:90px;"
+                />
+              </div>
+              <el-button size="mini" @click="addRule(gi, di)">添加规则</el-button>
+              <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C;" @click="removeDimension(gi, di)" />
+            </div>
+
+            <!-- 规则表格 -->
+            <table v-if="dim.rules && dim.rules.length" class="rule-table">
+              <thead>
+                <tr>
+                  <th class="col-idx">#</th>
+                  <th class="col-conditions">条件组合</th>
+                  <th class="col-score">分值</th>
+                  <th class="col-action">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(rule, ri) in dim.rules" :key="ri">
+                  <td class="col-idx">{{ ri + 1 }}</td>
+                  <td class="col-conditions">
+                    <div
+                      v-for="(cond, ci) in rule.conditions"
+                      :key="ci"
+                      class="condition-row"
+                    >
+                      <var-picker
+                        v-if="varPickerOptions.length"
+                        :vars="varPickerOptions"
+                        :value="cond.varCode"
+                        placeholder="变量"
+                        width="100%"
+                        class="cond-var"
+                        @select="v => { cond.varCode = v.varCode }"
+                      />
+                      <el-input v-else v-model="cond.varCode" size="mini" placeholder="变量" class="cond-var" />
+                      <el-select v-model="cond.operator" size="mini" class="cond-op">
+                        <el-option label="等于" value="==" />
+                        <el-option label="不等于" value="!=" />
+                        <el-option label="大于" value=">" />
+                        <el-option label="大于等于" value=">=" />
+                        <el-option label="小于" value="<" />
+                        <el-option label="小于等于" value="<=" />
+                        <el-option label="包含于(in)" value="in" />
+                        <el-option label="字符串包含" value="contains" />
+                        <el-option label="前匹配" value="startsWith" />
+                        <el-option label="后匹配" value="endsWith" />
+                      </el-select>
+                      <el-input v-model="cond.value" size="mini" placeholder="值" class="cond-val" />
+                      <el-button
+                        v-if="rule.conditions.length > 1"
+                        type="text"
+                        size="mini"
+                        icon="el-icon-close"
+                        style="color:#ccc;"
+                        @click="rule.conditions.splice(ci, 1)"
+                      />
+                      <span v-if="ci < rule.conditions.length - 1" class="cond-and">且</span>
+                    </div>
+                    <el-button type="text" size="mini" icon="el-icon-plus" @click="addCondition(rule)">添加条件</el-button>
+                  </td>
+                  <td class="col-score">
+                    <el-input-number v-model="rule.score" size="mini" :min="-9999" :max="9999" class="score-input" />
+                  </td>
+                  <td class="col-action">
+                    <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C;" @click="dim.rules.splice(ri, 1)" />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-else class="dim-empty">暂无规则，点击「添加规则」</div>
           </div>
 
-          <!-- 规则表格 -->
-          <table class="rule-table" v-if="dim.rules && dim.rules.length">
-            <thead>
-              <tr>
-                <th class="col-idx">#</th>
-                <th class="col-conditions">条件组合</th>
-                <th class="col-score">分值</th>
-                <th class="col-action">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(rule, ri) in dim.rules" :key="ri">
-                <td class="col-idx">{{ ri + 1 }}</td>
-                <td class="col-conditions">
-                  <div
-                    v-for="(cond, ci) in rule.conditions"
-                    :key="ci"
-                    class="condition-row"
-                  >
-                    <var-picker
-                      v-if="varPickerOptions.length"
-                      :vars="varPickerOptions"
-                      :value="cond.varCode"
-                      placeholder="变量"
-                      width="100%"
-                      class="cond-var"
-                      @select="v => { cond.varCode = v.varCode }"
-                    />
-                    <el-input v-else v-model="cond.varCode" size="mini" placeholder="变量" class="cond-var" />
-                    <el-select v-model="cond.operator" size="mini" class="cond-op">
-                      <el-option label="等于" value="==" />
-                      <el-option label="不等于" value="!=" />
-                      <el-option label="大于" value=">" />
-                      <el-option label="大于等于" value=">=" />
-                      <el-option label="小于" value="<" />
-                      <el-option label="小于等于" value="<=" />
-                    </el-select>
-                    <el-input v-model="cond.value" size="mini" placeholder="值" class="cond-val" />
-                    <el-button
-                      v-if="rule.conditions.length > 1"
-                      type="text" size="mini" icon="el-icon-close" style="color:#ccc;"
-                      @click="rule.conditions.splice(ci, 1)"
-                    />
-                    <span v-if="ci < rule.conditions.length - 1" class="cond-and">且</span>
-                  </div>
-                  <el-button type="text" size="mini" icon="el-icon-plus" @click="addCondition(rule)">添加条件</el-button>
-                </td>
-                <td class="col-score">
-                  <el-input-number v-model="rule.score" size="mini" :min="-9999" :max="9999" class="score-input" />
-                </td>
-                <td class="col-action">
-                  <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C;" @click="dim.rules.splice(ri, 1)" />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div v-else class="dim-empty">暂无规则，点击「添加规则」</div>
-        </div>
-
-        <div v-if="!group.dimensions || group.dimensions.length === 0" class="group-empty">
-          暂无维度，点击「添加维度」
+          <div v-if="!group.dimensions || group.dimensions.length === 0" class="group-empty">
+            暂无维度，点击「添加维度」
+          </div>
         </div>
       </div>
-    </div>
 
-    <div v-if="model.dimensionGroups.length === 0" class="asc-card asc-empty">
-      <i class="el-icon-s-data" style="font-size:36px;color:#ddd;" />
-      <p>暂无维度组，点击「添加维度组」开始配置</p>
-    </div>
+      <div v-if="model.dimensionGroups.length === 0" class="asc-card asc-empty">
+        <i class="el-icon-s-data" style="font-size:36px;color:#ddd;" />
+        <p>暂无维度组，点击「添加维度组」开始配置</p>
+      </div>
 
-    <!-- 计算公式预览 -->
-    <div class="asc-card asc-formula" v-if="model.dimensionGroups.length > 0">
-      <div class="asc-card-title"><i class="el-icon-files" style="color:#d46b08;" /> 计算公式预览</div>
-      <div class="formula-content">
-        <div class="formula-text">
-          <code>{{ model.resultVar.varCode || 'score' }}</code>
-          <span class="op"> = </span>
-          <span v-if="model.initialScore !== 0">
-            <code>{{ model.initialScore }}</code>
-            <span class="op"> + </span>
-          </span>
-          <template v-for="(group, gi) in model.dimensionGroups">
-            <span :key="'g-' + gi" class="formula-group">
-              <span class="formula-group-label">{{ group.groupLabel || '维度组' + (gi + 1) }}</span>
-              <template v-if="group.weight != null && group.weight !== 1">
-                <span class="op"> × </span>
-                <code>{{ (group.weight || 0).toFixed(2) }}</code>
-              </template>
-              <span class="formula-dims">
-                (
-                <template v-for="(dim, di) in (group.dimensions || [])">
-                  <span :key="'d-' + di" class="formula-term">
-                    {{ dim.varLabel || dim.varCode || '维度' + (di + 1) }}
-                    <template v-if="dim.weight != null && dim.weight !== 1">
-                      <span class="op">×</span>{{ (dim.weight || 0).toFixed(2) }}
-                    </template>
-                  </span>
-                  <span v-if="di < (group.dimensions || []).length - 1" :key="'dop-' + di" class="op"> + </span>
-                </template>
-                )
-              </span>
+      <!-- 计算公式预览 -->
+      <div v-if="model.dimensionGroups.length > 0" class="asc-card asc-formula">
+        <div class="asc-card-title"><i class="el-icon-files" style="color:#d46b08;" /> 计算公式预览</div>
+        <div class="formula-content">
+          <div class="formula-text">
+            <code>{{ model.resultVar.varCode || 'score' }}</code>
+            <span class="op"> = </span>
+            <span v-if="model.initialScore !== 0">
+              <code>{{ model.initialScore }}</code>
+              <span class="op"> + </span>
             </span>
-            <span v-if="gi < model.dimensionGroups.length - 1" :key="'gop-' + gi" class="op"> + </span>
-          </template>
-        </div>
-      </div>
-    </div>
-
-    <!-- 权重汇总 -->
-    <div class="asc-card" v-if="model.dimensionGroups.length > 0">
-      <div class="asc-card-title asc-card-title-row">
-        <span><i class="el-icon-s-check" /> 权重汇总</span>
-        <div class="weight-summary">
-          <span class="weight-label-sm">总权重：</span>
-          <el-progress
-            :percentage="totalWeightPercent"
-            :color="totalWeightColor"
-            :stroke-width="10"
-            style="width:150px;display:inline-block;vertical-align:middle;"
-          />
-          <span class="weight-value" :style="{ color: totalWeightColor }">{{ totalWeight.toFixed(2) }}</span>
-        </div>
-      </div>
-      <div class="weight-detail-list">
-        <div v-for="(group, gi) in model.dimensionGroups" :key="gi" class="weight-detail-item">
-          <span class="weight-detail-name">{{ group.groupLabel || '维度组' + (gi + 1) }}</span>
-          <span class="weight-detail-val">组权重 {{ (group.weight || 1).toFixed(2) }}</span>
-          <span class="weight-detail-dims">
-            × ( <template v-for="(dim, di) in (group.dimensions || [])">
-              <span :key="di">{{ dim.varLabel || '维度' }}:{{ (dim.weight || 1).toFixed(2) }}</span>
-              <span v-if="di < (group.dimensions || []).length - 1" :key="'s-' + di">, </span>
-            </template> )
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 分数等级配置 -->
-    <div class="asc-card">
-      <div class="asc-card-title asc-card-title-row">
-        <span><i class="el-icon-medal" /> 分数等级配置</span>
-        <el-button size="small" icon="el-icon-plus" @click="addThreshold">添加等级</el-button>
-      </div>
-      <div class="threshold-list">
-        <div v-for="(thresh, ti) in model.thresholds" :key="ti" class="threshold-item">
-          <div class="thresh-color-bar" :style="{ background: thresholdColor(ti) }" />
-          <div class="thresh-range">
-            <el-input-number v-model="thresh.min" size="small" :min="0" :controls="false" style="width:100px;" />
-            <span class="thresh-sep">&le; 分数 &lt;</span>
-            <el-input-number v-model="thresh.max" size="small" :min="thresh.min" :controls="false" style="width:100px;" />
+            <template v-for="(group, gi) in model.dimensionGroups">
+              <span :key="'g-' + gi" class="formula-group">
+                <span class="formula-group-label">{{ group.groupLabel || '维度组' + (gi + 1) }}</span>
+                <template v-if="group.weight != null && group.weight !== 1">
+                  <span class="op"> × </span>
+                  <code>{{ (group.weight || 0).toFixed(2) }}</code>
+                </template>
+                <span class="formula-dims">
+                  (
+                  <template v-for="(dim, di) in (group.dimensions || [])">
+                    <span :key="'d-' + di" class="formula-term">
+                      {{ dim.varLabel || dim.varCode || '维度' + (di + 1) }}
+                      <template v-if="dim.weight != null && dim.weight !== 1">
+                        <span class="op">×</span>{{ (dim.weight || 0).toFixed(2) }}
+                      </template>
+                    </span>
+                    <span v-if="di < (group.dimensions || []).length - 1" :key="'dop-' + di" class="op"> + </span>
+                  </template>
+                  )
+                </span>
+              </span>
+              <span v-if="gi < model.dimensionGroups.length - 1" :key="'gop-' + gi" class="op"> + </span>
+            </template>
           </div>
-          <div class="thresh-result">
-            <el-input v-model="thresh.result" size="small" placeholder="等级名称（如 低风险）" style="width:100%;min-width:200px;" />
-          </div>
-          <el-tag :color="thresholdColor(ti)" effect="dark" size="small" class="thresh-badge">
-            {{ thresh.result || '等级 ' + (ti + 1) }}
-          </el-tag>
-          <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="model.thresholds.splice(ti, 1)" />
-        </div>
-        <div v-if="model.thresholds.length === 0" class="group-empty">
-          暂未配置等级，点击「添加等级」
         </div>
       </div>
-    </div>
 
-    <!-- 脚本预览 -->
-    <script-panel
-      v-if="definitionId"
-      ref="scriptPanel"
-      :definitionId="definitionId"
-      :onBeforeCompile="handleSave"
-      @mode-change="mode => scriptMode = mode"
-    />
+      <!-- 权重汇总 -->
+      <div v-if="model.dimensionGroups.length > 0" class="asc-card">
+        <div class="asc-card-title asc-card-title-row">
+          <span><i class="el-icon-s-check" /> 权重汇总</span>
+          <div class="weight-summary">
+            <span class="weight-label-sm">总权重：</span>
+            <el-progress
+              :percentage="totalWeightPercent"
+              :color="totalWeightColor"
+              :stroke-width="10"
+              style="width:150px;display:inline-block;vertical-align:middle;"
+            />
+            <span class="weight-value" :style="{ color: totalWeightColor }">{{ totalWeight.toFixed(2) }}</span>
+          </div>
+        </div>
+        <div class="weight-detail-list">
+          <div v-for="(group, gi) in model.dimensionGroups" :key="gi" class="weight-detail-item">
+            <span class="weight-detail-name">{{ group.groupLabel || '维度组' + (gi + 1) }}</span>
+            <span class="weight-detail-val">组权重 {{ (group.weight || 1).toFixed(2) }}</span>
+            <span class="weight-detail-dims">
+              × ( <template v-for="(dim, di) in (group.dimensions || [])">
+                <span :key="di">{{ dim.varLabel || '维度' }}:{{ (dim.weight || 1).toFixed(2) }}</span>
+                <span v-if="di < (group.dimensions || []).length - 1" :key="'s-' + di">, </span>
+              </template> )
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分数等级配置 -->
+      <div class="asc-card">
+        <div class="asc-card-title asc-card-title-row">
+          <span><i class="el-icon-medal" /> 分数等级配置</span>
+          <el-button size="small" icon="el-icon-plus" @click="addThreshold">添加等级</el-button>
+        </div>
+        <div class="threshold-list">
+          <div v-for="(thresh, ti) in model.thresholds" :key="ti" class="threshold-item">
+            <div class="thresh-color-bar" :style="{ background: thresholdColor(ti) }" />
+            <div class="thresh-range">
+              <el-input-number v-model="thresh.min" size="small" :min="0" :controls="false" style="width:100px;" />
+              <span class="thresh-sep">&le; 分数 &lt;</span>
+              <el-input-number v-model="thresh.max" size="small" :min="thresh.min" :controls="false" style="width:100px;" />
+            </div>
+            <div class="thresh-result">
+              <el-input v-model="thresh.result" size="small" placeholder="等级名称（如 低风险）" style="width:100%;min-width:200px;" />
+            </div>
+            <el-tag :color="thresholdColor(ti)" effect="dark" size="small" class="thresh-badge">
+              {{ thresh.result || '等级 ' + (ti + 1) }}
+            </el-tag>
+            <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="model.thresholds.splice(ti, 1)" />
+          </div>
+          <div v-if="model.thresholds.length === 0" class="group-empty">
+            暂未配置等级，点击「添加等级」
+          </div>
+        </div>
+      </div>
+
+      <!-- 脚本预览 -->
+      <script-panel
+        v-if="definitionId"
+        ref="scriptPanel"
+        :definition-id="definitionId"
+        :scope-comp-id="scopeCompId"
+        :on-before-compile="persistModelSilent"
+        @mode-change="mode => scriptMode = mode"
+      />
+    </div>
 
     <!-- 测试弹窗 -->
     <el-dialog title="测试执行" :visible.sync="testVisible" width="600px" append-to-body>
       <p class="test-hint"><i class="el-icon-info" /> 输入测试参数（JSON 格式）</p>
-      <el-input v-model="testParamsJson" type="textarea" :rows="6" placeholder='{}' />
+      <el-input v-model="testParamsJson" type="textarea" :rows="6" placeholder="{}" />
       <template slot="footer">
         <el-button size="small" @click="testVisible = false">取消</el-button>
         <el-button size="small" type="primary" icon="el-icon-video-play" @click="doTest">执行</el-button>
@@ -301,7 +316,9 @@
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"
           :type="testResult.success ? 'success' : 'error'"
-          :closable="false" show-icon style="margin-bottom:10px;"
+          :closable="false"
+          show-icon
+          style="margin-bottom:10px;"
         />
         <el-descriptions :column="1" border size="small">
           <el-descriptions-item :label="model.resultVar.varLabel || '评分结果'">
@@ -314,21 +331,27 @@
         </el-descriptions>
       </div>
     </el-dialog>
+
+    <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
 
 <script>
-import { saveContent, compileRule, executeRule, getContent } from '@/api/definition'
+import { compileRule, executeRule, getContent, saveContent } from '@/api/definition'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
+import DesignSaveVersionDialog from '@/components/designer/DesignSaveVersionDialog.vue'
+import DesignVersionSwitcher from '@/components/designer/DesignVersionSwitcher.vue'
+import designerDefinitionIdMixin from '@/mixins/designerDefinitionIdMixin'
+import designerScopeMixin from '@/mixins/designerScopeMixin'
 
 const THRESHOLD_COLORS = ['#52c41a', '#1890ff', '#fa8c16', '#f5222d', '#722ed1', '#13c2c2', '#eb2f96']
 
 export default {
   name: 'AdvancedScorecard',
-  components: { VarPicker, ScriptPanel },
-  mixins: [varPickerMixin],
+  components: { VarPicker, ScriptPanel, DesignSaveVersionDialog, DesignVersionSwitcher },
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin],
   data() {
     return {
       definitionId: null,
@@ -368,13 +391,20 @@ export default {
     }
   },
   created() {
-    this.definitionId = this.$route.params.id
-    this.loadContent()
+    this.definitionId = this.resolveDefinitionIdFromContext()
+    ;(async() => {
+      try {
+        await this.bootstrapDesignerWithScope()
+      } catch (e) {
+        this.$message.error('加载失败: ' + (e.message || '未知错误'))
+        this.contentLoaded = true
+      }
+    })()
   },
   methods: {
     async loadContent() {
       try {
-        const res = await getContent(this.definitionId)
+        const res = await getContent(this.definitionId, this.scopeCompId)
         const content = res && res.data ? res.data : res
         if (content && content.modelJson && content.modelJson !== '{}') {
           this.model = JSON.parse(content.modelJson)
@@ -444,15 +474,59 @@ export default {
       const min = last ? last.max : 0
       this.model.thresholds.push({ min, max: min + 50, result: '' })
     },
-    async handleSave() {
+    /**
+     * 深拷贝模型并去掉 UI 用的 _collapsed，供接口保存。
+     */
+    buildSaveModelForApi() {
       const saveModel = JSON.parse(JSON.stringify(this.model))
       ;(saveModel.dimensionGroups || []).forEach(g => { delete g._collapsed })
-      await saveContent({ definitionId: this.definitionId, modelJson: JSON.stringify(saveModel) })
+      return saveModel
+    },
+
+    /**
+     * 历史快照写回复杂评分卡。
+     */
+    onApplyDesignSnapshot(parsed) {
+      if (!parsed || typeof parsed !== 'object') return
+      this.model = parsed
+    },
+
+    /**
+     * 静默保存（不写设计快照）。
+     */
+    async persistModelSilent() {
+      const saveModel = this.buildSaveModelForApi()
+      await saveContent({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        modelJson: JSON.stringify(saveModel),
+        recordHistory: false
+      })
+    },
+
+    /**
+     * 带版本说明保存。
+     */
+    async handleSave() {
+      let changeLog = ''
+      try {
+        changeLog = await this.$refs.designSaveVersionDialog.prompt()
+      } catch (e) {
+        return
+      }
+      const saveModel = this.buildSaveModelForApi()
+      await saveContent({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        modelJson: JSON.stringify(saveModel),
+        changeLog: changeLog || undefined,
+        recordHistory: true
+      })
       this.$message.success('保存成功')
     },
     async handleCompile() {
-      await this.handleSave()
-      const res = await compileRule(this.definitionId)
+      await this.persistModelSilent()
+      const res = await compileRule(this.definitionId, this.scopeCompId)
       if (res && res.data && res.data.success) {
         this.$message.success('编译成功')
         if (this.$refs.scriptPanel) this.$refs.scriptPanel.refresh()
@@ -471,7 +545,11 @@ export default {
         this.$message.error('参数 JSON 格式错误')
         return
       }
-      const res = await executeRule({ definitionId: this.definitionId, params })
+      const res = await executeRule({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        params
+      })
       this.testResult = res && res.data ? res.data : res
     }
   }

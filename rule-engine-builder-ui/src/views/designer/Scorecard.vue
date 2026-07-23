@@ -12,247 +12,259 @@
         <el-button size="small" icon="el-icon-plus" @click="addThreshold">添加等级</el-button>
         <el-divider direction="vertical" />
         <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <design-version-switcher
+          :definition-id="definitionId"
+          :scope-comp-id="scopeCompId"
+          @apply-model="onApplyDesignSnapshot"
+        />
         <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">编译</el-button>
         <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
       </div>
     </div>
 
-    <!-- 基础配置 -->
-    <div class="sc-card sc-base-config">
-      <div class="sc-card-title"><i class="el-icon-setting" /> 基础配置</div>
-      <div class="base-config-row">
-        <div class="base-config-item">
-          <span class="base-config-label">初始分数</span>
-          <el-input-number v-model="model.initialScore" :min="0" :max="1000" size="small" style="width:130px;" />
-        </div>
-        <div class="base-config-item">
-          <span class="base-config-label">结果变量</span>
-          <var-picker
-            v-if="varPickerOptions.length"
-            :vars="varPickerOptions"
-            :value="model.resultVar.varCode"
-            placeholder="选择变量、常量或对象字段..."
-            width="200px"
-            type-filter="NUMBER"
-            :show-all-when-filter-empty="true"
-            @select="onResultVarSelect"
-          />
-          <template v-else>
-            <el-input v-model="model.resultVar.varCode" size="small" placeholder="如 totalScore" style="width:160px;" />
-            <span style="margin:0 4px;color:#999;">|</span>
-            <el-input v-model="model.resultVar.varLabel" size="small" placeholder="如 总评分" style="width:140px;" />
-          </template>
-        </div>
-      </div>
-    </div>
-
-    <!-- 评分项配置 -->
-    <div class="sc-card">
-      <div class="sc-card-title sc-card-title-row">
-        <span><i class="el-icon-s-check" /> 评分项配置</span>
-        <div class="weight-summary">
-          <span class="weight-label">总权重：</span>
-          <el-progress
-            :percentage="totalWeightPercent"
-            :color="totalWeightColor"
-            :stroke-width="10"
-            style="width:150px;display:inline-block;vertical-align:middle;"
-          />
-          <span class="weight-value" :style="{ color: totalWeightColor }">{{ totalWeightDisplay }}</span>
-        </div>
-      </div>
-
-      <div class="score-items">
-        <div
-          v-for="(item, idx) in model.scoreItems"
-          :key="idx"
-          class="score-item-card"
-        >
-          <div class="score-item-header">
-            <span class="item-index">{{ idx + 1 }}</span>
-            <el-input
-              v-model="item.conditionLabel"
-              size="small"
-              placeholder="评分项名称（如 纳税信用等级）"
-              class="item-label-input"
-            />
-            <el-button
-              type="text"
-              size="small"
-              icon="el-icon-delete"
-              style="color:#F56C6C;"
-              @click="removeScoreItem(idx)"
-            />
+    <div v-loading="scopeContentLoading">
+      <!-- 基础配置 -->
+      <div class="sc-card sc-base-config">
+        <div class="sc-card-title"><i class="el-icon-setting" /> 基础配置</div>
+        <div class="base-config-row">
+          <div class="base-config-item">
+            <span class="base-config-label">初始分数</span>
+            <el-input-number v-model="model.initialScore" :min="0" :max="1000" size="small" style="width:130px;" />
           </div>
+          <div class="base-config-item">
+            <span class="base-config-label">结果变量</span>
+            <var-picker
+              v-if="varPickerOptions.length"
+              :vars="varPickerOptions"
+              :value="model.resultVar.varCode"
+              placeholder="选择变量、常量或对象字段..."
+              width="200px"
+              type-filter="NUMBER"
+              :show-all-when-filter-empty="true"
+              @select="onResultVarSelect"
+            />
+            <template v-else>
+              <el-input v-model="model.resultVar.varCode" size="small" placeholder="如 totalScore" style="width:160px;" />
+              <span style="margin:0 4px;color:#999;">|</span>
+              <el-input v-model="model.resultVar.varLabel" size="small" placeholder="如 总评分" style="width:140px;" />
+            </template>
+          </div>
+        </div>
+      </div>
 
-          <div class="score-item-body">
-            <div class="score-item-row">
-              <span class="item-field-label">条件</span>
-              <div class="condition-row">
-                <var-picker
-                  v-if="varPickerOptions.length"
-                  :vars="varPickerOptions"
-                  :value="item.condVar"
-                  placeholder="选择变量"
-                  width="100%"
-                  class="cond-var"
-                  @select="v => { item.condVar = v.varCode; item.condVarType = v.varType }"
-                />
-                <el-input v-else v-model="item.condVar" size="small" placeholder="变量编码" class="cond-var" />
-                <el-select v-model="item.condOperator" size="small" class="cond-op">
-                  <el-option label="等于" value="==" />
-                  <el-option label="不等于" value="!=" />
-                  <el-option label="大于" value=">" />
-                  <el-option label="大于等于" value=">=" />
-                  <el-option label="小于" value="<" />
-                  <el-option label="小于等于" value="<=" />
-                </el-select>
-                <el-input v-model="item.condValue" size="small" placeholder="值" class="cond-val" />
-              </div>
+      <!-- 评分项配置 -->
+      <div class="sc-card">
+        <div class="sc-card-title sc-card-title-row">
+          <span><i class="el-icon-s-check" /> 评分项配置</span>
+          <div class="weight-summary">
+            <span class="weight-label">总权重：</span>
+            <el-progress
+              :percentage="totalWeightPercent"
+              :color="totalWeightColor"
+              :stroke-width="10"
+              style="width:150px;display:inline-block;vertical-align:middle;"
+            />
+            <span class="weight-value" :style="{ color: totalWeightColor }">{{ totalWeightDisplay }}</span>
+          </div>
+        </div>
+
+        <div class="score-items">
+          <div
+            v-for="(item, idx) in model.scoreItems"
+            :key="idx"
+            class="score-item-card"
+          >
+            <div class="score-item-header">
+              <span class="item-index">{{ idx + 1 }}</span>
+              <el-input
+                v-model="item.conditionLabel"
+                size="small"
+                placeholder="评分项名称（如 纳税信用等级）"
+                class="item-label-input"
+              />
+              <el-button
+                type="text"
+                size="small"
+                icon="el-icon-delete"
+                style="color:#F56C6C;"
+                @click="removeScoreItem(idx)"
+              />
             </div>
 
-            <div class="score-item-row score-weight-row">
-              <div class="score-col">
-                <span class="item-field-label">命中得分</span>
-                <el-input-number
-                  v-model="item.score"
-                  :min="0"
-                  :max="9999"
-                  size="small"
-                  style="width:120px;"
-                />
-              </div>
-              <div class="weight-col">
-                <span class="item-field-label">
-                  权重
-                  <el-tooltip content="权重决定该项分数在总分中的占比（0~2，推荐各项权重加总=1.0）" placement="top" effect="light">
-                    <i class="el-icon-question tip-icon" />
-                  </el-tooltip>
-                </span>
-                <div class="weight-slider-row">
-                  <el-slider
-                    v-model="item.weight"
-                    :min="0"
-                    :max="2"
-                    :step="0.05"
-                    :format-tooltip="v => v.toFixed(2)"
-                    show-input
-                    input-size="small"
-                    style="flex:1;"
+            <div class="score-item-body">
+              <div class="score-item-row">
+                <span class="item-field-label">条件</span>
+                <div class="condition-row">
+                  <var-picker
+                    v-if="varPickerOptions.length"
+                    :vars="varPickerOptions"
+                    :value="item.condVar"
+                    placeholder="选择变量"
+                    width="100%"
+                    class="cond-var"
+                    @select="v => { item.condVar = v.varCode; item.condVarType = v.varType }"
                   />
+                  <el-input v-else v-model="item.condVar" size="small" placeholder="变量编码" class="cond-var" />
+                  <el-select v-model="item.condOperator" size="small" class="cond-op">
+                    <el-option label="等于" value="==" />
+                    <el-option label="不等于" value="!=" />
+                    <el-option label="大于" value=">" />
+                    <el-option label="大于等于" value=">=" />
+                    <el-option label="小于" value="<" />
+                    <el-option label="小于等于" value="<=" />
+                    <el-option label="包含于(in)" value="in" />
+                    <el-option label="字符串包含" value="contains" />
+                    <el-option label="前匹配" value="startsWith" />
+                    <el-option label="后匹配" value="endsWith" />
+                  </el-select>
+                  <el-input v-model="item.condValue" size="small" placeholder="值" class="cond-val" />
                 </div>
               </div>
-              <div class="weighted-score">
-                <span class="item-field-label">加权分</span>
-                <span class="weighted-value">{{ (item.score * item.weight).toFixed(1) }}</span>
+
+              <div class="score-item-row score-weight-row">
+                <div class="score-col">
+                  <span class="item-field-label">命中得分</span>
+                  <el-input-number
+                    v-model="item.score"
+                    :min="0"
+                    :max="9999"
+                    size="small"
+                    style="width:120px;"
+                  />
+                </div>
+                <div class="weight-col">
+                  <span class="item-field-label">
+                    权重
+                    <el-tooltip content="权重决定该项分数在总分中的占比（0~2，推荐各项权重加总=1.0）" placement="top" effect="light">
+                      <i class="el-icon-question tip-icon" />
+                    </el-tooltip>
+                  </span>
+                  <div class="weight-slider-row">
+                    <el-slider
+                      v-model="item.weight"
+                      :min="0"
+                      :max="2"
+                      :step="0.05"
+                      :format-tooltip="v => v.toFixed(2)"
+                      show-input
+                      input-size="small"
+                      style="flex:1;"
+                    />
+                  </div>
+                </div>
+                <div class="weighted-score">
+                  <span class="item-field-label">加权分</span>
+                  <span class="weighted-value">{{ (item.score * item.weight).toFixed(1) }}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div v-if="model.scoreItems.length === 0" class="sc-empty">
-          <i class="el-icon-s-check sc-empty-icon" />
-          <p>暂无评分项，点击「添加评分项」开始配置</p>
+          <div v-if="model.scoreItems.length === 0" class="sc-empty">
+            <i class="el-icon-s-check sc-empty-icon" />
+            <p>暂无评分项，点击「添加评分项」开始配置</p>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- 计算公式预览 -->
-    <div class="sc-card sc-formula">
-      <div class="sc-card-title"><i class="el-icon-files" /> 计算公式预览</div>
-      <div class="formula-content">
-        <div class="formula-text">
-          <code>{{ model.resultVar.varCode || 'score' }}</code>
-          <span class="op"> = </span>
-          <span v-if="model.initialScore !== 0">
-            <code>{{ model.initialScore }}</code>
-            <span class="op"> + </span>
-          </span>
-          <template v-for="(item, idx) in model.scoreItems">
-            <span :key="idx" class="formula-term">
-              <span class="formula-cond">IF({{ item.conditionLabel || item.condVar || '条件' + (idx + 1) }} {{ item.condOperator }} {{ item.condValue }})</span>
-              <span class="op"> × </span>
-              <code>{{ item.score }}</code>
-              <template v-if="item.weight !== 1">
-                <span class="op"> × </span>
-                <code>{{ item.weight.toFixed(2) }}</code>
-              </template>
+      <!-- 计算公式预览 -->
+      <div class="sc-card sc-formula">
+        <div class="sc-card-title"><i class="el-icon-files" /> 计算公式预览</div>
+        <div class="formula-content">
+          <div class="formula-text">
+            <code>{{ model.resultVar.varCode || 'score' }}</code>
+            <span class="op"> = </span>
+            <span v-if="model.initialScore !== 0">
+              <code>{{ model.initialScore }}</code>
+              <span class="op"> + </span>
             </span>
-            <span v-if="idx < model.scoreItems.length - 1" :key="'op-' + idx" class="op"> + </span>
-          </template>
-          <span v-if="model.scoreItems.length === 0" class="formula-empty">（暂未配置评分项）</span>
+            <template v-for="(item, idx) in model.scoreItems">
+              <span :key="idx" class="formula-term">
+                <span class="formula-cond">IF({{ item.conditionLabel || item.condVar || '条件' + (idx + 1) }} {{ item.condOperator }} {{ item.condValue }})</span>
+                <span class="op"> × </span>
+                <code>{{ item.score }}</code>
+                <template v-if="item.weight !== 1">
+                  <span class="op"> × </span>
+                  <code>{{ item.weight.toFixed(2) }}</code>
+                </template>
+              </span>
+              <span v-if="idx < model.scoreItems.length - 1" :key="'op-' + idx" class="op"> + </span>
+            </template>
+            <span v-if="model.scoreItems.length === 0" class="formula-empty">（暂未配置评分项）</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- 分数等级配置 -->
-    <div class="sc-card">
-      <div class="sc-card-title"><i class="el-icon-medal" /> 分数等级配置</div>
-      <div class="threshold-list">
-        <div
-          v-for="(thresh, ti) in model.thresholds"
-          :key="ti"
-          class="threshold-item"
-        >
-          <div class="thresh-color-bar" :style="{ background: thresholdColor(ti) }" />
-          <div class="thresh-range">
-            <el-input-number
-              v-model="thresh.min"
-              size="small"
-              :min="0"
-              :controls="false"
-              style="width:100px;"
-            />
-            <span class="thresh-sep">≤ 分数 &lt;</span>
-            <el-input-number
-              v-model="thresh.max"
-              size="small"
-              :min="thresh.min"
-              :controls="false"
-              style="width:100px;"
-            />
+      <!-- 分数等级配置 -->
+      <div class="sc-card">
+        <div class="sc-card-title"><i class="el-icon-medal" /> 分数等级配置</div>
+        <div class="threshold-list">
+          <div
+            v-for="(thresh, ti) in model.thresholds"
+            :key="ti"
+            class="threshold-item"
+          >
+            <div class="thresh-color-bar" :style="{ background: thresholdColor(ti) }" />
+            <div class="thresh-range">
+              <el-input-number
+                v-model="thresh.min"
+                size="small"
+                :min="0"
+                :controls="false"
+                style="width:100px;"
+              />
+              <span class="thresh-sep">≤ 分数 &lt;</span>
+              <el-input-number
+                v-model="thresh.max"
+                size="small"
+                :min="thresh.min"
+                :controls="false"
+                style="width:100px;"
+              />
+            </div>
+            <div class="thresh-result">
+              <el-input v-model="thresh.result" size="small" placeholder="等级名称（如 优质客户）" style="width:100%;min-width:240px;" />
+            </div>
+            <el-tag :color="thresholdColor(ti)" effect="dark" size="small" class="thresh-badge">
+              {{ thresh.result || '等级 ' + (ti + 1) }}
+            </el-tag>
+            <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="removeThreshold(ti)" />
           </div>
-          <div class="thresh-result">
-            <el-input v-model="thresh.result" size="small" placeholder="等级名称（如 优质客户）" style="width:100%;min-width:240px;" />
+          <div v-if="model.thresholds.length === 0" class="sc-empty">
+            暂未配置等级，点击「添加等级」设置分数区间
           </div>
-          <el-tag :color="thresholdColor(ti)" effect="dark" size="small" class="thresh-badge">
-            {{ thresh.result || '等级 ' + (ti + 1) }}
-          </el-tag>
-          <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="removeThreshold(ti)" />
         </div>
-        <div v-if="model.thresholds.length === 0" class="sc-empty">
-          暂未配置等级，点击「添加等级」设置分数区间
-        </div>
-      </div>
 
       <!-- 等级色带预览 -->
-<!--      <div v-if="model.thresholds.length > 0" class="threshold-visual">-->
-<!--        <div-->
-<!--          v-for="(thresh, ti) in sortedThresholds"-->
-<!--          :key="ti"-->
-<!--          class="visual-segment"-->
-<!--          :style="{-->
-<!--            flex: thresh.max - thresh.min,-->
-<!--            background: thresholdColor(ti),-->
-<!--            opacity: 0.85-->
-<!--          }"-->
-<!--        >-->
-<!--          <span class="segment-label">{{ thresh.result || ('等级' + (ti + 1)) }}</span>-->
-<!--          <span class="segment-range">{{ thresh.min }}~{{ thresh.max }}</span>-->
-<!--        </div>-->
-<!--      </div>-->
-    </div>
+        <!--      <div v-if="model.thresholds.length > 0" class="threshold-visual">-->
+        <!--        <div-->
+        <!--          v-for="(thresh, ti) in sortedThresholds"-->
+        <!--          :key="ti"-->
+        <!--          class="visual-segment"-->
+        <!--          :style="{-->
+        <!--            flex: thresh.max - thresh.min,-->
+        <!--            background: thresholdColor(ti),-->
+        <!--            opacity: 0.85-->
+        <!--          }"-->
+        <!--        >-->
+        <!--          <span class="segment-label">{{ thresh.result || ('等级' + (ti + 1)) }}</span>-->
+        <!--          <span class="segment-range">{{ thresh.min }}~{{ thresh.max }}</span>-->
+        <!--        </div>-->
+        <!--      </div>-->
+      </div>
 
-    <!-- 脚本预览/编辑面板 -->
-    <script-panel
-      v-if="definitionId"
-      ref="scriptPanel"
-      :definitionId="definitionId"
-      :onBeforeCompile="handleSave"
-      @mode-change="mode => scriptMode = mode"
-    />
-    <div v-if="scriptMode === 'script'" class="script-override-banner">
-      <i class="el-icon-warning" /> 脚本覆盖模式已激活，可视化编辑暂停。
+      <!-- 脚本预览/编辑面板 -->
+      <script-panel
+        v-if="definitionId"
+        ref="scriptPanel"
+        :definition-id="definitionId"
+        :scope-comp-id="scopeCompId"
+        :on-before-compile="persistModelSilent"
+        @mode-change="mode => scriptMode = mode"
+      />
+      <div v-if="scriptMode === 'script'" class="script-override-banner">
+        <i class="el-icon-warning" /> 脚本覆盖模式已激活，可视化编辑暂停。
+      </div>
     </div>
 
     <!-- 测试执行弹窗 -->
@@ -262,7 +274,7 @@
         v-model="testParamsJson"
         type="textarea"
         :rows="6"
-        placeholder='{"creditLevel": "A", "income": 600000, "age": 25}'
+        placeholder="{&quot;creditLevel&quot;: &quot;A&quot;, &quot;income&quot;: 600000, &quot;age&quot;: 25}"
       />
       <template slot="footer">
         <el-button size="small" @click="testVisible = false">取消</el-button>
@@ -287,21 +299,28 @@
         </el-descriptions>
       </div>
     </el-dialog>
+
+    <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
 
 <script>
-import { saveContent, compileRule, executeRule, getContent } from '@/api/definition'
+import { compileRule, executeRule, getContent, saveContent } from '@/api/definition'
+import { buildQlConditionExpr, inferConstVarType, parseQlConditionExpr } from '@/utils/conditionExpr'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
+import DesignSaveVersionDialog from '@/components/designer/DesignSaveVersionDialog.vue'
+import DesignVersionSwitcher from '@/components/designer/DesignVersionSwitcher.vue'
+import designerDefinitionIdMixin from '@/mixins/designerDefinitionIdMixin'
+import designerScopeMixin from '@/mixins/designerScopeMixin'
 
 const THRESHOLD_COLORS = ['#52c41a', '#1890ff', '#fa8c16', '#f5222d', '#722ed1', '#13c2c2', '#eb2f96']
 
 export default {
   name: 'Scorecard',
-  components: { VarPicker, ScriptPanel },
-  mixins: [varPickerMixin],
+  components: { VarPicker, ScriptPanel, DesignSaveVersionDialog, DesignVersionSwitcher },
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin],
   data() {
     return {
       definitionId: null,
@@ -339,13 +358,20 @@ export default {
     }
   },
   created() {
-    this.definitionId = this.$route.params.id
-    this.loadContent()
+    this.definitionId = this.resolveDefinitionIdFromContext()
+    ;(async() => {
+      try {
+        await this.bootstrapDesignerWithScope()
+      } catch (e) {
+        this.$message.error('加载失败: ' + (e.message || '未知错误'))
+        this.contentLoaded = true
+      }
+    })()
   },
   methods: {
     async loadContent() {
       try {
-        const res = await getContent(this.definitionId)
+        const res = await getContent(this.definitionId, this.scopeCompId)
         const content = res && res.data ? res.data : res
         if (content && content.modelJson && content.modelJson !== '{}') {
           this.model = JSON.parse(content.modelJson)
@@ -383,7 +409,15 @@ export default {
     },
     /** 从已有 condition 字符串反解出结构化字段 */
     parseCondition(item) {
-      const ops = ['>=', '<=', '!=', '==', '>', '<']
+      const parsed = parseQlConditionExpr(item.condition)
+      if (parsed) {
+        item.condVar = parsed.leftVar
+        item.condOperator = parsed.operator
+        item.condValue = parsed.rightType === 'var' ? (parsed.rightVar || parsed.rightValue) : parsed.rightValue
+        item.condVarType = inferConstVarType(item.condValue)
+        return
+      }
+      const ops = ['>=', '<=', '!=', '==', '>', '<', 'in']
       for (const op of ops) {
         const idx = item.condition.indexOf(' ' + op + ' ')
         if (idx >= 0) {
@@ -429,20 +463,68 @@ export default {
     removeThreshold(index) {
       this.model.thresholds.splice(index, 1)
     },
-    async handleSave() {
+    /**
+     * 保存前根据条件控件回填 QL 条件表达式。
+     */
+    prepareScoreItemsForSave() {
       this.model.scoreItems.forEach(item => {
         if (item.condVar && item.condOperator && item.condValue != null && item.condValue !== '') {
-          const needQuote = !item.condVarType || item.condVarType === 'STRING' || item.condVarType === 'ENUM'
-          const val = needQuote ? '"' + String(item.condValue).replace(/"/g, '\\"') + '"' : item.condValue
-          item.condition = item.condVar + ' ' + item.condOperator + ' ' + val
+          const expr = buildQlConditionExpr(
+            item.condVar,
+            item.condOperator,
+            String(item.condValue),
+            'value',
+            inferConstVarType(item.condValue)
+          )
+          if (expr) item.condition = expr
         }
       })
-      await saveContent({ definitionId: this.definitionId, modelJson: JSON.stringify(this.model) })
+    },
+
+    /**
+     * 历史快照写回评分卡模型。
+     */
+    onApplyDesignSnapshot(parsed) {
+      if (!parsed || typeof parsed !== 'object') return
+      this.model = parsed
+    },
+
+    /**
+     * 静默保存（不写设计快照）。
+     */
+    async persistModelSilent() {
+      this.prepareScoreItemsForSave()
+      await saveContent({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        modelJson: JSON.stringify(this.model),
+        recordHistory: false
+      })
+    },
+
+    /**
+     * 带版本说明保存。
+     */
+    async handleSave() {
+      let changeLog = ''
+      try {
+        changeLog = await this.$refs.designSaveVersionDialog.prompt()
+      } catch (e) {
+        return
+      }
+      this.prepareScoreItemsForSave()
+      await saveContent({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        modelJson: JSON.stringify(this.model),
+        changeLog: changeLog || undefined,
+        recordHistory: true
+      })
       this.$message.success('保存成功')
     },
     async handleCompile() {
-      await this.handleSave()
-      const res = await compileRule(this.definitionId)
+      await this.persistModelSilent()
+      const res = await compileRule(this.definitionId, this.scopeCompId)
       if (res && res.data && res.data.success) {
         this.$message.success('编译成功')
         // 异步刷新变量映射和脚本面板
@@ -465,7 +547,11 @@ export default {
         this.$message.error('参数 JSON 格式错误')
         return
       }
-      const res = await executeRule({ definitionId: this.definitionId, params })
+      const res = await executeRule({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        params
+      })
       this.testResult = res && res.data ? res.data : res
     }
   }

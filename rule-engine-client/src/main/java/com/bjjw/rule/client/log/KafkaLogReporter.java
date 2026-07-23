@@ -8,6 +8,9 @@ import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.List;
 
+/**
+ * 使用 Spring Kafka 的 {@link KafkaTemplate} 发送规则执行日志。
+ */
 public class KafkaLogReporter implements ExecutionLogReporter {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaLogReporter.class);

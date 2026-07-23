@@ -6,7 +6,7 @@
       <span class="dtt-decision-label">{{ node.label }}？</span>
     </div>
     <!-- 分支列表 -->
-    <div class="dtt-branches" v-if="node.children && node.children.length">
+    <div v-if="node.children && node.children.length" class="dtt-branches">
       <div
         v-for="(child, idx) in node.children"
         :key="idx"
@@ -15,14 +15,14 @@
       >
         <!-- 分支头：状态圆点 + 标签 + 条件文本 + 状态标记 -->
         <div class="dtt-branch-head" @click="toggle(idx)">
-          <span class="dtt-dot" :class="'dtt-dot--' + child.status"></span>
+          <span class="dtt-dot" :class="'dtt-dot--' + child.status" />
           <span class="dtt-branch-label">{{ child.branchLabel || '其他' }}</span>
-          <span class="dtt-cond" v-if="child.conditionText">({{ child.conditionText }})</span>
+          <span v-if="child.conditionText" class="dtt-cond">({{ child.conditionText }})</span>
           <span class="dtt-status-tag" :class="'dtt-tag--' + child.status">{{ statusLabel(child.status) }}</span>
           <i v-if="child.children && child.children.length" class="dtt-toggle el-icon-arrow-right" :class="{ 'is-open': isOpen(idx) }" />
         </div>
         <!-- 分支体：叶子 或 子决策树 -->
-        <div class="dtt-branch-body" v-show="isOpen(idx)">
+        <div v-show="isOpen(idx)" class="dtt-branch-body">
           <!-- 子决策树 -->
           <decision-tree-trace-node
             v-if="child.children && child.children.length"
@@ -33,8 +33,8 @@
           <!-- 叶子节点 -->
           <div v-else class="dtt-leaf" :class="{ 'dtt-leaf--hit': child.status === 'hit' }">
             <span class="dtt-leaf-icon">{{ child.status === 'hit' ? '\u2705' : '\u25CB' }}</span>
-            <span class="dtt-leaf-task" v-if="child.taskName">{{ child.taskName }}：</span>
-            <span class="dtt-leaf-var" v-if="child.resultVar">{{ child.resultVarLabel || varMap[child.resultVar] || child.resultVar }} = </span>
+            <span v-if="child.taskName" class="dtt-leaf-task">{{ child.taskName }}：</span>
+            <span v-if="child.resultVar" class="dtt-leaf-var">{{ child.resultVarLabel || varMap[child.resultVar] || child.resultVar }} = </span>
             <span class="dtt-leaf-val">{{ child.label }}</span>
           </div>
           <!-- 叶子节点关联的函数调用 -->
@@ -43,7 +43,7 @@
               <span class="dtt-func-icon">ƒ</span>
               <code class="dtt-func-name">{{ funcDisplayName(fc.name) }}</code>
               <span class="dtt-func-expr">({{ fc.args.map(function(a){ return a.label + '=' + a.value }).join(', ') }})</span>
-              <span class="dtt-func-result" v-if="fc.value !== undefined && fc.value !== null">→ {{ typeof fc.value === 'object' ? JSON.stringify(fc.value) : String(fc.value) }}</span>
+              <span v-if="fc.value !== undefined && fc.value !== null" class="dtt-func-result">→ {{ typeof fc.value === 'object' ? JSON.stringify(fc.value) : String(fc.value) }}</span>
             </div>
           </div>
         </div>
@@ -65,16 +65,16 @@ export default {
     /** 是否为根节点 */
     isRoot: { type: Boolean, default: false },
     /** 变量码→中文标签映射 */
-    varMap: { type: Object, default: function () { return {} } },
+    varMap: { type: Object, default: function() { return {} } },
     /** 函数名→中文展示（含内置映射与项目配置，由 TraceTree 传入） */
-    functionNameMap: { type: Object, default: function () { return {} } }
+    functionNameMap: { type: Object, default: function() { return {} } }
   },
-  data: function () {
+  data: function() {
     return {
       collapsed: {}
     }
   },
-  created: function () {
+  created: function() {
     if (!this.node || !this.node.children) return
     for (var i = 0; i < this.node.children.length; i++) {
       var ch = this.node.children[i]
@@ -87,21 +87,21 @@ export default {
     /**
      * 将追踪中的函数标识转为中文展示名
      */
-    funcDisplayName: function (code) {
+    funcDisplayName: function(code) {
       if (code === undefined || code === null || code === '') return '?'
       var s = String(code)
       var m = this.functionNameMap
       return (m && m[s]) || s
     },
-    statusLabel: function (status) {
+    statusLabel: function(status) {
       if (status === 'hit') return '命中'
       if (status === 'blocked') return '不满足'
       return '跳过'
     },
-    isOpen: function (idx) {
+    isOpen: function(idx) {
       return !this.collapsed[idx]
     },
-    toggle: function (idx) {
+    toggle: function(idx) {
       this.$set(this.collapsed, idx, !this.collapsed[idx])
     }
   }

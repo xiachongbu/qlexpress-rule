@@ -64,7 +64,7 @@ public class BatchTestService {
             }
 
             try {
-                RuleResult rr = executeService.testExecute(def.getId(), defaultParams);
+                RuleResult rr = executeService.testExecute(def.getId(), null, defaultParams, null);
                 vr.setExecuteOk(rr.isSuccess());
                 if (!rr.isSuccess()) {
                     vr.setErrorMsg("执行失败: " + rr.getErrorMessage());

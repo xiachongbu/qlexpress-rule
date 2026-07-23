@@ -36,7 +36,7 @@
         <div class="uiue-card" style="margin-top: 12px;">
           <div class="uiue-card-title">
             输入参数
-            <el-button type="text" size="small" style="margin-left: 12px;" @click="loadVariables" v-if="selectedProjectId">
+            <el-button v-if="selectedProjectId" type="text" size="small" style="margin-left: 12px;" @click="loadVariables">
               <i class="el-icon-refresh" /> 加载项目变量
             </el-button>
             <el-button type="text" size="small" style="margin-left: 8px;" @click="addParam">
@@ -49,7 +49,7 @@
           <el-form v-else size="small" label-width="0">
             <div v-for="(p, idx) in params" :key="idx" class="param-row">
               <el-input v-model="p.key" placeholder="参数名" class="param-key" :disabled="p.fromVar" />
-              <span class="param-label" v-if="p.label">({{ p.label }})</span>
+              <span v-if="p.label" class="param-label">({{ p.label }})</span>
               <template v-if="p.type === 'BOOLEAN'">
                 <el-select v-model="p.value" class="param-value" placeholder="选择">
                   <el-option label="true" value="true" />
@@ -128,8 +128,8 @@
 </template>
 <script>
 import { listProjects } from '@/api/project'
-import { listDefinitions, executeRule } from '@/api/definition'
-import { listVariablesByProject, getVariableOptions } from '@/api/variable'
+import { executeRule, listDefinitions } from '@/api/definition'
+import { getVariableOptions, listVariablesByProject } from '@/api/variable'
 
 export default {
   name: 'RuleTest',

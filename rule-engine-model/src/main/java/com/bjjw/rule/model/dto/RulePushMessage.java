@@ -11,10 +11,12 @@ public class RulePushMessage {
     private String compiledType;
     private String modelJson;
     private Long publishTime;
-    /** 动作类型：PUBLISH / UNPUBLISH / DELETE / FUNC_UPDATE / FUNC_DELETE */
+    /** 动作类型：PUBLISH / UNPUBLISH / DELETE / FUNC_UPDATE / FUNC_DELETE / SET_PUBLISH / SET_UNPUBLISH */
     private String action;
     /** 规则所属项目编码 */
     private String projectCode;
+    /** 作用域省份：0 全国；UNPUBLISH 时指明下线的是哪一条发布快照 */
+    private String compId;
 
     // ── 函数推送字段（action = FUNC_UPDATE / FUNC_DELETE 时使用） ──
     /** 函数编码 */
@@ -33,4 +35,10 @@ public class RulePushMessage {
     private String funcImplBeanName;
     /** 函数参数 JSON */
     private String funcParamsJson;
+
+    // ── 规则集推送（action = SET_PUBLISH / SET_UNPUBLISH） ──
+    /** 规则集编码 */
+    private String setCode;
+    /** 成员 rule_code 有序 JSON 数组字符串 */
+    private String memberRuleCodes;
 }

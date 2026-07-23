@@ -128,18 +128,8 @@ public class AdvancedCrossTableCompiler implements RuleCompiler {
 
     /** 将单个分段条件追加到脚本 */
     private void appendCondition(StringBuilder sb, SegmentInfo seg) {
-        String code = seg.varCode;
-        String op = seg.operator;
-
-        if ("range".equals(op)) {
-            sb.append(code).append(" >= ");
-            appendValue(sb, seg.min, seg.varType);
-            sb.append(" && ").append(code).append(" < ");
-            appendValue(sb, seg.max, seg.varType);
-        } else {
-            sb.append(code).append(" ").append(op).append(" ");
-            appendValue(sb, seg.value, seg.varType);
-        }
+        sb.append(QlCompareExpression.emitSegmentCondition(
+                seg.varCode, seg.varType, seg.operator, seg.value, seg.min, seg.max));
     }
 
     private void appendValue(StringBuilder sb, String value, String type) {

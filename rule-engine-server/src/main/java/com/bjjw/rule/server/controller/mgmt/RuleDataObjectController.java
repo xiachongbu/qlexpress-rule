@@ -1,5 +1,6 @@
 package com.bjjw.rule.server.controller.mgmt;
 
+import com.bjjw.rule.model.dto.mgmt.*;
 import com.bjjw.rule.model.entity.RuleDataObject;
 import com.bjjw.rule.model.entity.RuleDataObjectField;
 import com.bjjw.rule.model.entity.RuleDataObjectFieldOption;
@@ -25,11 +26,9 @@ public class RuleDataObjectController {
     private SchemaSyncService schemaSyncService;
 
     @PostMapping("/import/java")
-    public R<Map<String, Object>> importJava(@RequestBody Map<String, String> body) {
-        Long projectId = Long.valueOf(body.get("projectId"));
-        String objectType = body.getOrDefault("objectType", "INPUT");
-        String javaSource = body.get("javaSource");
-        Map<String, Object> result = dataObjectService.importFromJava(projectId, javaSource, objectType);
+    public R<Map<String, Object>> importJava(@RequestBody RuleDataObjectImportJavaRequest req) {
+        String objectType = req.getObjectType() != null ? req.getObjectType() : "INPUT";
+        Map<String, Object> result = dataObjectService.importFromJava(req.getProjectId(), req.getJavaSource(), objectType);
         trySyncSchema();
         return R.ok(result);
     }
@@ -46,30 +45,27 @@ public class RuleDataObjectController {
     }
 
     @PostMapping("/import/json")
-    public R<Map<String, Object>> importJson(@RequestBody Map<String, String> body) {
-        Long projectId = Long.valueOf(body.get("projectId"));
-        String objectType = body.getOrDefault("objectType", "INPUT");
-        String objectCode = body.get("objectCode");
-        String jsonContent = body.get("jsonContent");
-        Map<String, Object> result = dataObjectService.importFromJson(projectId, jsonContent, objectCode, objectType);
+    public R<Map<String, Object>> importJson(@RequestBody RuleDataObjectImportJsonRequest req) {
+        String objectType = req.getObjectType() != null ? req.getObjectType() : "INPUT";
+        Map<String, Object> result = dataObjectService.importFromJson(req.getProjectId(), req.getJsonContent(),
+                req.getObjectCode(), objectType);
         trySyncSchema();
         return R.ok(result);
     }
 
-    /** 从建表 DDL（CREATE TABLE）导入数据对象与字段，COMMENT 作为变量名称 */
+    /** 从建表 DDL 导入数据对象与字段 */
     @PostMapping("/import/ddl")
-    public R<Map<String, Object>> importDdl(@RequestBody Map<String, String> body) {
-        Long projectId = Long.valueOf(body.get("projectId"));
-        String objectType = body.getOrDefault("objectType", "INPUT");
-        String ddlSource = body.get("ddlSource");
-        Map<String, Object> result = dataObjectService.importFromDdl(projectId, ddlSource, objectType);
+    public R<Map<String, Object>> importDdl(@RequestBody RuleDataObjectImportDdlRequest req) {
+        String objectType = req.getObjectType() != null ? req.getObjectType() : "INPUT";
+        Map<String, Object> result = dataObjectService.importFromDdl(req.getProjectId(), req.getDdlSource(), objectType);
         trySyncSchema();
         return R.ok(result);
     }
 
-    @GetMapping("/project/{projectId:\\d+}")
-    public R<List<RuleDataObject>> listByProject(@PathVariable Long projectId) {
-        return R.ok(dataObjectService.listByProject(projectId));
+    /** 按项目列出数据对象 */
+    @PostMapping("/project/query")
+    public R<List<RuleDataObject>> listByProject(@RequestBody RuleDataObjectProjectQueryRequest req) {
+        return R.ok(dataObjectService.listByProject(req.getProjectId()));
     }
 
     @GetMapping("/{id:\\d+}")
@@ -78,21 +74,21 @@ public class RuleDataObjectController {
         return data != null ? R.ok(data) : R.fail("数据对象不存在");
     }
 
-    @GetMapping("/tree/{projectId:\\d+}")
-    public R<List<Map<String, Object>>> tree(@PathVariable Long projectId) {
-        return R.ok(dataObjectService.getVariableTree(projectId));
+    @PostMapping("/tree/query")
+    public R<List<Map<String, Object>>> tree(@RequestBody RuleDataObjectTreeQueryRequest req) {
+        return R.ok(dataObjectService.getVariableTree(req.getProjectId()));
     }
 
     @PutMapping("/{id:\\d+}/type")
-    public R<Void> updateType(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        dataObjectService.updateObjectType(id, body.get("objectType"));
+    public R<Void> updateType(@PathVariable Long id, @RequestBody RuleDataObjectUpdateTypeRequest req) {
+        dataObjectService.updateObjectType(id, req.getObjectType());
         return R.ok();
     }
 
     /** 更新数据对象的脚本引用名 */
     @PutMapping("/{id:\\d+}/script-name")
-    public R<Void> updateScriptName(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        dataObjectService.updateScriptName(id, body.get("scriptName"));
+    public R<Void> updateScriptName(@PathVariable Long id, @RequestBody RuleDataObjectUpdateScriptNameRequest req) {
+        dataObjectService.updateScriptName(id, req.getScriptName());
         return R.ok();
     }
 
@@ -103,7 +99,7 @@ public class RuleDataObjectController {
         return R.ok();
     }
 
-    /** 在数据对象下新增字段（写入 rule_data_object_field） */
+    /** 在数据对象下新增字段 */
     @PostMapping("/{objectId:\\d+}/field")
     public R<RuleDataObjectField> createField(@PathVariable Long objectId, @RequestBody RuleDataObjectField field) {
         return R.ok(dataObjectService.createObjectField(objectId, field));

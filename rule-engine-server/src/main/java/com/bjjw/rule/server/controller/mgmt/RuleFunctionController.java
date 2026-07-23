@@ -1,10 +1,14 @@
 package com.bjjw.rule.server.controller.mgmt;
 
 import com.bjjw.rule.model.dto.RulePushMessage;
+import com.bjjw.rule.model.dto.mgmt.RuleFunctionPageRequest;
+import com.bjjw.rule.model.dto.mgmt.RuleFunctionProjectAllRequest;
 import com.bjjw.rule.model.entity.RuleFunction;
+import com.bjjw.rule.model.entity.RuleProject;
 import com.bjjw.rule.server.common.Result;
 import com.bjjw.rule.server.publish.RulePushService;
 import com.bjjw.rule.server.service.RuleFunctionService;
+import com.bjjw.rule.server.service.RuleProjectService;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,23 +25,27 @@ public class RuleFunctionController {
     @Resource
     private RulePushService pushService;
 
+    @Resource
+    private RuleProjectService projectService;
+
     /**
-     * 按项目分页查询函数列表（管理页面）
+     * 按项目分页查询函数列表（POST + JSON）
      */
-    @GetMapping("/project/{projectId}")
+    @PostMapping("/project/{projectId}/list")
     public Result<IPage<RuleFunction>> listByProject(
             @PathVariable Long projectId,
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "20") int pageSize) {
+            @RequestBody(required = false) RuleFunctionPageRequest req) {
+        int pageNum = req == null || req.getPageNum() == null ? 1 : req.getPageNum();
+        int pageSize = req == null || req.getPageSize() == null ? 20 : req.getPageSize();
         return Result.ok(functionService.pageByProject(projectId, pageNum, pageSize));
     }
 
     /**
-     * 按项目查询全部启用函数（设计器变量面板使用，非分页）
+     * 按项目查询全部启用函数（POST + JSON）
      */
-    @GetMapping("/project/{projectId}/all")
-    public Result<List<RuleFunction>> listAllByProject(@PathVariable Long projectId) {
-        return Result.ok(functionService.listByProject(projectId));
+    @PostMapping("/project/all")
+    public Result<List<RuleFunction>> listAllByProject(@RequestBody RuleFunctionProjectAllRequest req) {
+        return Result.ok(functionService.listByProject(req.getProjectId()));
     }
 
     @GetMapping("/{id}")
@@ -64,9 +72,11 @@ public class RuleFunctionController {
         RuleFunction func = functionService.getById(id);
         functionService.delete(id);
         if (func != null) {
+            RuleProject project = projectService.getById(func.getProjectId());
             RulePushMessage msg = new RulePushMessage();
             msg.setAction("FUNC_DELETE");
             msg.setFuncCode(func.getFuncCode());
+            msg.setProjectCode(project.getProjectCode());
             msg.setPublishTime(System.currentTimeMillis());
             pushService.push(msg);
         }
@@ -75,6 +85,7 @@ public class RuleFunctionController {
 
     /** 推送函数新增/更新消息 */
     private void pushFuncUpdate(RuleFunction func) {
+        RuleProject project = projectService.getById(func.getProjectId());
         RulePushMessage msg = new RulePushMessage();
         msg.setAction("FUNC_UPDATE");
         msg.setFuncCode(func.getFuncCode());
@@ -85,6 +96,7 @@ public class RuleFunctionController {
         msg.setFuncImplMethod(func.getImplMethod());
         msg.setFuncImplBeanName(func.getImplBeanName());
         msg.setFuncParamsJson(func.getParamsJson());
+        msg.setProjectCode(project.getProjectCode());
         msg.setPublishTime(System.currentTimeMillis());
         pushService.push(msg);
     }

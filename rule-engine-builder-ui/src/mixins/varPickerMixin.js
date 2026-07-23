@@ -16,8 +16,8 @@
  */
 
 import { getDefinition } from '@/api/definition'
-import { listVariablesByProject, getVariableOptions } from '@/api/variable'
-import { getVariableTree, getDataObjectFieldOptions } from '@/api/dataObject'
+import { getVariableOptions, listVariablesByProject } from '@/api/variable'
+import { getDataObjectFieldOptions, getVariableTree } from '@/api/dataObject'
 import { listAllFunctionsByProject } from '@/api/function'
 import { varTypeLabel as varTypeLabelFn, varTypeTagColor } from '@/constants/varTypes'
 
@@ -57,10 +57,14 @@ export default {
     }
   },
 
-  created() {
-    if (this.$route && this.$route.params && this.$route.params.id) {
-      this.loadProjectVars(this.$route.params.id)
-    }
+  mounted() {
+    /**
+     * 须在组件 created 写完 definitionId 之后再拉变量；抽屉内打开时路由 params.id 可能是项目 id，不能用作定义 id。
+     */
+    this.$nextTick(() => {
+      const id = this.definitionId || (this.$route && this.$route.params && this.$route.params.id)
+      if (id) this.loadProjectVars(id)
+    })
   },
 
   methods: {
@@ -122,11 +126,11 @@ export default {
         objectTree.forEach(node => {
           const obj = node.object || node
           const objectCode = obj.objectCode || ''
-          const objScriptName = obj.scriptName || objectCode
+          // const objScriptName = obj.scriptName || objectCode
           const objectLabel = obj.objectLabel || objectCode
           ;(node.variables || []).forEach(v => {
             const varScriptName = v.scriptName || v.varCode
-            const refCode = `${objScriptName}.${varScriptName}`
+            const refCode = varScriptName
             refs.push({
               refCode,
               refLabel: `${v.varLabel || v.varCode} (${varScriptName})`,

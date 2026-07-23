@@ -133,23 +133,7 @@ public class AdvancedScorecardCompiler implements RuleCompiler {
             String varCode = cond.getString("varCode");
             String operator = cond.getString("operator");
             String value = cond.getString("value");
-
-            sb.append(varCode).append(" ").append(operator).append(" ");
-            if (isNumericValue(value)) {
-                sb.append(value);
-            } else {
-                sb.append("\"").append(value.replace("\"", "\\\"")).append("\"");
-            }
-        }
-    }
-
-    private boolean isNumericValue(String value) {
-        if (value == null) return false;
-        try {
-            Double.parseDouble(value);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
+            sb.append(QlCompareExpression.emitStructuredCondition(varCode, operator, value));
         }
     }
 }

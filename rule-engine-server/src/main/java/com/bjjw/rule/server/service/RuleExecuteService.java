@@ -1,5 +1,6 @@
 package com.bjjw.rule.server.service;
 
+import com.bjjw.rule.model.constant.RuleCompIds;
 import com.bjjw.rule.core.function.AggregateBuiltinFunctionRegistry;
 import com.bjjw.rule.core.engine.QLExpressEngine;
 import com.bjjw.rule.model.dto.RuleResult;
@@ -37,7 +38,15 @@ public class RuleExecuteService {
     @Resource
     private FunctionRegistrar functionRegistrar;
 
-    public RuleResult testExecute(Long definitionId, Map<String, Object> params) {
+    /**
+     * 管理端试跑：按作用域读取已编译内容后执行
+     *
+     * @param definitionId 定义 ID
+     * @param scopeCompId  设计内容作用域，空视为全国 0
+     * @param params       入参
+     * @param businessId   业务主键ID，用于关联具体业务记录
+     */
+    public RuleResult testExecute(Long definitionId, String scopeCompId, Map<String, Object> params, String businessId) {
         RuleDefinition definition = definitionService.getById(definitionId);
         if (definition == null) {
             RuleResult r = new RuleResult();
@@ -46,7 +55,7 @@ public class RuleExecuteService {
             return r;
         }
 
-        RuleDefinitionContent content = definitionService.getContent(definitionId);
+        RuleDefinitionContent content = definitionService.getContent(definitionId, RuleCompIds.normalize(scopeCompId));
         if (content == null || content.getCompileStatus() != 1) {
             RuleResult r = new RuleResult();
             r.setSuccess(false);
@@ -81,9 +90,11 @@ public class RuleExecuteService {
                 log.setProjectCode(project.getProjectCode());
             }
         }
-        log.setRuleVersion(definition.getCurrentVersion());
-        log.setModelType(definition.getModelType());
+        log.setRuleVersion(content.getCurrentVersion());
+        log.setModelType(content.getModelType());
         log.setSource("SERVER");
+        log.setCompId(RuleCompIds.normalize(scopeCompId));
+        log.setBusinessId(businessId);
         log.setInputParams(JSON.toJSONString(params));
         log.setOutputResult(JSON.toJSONString(result.getResult()));
         log.setSuccess(result.isSuccess() ? 1 : 0);

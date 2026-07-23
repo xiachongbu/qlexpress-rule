@@ -5,6 +5,7 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 import './styles/index.scss'
+import './directive'
 
 Vue.use(ElementUI, { size: 'small' })
 Vue.config.productionTip = false

@@ -11,7 +11,7 @@
         <div class="fc-steps">
           <div v-for="(card, idx) in flowCards" :key="idx" class="fc-step">
             <!-- 步骤间连线 -->
-            <div class="fc-connector" v-if="idx > 0"><div class="fc-conn-line"></div></div>
+            <div v-if="idx > 0" class="fc-connector"><div class="fc-conn-line" /></div>
             <div class="fc-step-row">
               <!-- 左侧图标 -->
               <div class="fc-icon" :class="'fc-icon--' + card.stepType">
@@ -77,22 +77,22 @@
       <!-- ========== 决策树追踪（层级树） ========== -->
       <div v-else-if="effectiveType === 'TREE'" class="mv-tree">
         <!-- 命中路径摘要 -->
-        <div class="dt-path" v-if="treePath.length">
+        <div v-if="treePath.length" class="dt-path">
           <span class="dt-path-label">命中路径：</span>
           <span v-for="(seg, si) in treePath" :key="si" class="dt-path-seg">
-            <span class="dt-path-arrow" v-if="si > 0">&rarr;</span>
+            <span v-if="si > 0" class="dt-path-arrow">&rarr;</span>
             <span class="dt-path-text">{{ seg }}</span>
           </span>
         </div>
         <!-- 层级树主体 -->
-        <div class="dt-body" v-if="treeData">
+        <div v-if="treeData" class="dt-body">
           <decision-tree-trace-node :node="treeData" :is-root="true" :var-map="varMap" :function-name-map="effectiveFunctionNameMap" />
         </div>
         <!-- 图例 -->
         <div class="dt-legend">
-          <span class="dt-legend-item"><span class="dt-legend-dot dt-legend-dot--hit"></span> 命中：条件满足，路径通过</span>
-          <span class="dt-legend-item"><span class="dt-legend-dot dt-legend-dot--blocked"></span> 阻断：条件不满足，路径终止</span>
-          <span class="dt-legend-item"><span class="dt-legend-dot dt-legend-dot--skipped"></span> 跳过：兄弟已命中，未执行</span>
+          <span class="dt-legend-item"><span class="dt-legend-dot dt-legend-dot--hit" /> 命中：条件满足，路径通过</span>
+          <span class="dt-legend-item"><span class="dt-legend-dot dt-legend-dot--blocked" /> 阻断：条件不满足，路径终止</span>
+          <span class="dt-legend-item"><span class="dt-legend-dot dt-legend-dot--skipped" /> 跳过：兄弟已命中，未执行</span>
         </div>
       </div>
 
@@ -102,8 +102,11 @@
         <table class="sc-table">
           <thead><tr><th>评估维度</th><th>输入值</th><th>规则条件</th><th>得分</th><th v-if="effectiveType === 'SCORE_ADV'">状态</th><th>小计</th></tr></thead>
           <tbody>
-            <tr v-for="(item, idx) in effectiveScoreItems" :key="idx"
-                :class="{ 'sc-hit': item.hit, 'sc-result': item.isResult, 'sc-skipped': item.status === 'skipped', 'sc-miss': item.status === 'miss' }">
+            <tr
+              v-for="(item, idx) in effectiveScoreItems"
+              :key="idx"
+              :class="{ 'sc-hit': item.hit, 'sc-result': item.isResult, 'sc-skipped': item.status === 'skipped', 'sc-miss': item.status === 'miss' }"
+            >
               <td>{{ item.dimension }}</td>
               <td>{{ item.inputValue }}</td>
               <td>{{ scoreRuleConditionText(item) }}</td>
@@ -269,7 +272,7 @@
 
       <!-- ========== 默认：表达式追踪树 ========== -->
       <template v-else>
-        <div class="t-sec" v-if="usedVariables.length > 0">
+        <div v-if="usedVariables.length > 0" class="t-sec">
           <div class="t-hd">输入变量</div>
           <div class="var-list">
             <span v-for="v in usedVariables" :key="v.code" class="var-tag">
@@ -282,7 +285,7 @@
           <div class="t-hd">
             求值过程
             <el-button class="fullscreen-btn" type="text" size="mini" @click="fullscreen = true">
-              <i class="el-icon-full-screen"></i> 全屏查看
+              <i class="el-icon-full-screen" /> 全屏查看
             </el-button>
           </div>
           <div class="tree-viewport">
@@ -291,11 +294,11 @@
             </div>
           </div>
         </div>
-        <div class="fs-mask" v-if="fullscreen" @click.self="fullscreen = false">
+        <div v-if="fullscreen" class="fs-mask" @click.self="fullscreen = false">
           <div class="fs-panel">
             <div class="fs-bar">
               <span class="fs-title">求值过程</span>
-              <el-button type="text" class="fs-close" @click="fullscreen = false"><i class="el-icon-close"></i></el-button>
+              <el-button type="text" class="fs-close" @click="fullscreen = false"><i class="el-icon-close" /></el-button>
             </div>
             <div class="fs-body">
               <div class="tree-canvas">
@@ -311,7 +314,7 @@
       </template>
 
     </div>
-    <div v-else class="t-empty"><i class="el-icon-info"></i> 暂无追踪信息</div>
+    <div v-else class="t-empty"><i class="el-icon-info" /> 暂无追踪信息</div>
   </div>
 </template>
 
@@ -323,6 +326,7 @@ import DecisionTreeTraceNode from './DecisionTreeTraceNode.vue'
 var OP_CN = {
   '==': '等于', '!=': '不等于',
   '>': '大于', '>=': '大于等于', '<': '小于', '<=': '小于等于',
+  in: '包含于', contains: '字符串包含', startsWith: '前匹配', endsWith: '后匹配',
   '&&': '且', '||': '或'
 }
 
@@ -342,7 +346,7 @@ export default {
   components: { TraceNode, DecisionTreeTraceNode },
   props: {
     traceInfo: { type: String, default: '' },
-    varMap: { type: Object, default: function () { return {} } },
+    varMap: { type: Object, default: function() { return {} } },
     modelType: { type: String, default: '' },
     inputParams: { type: String, default: '' },
     outputResult: { type: String, default: '' },
@@ -357,22 +361,17 @@ export default {
     /** 规则完整 modelJson 对象（交叉表矩阵高亮依赖 rowHeaders/cells 等） */
     definitionModel: { type: Object, default: null },
     /** 函数编码 → 中文名称（项目自定义函数，来自执行日志页加载） */
-    functionNameMap: { type: Object, default: function () { return {} } }
+    functionNameMap: { type: Object, default: function() { return {} } },
+    /**
+     * 是否展示决策流步骤卡片：true=强制展示（FLOW+卡片）；false=强制不展示；不传=自动（仅 SCRIPT 在 flowCards 非空时展示）。不用 Boolean 类型以免 Vue2 将缺省当作 false
+     */
+    showFlowCards: { default: undefined }
   },
-  data: function () {
+  data: function() {
     return { fullscreen: false }
   },
-  watch: {
-    fullscreen: function (val) {
-      if (val) document.addEventListener('keydown', this._onEsc)
-      else document.removeEventListener('keydown', this._onEsc)
-    }
-  },
-  beforeDestroy: function () {
-    document.removeEventListener('keydown', this._onEsc)
-  },
   computed: {
-    traceData: function () {
+    traceData: function() {
       if (!this.traceInfo) return null
       try {
         var d = JSON.parse(this.traceInfo)
@@ -380,45 +379,48 @@ export default {
         return d
       } catch (e) { return null }
     },
-    hasTraceData: function () {
+    hasTraceData: function() {
       return this.traceData && (Array.isArray(this.traceData) ? this.traceData.length > 0 : true)
     },
-    effectiveType: function () {
+    effectiveType: function() {
       if (this.modelType) return this.modelType
       if (this._isFlowFormat()) return 'FLOW'
       return ''
     },
     /**
-     * 是否渲染决策流式步骤卡片区域：FLOW 与现网一致始终展示；SCRIPT 仅在 flowCards 非空时展示，否则回退树形追踪
+     * 是否渲染决策流式步骤卡片区域：默认仅 SCRIPT；FLOW 由父级传 showFlowCards=true（与 LogicFlow 追踪图组合）
      */
-    showFlowCardTrace: function () {
-      if (this.effectiveType === 'FLOW') return true
+    showFlowCardTrace: function() {
+      if (this.showFlowCards === true) {
+        return this.effectiveType === 'FLOW' && this.flowCards && this.flowCards.length > 0
+      }
+      if (this.showFlowCards === false) return false
       if (this.modelType === 'SCRIPT' && this.flowCards && this.flowCards.length > 0) return true
       return false
     },
-    rootNodes: function () {
+    rootNodes: function() {
       var nodes = Array.isArray(this.traceData) ? this.traceData : [this.traceData]
       if (nodes.length === 1 && nodes[0] && nodes[0].type === 'BLOCK' && nodes[0].children) nodes = nodes[0].children
       if (nodes.length === 1 && nodes[0] && nodes[0].type === 'STATEMENT' && nodes[0].children) nodes = nodes[0].children
-      return nodes.filter(function (n) { return n && typeof n === 'object' })
+      return nodes.filter(function(n) { return n && typeof n === 'object' })
     },
     /** 解析后的输入参数 */
-    parsedInput: function () {
+    parsedInput: function() {
       try { return JSON.parse(this.inputParams) } catch (e) { return {} }
     },
-    parsedOutput: function () {
+    parsedOutput: function() {
       try { return JSON.parse(this.outputResult) } catch (e) { return null }
     },
 
     // ─── 决策表 / 交叉表 ───
-    tableRules: function () {
+    tableRules: function() {
       var stmts = this._getStatements()
       var ifNode = this._findFirstIf(stmts)
       if (!ifNode) return []
       return this._walkIfChain(ifNode)
     },
-    ruleCols: function () {
-      var cols = [], seen = {}
+    ruleCols: function() {
+      var cols = []; var seen = {}
       for (var i = 0; i < this.tableRules.length; i++) {
         var keys = Object.keys(this.tableRules[i].conds)
         for (var j = 0; j < keys.length; j++) {
@@ -427,8 +429,8 @@ export default {
       }
       return cols
     },
-    actionCols: function () {
-      var cols = [], seen = {}
+    actionCols: function() {
+      var cols = []; var seen = {}
       for (var i = 0; i < this.tableRules.length; i++) {
         var keys = Object.keys(this.tableRules[i].acts)
         for (var j = 0; j < keys.length; j++) {
@@ -437,7 +439,7 @@ export default {
       }
       return cols
     },
-    hitRuleNo: function () {
+    hitRuleNo: function() {
       for (var i = 0; i < this.tableRules.length; i++) {
         if (this.tableRules[i].hit) return this.tableRules[i].no
       }
@@ -446,16 +448,16 @@ export default {
     /**
      * 决策表条件中含「或」时，按变量分列会失真，改为仅展示条件摘要列。
      */
-    tableUseCondSummary: function () {
+    tableUseCondSummary: function() {
       var rules = this.tableRules
       for (var i = 0; i < rules.length; i++) {
         if (this._condHasOr(rules[i].condNode)) return true
       }
       return false
     },
-    tableInputText: function () {
+    tableInputText: function() {
       var self = this
-      return this.ruleCols.map(function (c) {
+      return this.ruleCols.map(function(c) {
         var label = self.varMap[c] || c
         var val = self.parsedInput[c]
         return val !== undefined ? label + ' = ' + val : label
@@ -463,7 +465,7 @@ export default {
     },
 
     // ─── 评分卡 ───
-    scoreItems: function () {
+    scoreItems: function() {
       var stmts = this._getStatements()
       var items = []
       var running = 0
@@ -518,7 +520,7 @@ export default {
     },
 
     /** 复杂评分卡专用解析：遍历完整 if/else if 链（含未求值分支） */
-    scoreAdvItems: function () {
+    scoreAdvItems: function() {
       var stmts = this._getStatements()
       var items = []
       var running = 0
@@ -597,14 +599,14 @@ export default {
     },
 
     /** 根据模型类型返回对应的评分卡行数据 */
-    effectiveScoreItems: function () {
+    effectiveScoreItems: function() {
       return this.effectiveType === 'SCORE_ADV' ? this.scoreAdvItems : this.scoreItems
     },
 
     /**
      * 合并内置函数中文名与项目函数中文名（项目配置覆盖内置）
      */
-    effectiveFunctionNameMap: function () {
+    effectiveFunctionNameMap: function() {
       var m = Object.assign({}, BUILTIN_FUNC_CN)
       var ext = this.functionNameMap || {}
       for (var k in ext) {
@@ -616,7 +618,7 @@ export default {
     /**
      * 评分卡「风险等级」行规则条件列展示的汇总公式（仅命中分支；形如 100 +IF(…)×分）
      */
-    scoreFormulaDisplayText: function () {
+    scoreFormulaDisplayText: function() {
       var items = this.effectiveScoreItems
       if (!items || items.length === 0) return ''
       var parts = []
@@ -635,7 +637,7 @@ export default {
     },
 
     /** 复杂评分卡最终得分 */
-    scoreAdvFinalResult: function () {
+    scoreAdvFinalResult: function() {
       var items = this.effectiveScoreItems
       if (!items || items.length === 0) return null
       for (var i = items.length - 1; i >= 0; i--) {
@@ -651,7 +653,7 @@ export default {
     },
 
     /** 复杂交叉表命中结果汇总 */
-    crossAdvHitResult: function () {
+    crossAdvHitResult: function() {
       var rules = this.tableRules
       for (var i = 0; i < rules.length; i++) {
         if (rules[i].hit) {
@@ -667,51 +669,51 @@ export default {
     },
 
     /** 简单交叉表：来自设计器的模型快照 */
-    traceCrossSimpleModel: function () {
+    traceCrossSimpleModel: function() {
       var m = this.definitionModel
       if (!m || !Array.isArray(m.rowHeaders) || !Array.isArray(m.colHeaders) || !Array.isArray(m.cells)) return null
       return m
     },
     /** 复杂交叉表：含多维 rowDimensions / colDimensions */
-    traceCrossAdvModel: function () {
+    traceCrossAdvModel: function() {
       var m = this.definitionModel
       if (!m || !Array.isArray(m.rowDimensions) || !Array.isArray(m.colDimensions) || !Array.isArray(m.cells)) return null
       if (m.rowDimensions.length < 1 || m.colDimensions.length < 1) return null
       return m
     },
     /** 行维度笛卡尔积（复杂交叉表） */
-    traceAdvRowCombinations: function () {
+    traceAdvRowCombinations: function() {
       if (!this.traceCrossAdvModel) return []
       return this._cartesianProductSegs(this.traceCrossAdvModel.rowDimensions)
     },
     /** 列维度笛卡尔积（复杂交叉表） */
-    traceAdvColCombinations: function () {
+    traceAdvColCombinations: function() {
       if (!this.traceCrossAdvModel) return []
       return this._cartesianProductSegs(this.traceCrossAdvModel.colDimensions)
     },
-    traceAdvColDimLevels: function () {
+    traceAdvColDimLevels: function() {
       if (!this.traceCrossAdvModel) return 1
       return Math.max(1, this.traceCrossAdvModel.colDimensions.length)
     },
-    traceAdvRowDimLevels: function () {
+    traceAdvRowDimLevels: function() {
       if (!this.traceCrossAdvModel) return 1
       return Math.max(1, this.traceCrossAdvModel.rowDimensions.length)
     },
-    traceAdvRowDimLabel: function () {
+    traceAdvRowDimLabel: function() {
       if (!this.traceCrossAdvModel) return '行'
       var dims = this.traceCrossAdvModel.rowDimensions || []
-      return dims.map(function (d) { return d.varLabel || d.varCode || '' }).join(' / ') || '行'
+      return dims.map(function(d) { return d.varLabel || d.varCode || '' }).join(' / ') || '行'
     },
-    traceAdvColDimLabel: function () {
+    traceAdvColDimLabel: function() {
       if (!this.traceCrossAdvModel) return '列'
       var dims = this.traceCrossAdvModel.colDimensions || []
-      return dims.map(function (d) { return d.varLabel || d.varCode || '' }).join(' / ') || '列'
+      return dims.map(function(d) { return d.varLabel || d.varCode || '' }).join(' / ') || '列'
     },
     /**
      * 与 AdvancedCrossTable 一致的多级列表头；每格带 colStart/colEnd（数据列下标区间，左闭右开），
      * 用于命中时同时高亮第一级合并列头。
      */
-    traceAdvColHeaderRows: function () {
+    traceAdvColHeaderRows: function() {
       var m = this.traceCrossAdvModel
       if (!m) return []
       var dims = m.colDimensions || []
@@ -748,7 +750,7 @@ export default {
       return rows
     },
     /** 与 AdvancedCrossTable 一致的多级行表头（每行一组 td） */
-    traceAdvRowHeaderCells: function () {
+    traceAdvRowHeaderCells: function() {
       var m = this.traceCrossAdvModel
       if (!m) return []
       var dims = m.rowDimensions || []
@@ -777,7 +779,7 @@ export default {
       return result
     },
     /** 简单交叉：与编译器相同的非空单元格顺序下，命中分支对应的 (r,c) */
-    crossSimpleHitCoords: function () {
+    crossSimpleHitCoords: function() {
       var m = this.traceCrossSimpleModel
       if (!m) return null
       var order = this._crossCompileOrder(m.rowHeaders, m.colHeaders, m.cells)
@@ -788,7 +790,7 @@ export default {
       return null
     },
     /** 复杂交叉：命中单元格 (ri,ci)，顺序与 AdvancedCrossTableCompiler 一致 */
-    crossAdvHitCoords: function () {
+    crossAdvHitCoords: function() {
       var m = this.traceCrossAdvModel
       if (!m) return null
       var order = this._advCrossCompileOrder(m.rowDimensions, m.colDimensions, m.cells)
@@ -800,7 +802,7 @@ export default {
     },
 
     // ─── 决策树 ───
-    treeData: function () {
+    treeData: function() {
       var stmts = this._getStatements()
       var ifNode = this._findFirstIf(stmts)
       if (!ifNode) return null
@@ -808,7 +810,7 @@ export default {
       return this._buildTree(ifNode, this.treeGraphLabels, labelIdx)
     },
     /** 从 modelData 按图遍历顺序提取决策树标注：[{ name, edges: [{ name, targetName, isLeaf }] }] */
-    treeGraphLabels: function () {
+    treeGraphLabels: function() {
       if (!this.modelData || !this.modelData.nodes || !this.modelData.edges) return []
       var nodes = this.modelData.nodes
       var edges = this.modelData.edges
@@ -831,37 +833,37 @@ export default {
       this._walkTreeGraph(firstTarget, nodeMap, outEdgeMap, result)
       return result
     },
-    treePath: function () {
+    treePath: function() {
       if (!this.treeData) return []
       var path = []
       this._collectPath(this.treeData, path)
       return path
     },
     /** 决策树最终命中结果（叶子节点的值） */
-    treeHitResult: function () {
+    treeHitResult: function() {
       if (!this.treeData) return ''
       var result = this._findHitLeaf(this.treeData)
       return result || ''
     },
 
     // ─── 决策流 ───
-    flowSteps: function () {
+    flowSteps: function() {
       var steps = []
       var self = this
       var inp = this.parsedInput || {}
-      var params = Object.keys(inp).map(function (k) { return { label: self.varMap[k] || k, value: self._fv(inp[k]) } })
+      var params = Object.keys(inp).map(function(k) { return { label: self.varMap[k] || k, value: self._fv(inp[k]) } })
       steps.push({ type: 'start', params: params })
       var stmts = this._getStatements()
       this._walkFlow(stmts, steps)
       var lastAction = null
       for (var i = steps.length - 1; i >= 0; i--) { if (steps[i].type === 'action') { lastAction = steps[i]; break } }
-      var endText = lastAction ? lastAction.text.split('=').map(function (s) { return s.trim() }).join(' 确定为 ') : ''
+      var endText = lastAction ? lastAction.text.split('=').map(function(s) { return s.trim() }).join(' 确定为 ') : ''
       steps.push({ type: 'end', text: endText })
       return steps
     },
 
     /** 决策流卡片式数据（增强版） */
-    flowCards: function () {
+    flowCards: function() {
       var cards = []
       var stmts = this._getStatements()
       var stepNo = { n: 1 }
@@ -878,7 +880,7 @@ export default {
       return cards
     },
     /** 决策流最终输出值 */
-    flowFinalResult: function () {
+    flowFinalResult: function() {
       var cards = this.flowCards
       if (cards.length > 0) {
         var last = cards[cards.length - 1]
@@ -887,7 +889,7 @@ export default {
       return this.parsedOutput
     },
     /** 决策流最终结果标签 */
-    flowFinalLabel: function () {
+    flowFinalLabel: function() {
       var nn = this.orderedNodeNames
       if (nn.length > 0) {
         for (var i = nn.length - 1; i >= 0; i--) {
@@ -902,7 +904,7 @@ export default {
       return '最终结果'
     },
     /** 决策流最终结果展示文本 */
-    flowFinalDisplay: function () {
+    flowFinalDisplay: function() {
       var v = this.flowFinalResult
       if (v === null || v === undefined) return '-'
       if (typeof v === 'object') { try { return JSON.stringify(v) } catch (e) { return String(v) } }
@@ -910,7 +912,7 @@ export default {
     },
 
     /** 从 modelData 按图遍历顺序提取节点名称列表 [{type, name}] */
-    orderedNodeNames: function () {
+    orderedNodeNames: function() {
       if (!this.modelData || !this.modelData.nodes || !this.modelData.edges) return []
       var nodes = this.modelData.nodes
       var edges = this.modelData.edges
@@ -950,27 +952,36 @@ export default {
     },
 
     // ─── 默认表达式追踪树 ───
-    usedVariables: function () {
-      var vars = [], seen = {}
+    usedVariables: function() {
+      var vars = []; var seen = {}
       this._walk(this.rootNodes, vars, seen)
       return vars
     },
-    finalResult: function () {
+    finalResult: function() {
       if (!this.rootNodes || this.rootNodes.length === 0) return undefined
       return this.rootNodes[this.rootNodes.length - 1].value
     },
-    finalText: function () { return this.fmtVal(this.finalResult) },
-    finalCls: function () {
+    finalText: function() { return this.fmtVal(this.finalResult) },
+    finalCls: function() {
       if (this.finalResult === true) return 'is-true'
       if (this.finalResult === false) return 'is-false'
       return 'is-val'
     }
   },
+  watch: {
+    fullscreen: function(val) {
+      if (val) document.addEventListener('keydown', this._onEsc)
+      else document.removeEventListener('keydown', this._onEsc)
+    }
+  },
+  beforeDestroy: function() {
+    document.removeEventListener('keydown', this._onEsc)
+  },
   methods: {
     /**
      * 决策流卡片等处：模板中使用的函数展示名
      */
-    funcDisplayName: function (code) {
+    funcDisplayName: function(code) {
       if (code === undefined || code === null || code === '') return '?'
       var s = String(code)
       var m = this.effectiveFunctionNameMap
@@ -979,7 +990,7 @@ export default {
     /**
      * 评分卡表格「规则条件」列：汇总行展示 scoreFormulaDisplayText，其余行仍为 ruleText
      */
-    scoreRuleConditionText: function (item) {
+    scoreRuleConditionText: function(item) {
       if (!item) return '-'
       if (item.isResult && (this.effectiveType === 'SCORE' || this.effectiveType === 'SCORE_ADV')) {
         return this.scoreFormulaDisplayText || '-'
@@ -989,7 +1000,7 @@ export default {
     /**
      * 简单交叉表矩阵单元格展示（只读）
      */
-    traceCrossSimpleCellDisplay: function (ri, ci) {
+    traceCrossSimpleCellDisplay: function(ri, ci) {
       var m = this.traceCrossSimpleModel
       if (!m || !m.cells[ri]) return ''
       var v = m.cells[ri][ci]
@@ -999,7 +1010,7 @@ export default {
     /**
      * 复杂交叉表矩阵单元格展示（只读）
      */
-    traceAdvCellDisplay: function (ri, ci) {
+    traceAdvCellDisplay: function(ri, ci) {
       var m = this.traceCrossAdvModel
       if (!m || !m.cells[ri]) return ''
       var raw = this._getAdvCellValue(m.cells[ri], ci)
@@ -1008,7 +1019,7 @@ export default {
     /**
      * 与 CrossTableCompiler 一致：行优先遍历非空单元格，顺序对应 trace 中 if/else if 链
      */
-    _crossCompileOrder: function (rowHeaders, colHeaders, cells) {
+    _crossCompileOrder: function(rowHeaders, colHeaders, cells) {
       var order = []
       if (!rowHeaders || !colHeaders || !cells) return order
       for (var r = 0; r < rowHeaders.length; r++) {
@@ -1024,7 +1035,7 @@ export default {
     /**
      * 与 AdvancedCrossTableCompiler.getCellValue 一致解析单元格
      */
-    _getAdvCellValue: function (rowCells, colIndex) {
+    _getAdvCellValue: function(rowCells, colIndex) {
       try {
         if (!rowCells) return null
         var val = rowCells[colIndex]
@@ -1037,7 +1048,7 @@ export default {
     /**
      * 维度分段笛卡尔积（复杂交叉表），返回 segment 对象数组的数组
      */
-    _cartesianProductSegs: function (dimensions) {
+    _cartesianProductSegs: function(dimensions) {
       if (!dimensions || dimensions.length === 0) return []
       var result = [[]]
       for (var d = 0; d < dimensions.length; d++) {
@@ -1058,7 +1069,7 @@ export default {
     /**
      * 与 AdvancedCrossTableCompiler 一致：按 ri、ci 双层循环跳过空单元格后的顺序
      */
-    _advCrossCompileOrder: function (rowDims, colDims, cells) {
+    _advCrossCompileOrder: function(rowDims, colDims, cells) {
       var order = []
       if (!rowDims || !colDims || !cells) return order
       var rowProduct = this._cartesianProductSegs(rowDims)
@@ -1073,8 +1084,8 @@ export default {
       }
       return order
     },
-    _onEsc: function (e) { if (e.keyCode === 27) this.fullscreen = false },
-    fmtVal: function (v) {
+    _onEsc: function(e) { if (e.keyCode === 27) this.fullscreen = false },
+    fmtVal: function(v) {
       if (v === true) return '真'
       if (v === false) return '假'
       if (v === null || v === undefined) return '空'
@@ -1083,30 +1094,30 @@ export default {
       }
       return String(v)
     },
-    valCls: function (v) {
+    valCls: function(v) {
       if (v === true) return 'is-true'
       if (v === false) return 'is-false'
       return 'is-val'
     },
-    _fv: function (v) {
+    _fv: function(v) {
       if (v === true) return 'true'
       if (v === false) return 'false'
       if (v === null || v === undefined) return '空'
       return String(v)
     },
     /** 面向展示的值格式化：布尔值转中文，其他原样 */
-    _displayVal: function (v) {
+    _displayVal: function(v) {
       if (v === true) return '是'
       if (v === false) return '否'
       if (v === null || v === undefined) return '空'
       return String(v)
     },
-    _isFlowFormat: function () {
+    _isFlowFormat: function() {
       if (!this.traceData || !Array.isArray(this.traceData)) return false
       var f = this.traceData[0]
       return f && f.node && ['task', 'decision', 'end'].indexOf(f.type) !== -1
     },
-    _walk: function (nodes, vars, seen) {
+    _walk: function(nodes, vars, seen) {
       var list = Array.isArray(nodes) ? nodes : [nodes]
       for (var i = 0; i < list.length; i++) {
         var n = list[i]
@@ -1119,7 +1130,7 @@ export default {
       }
     },
     /** 展开 BLOCK/STATEMENT 包装，获取实际语句列表 */
-    _getStatements: function () {
+    _getStatements: function() {
       var nodes = this.rootNodes
       var result = []
       for (var i = 0; i < nodes.length; i++) {
@@ -1135,7 +1146,7 @@ export default {
       }
       return result
     },
-    _findFirstIf: function (stmts) {
+    _findFirstIf: function(stmts) {
       for (var i = 0; i < stmts.length; i++) {
         if (stmts[i] && stmts[i].type === 'IF') return stmts[i]
       }
@@ -1143,7 +1154,7 @@ export default {
     },
 
     // ─── 决策表/交叉表解析 ───
-    _walkIfChain: function (node) {
+    _walkIfChain: function(node) {
       var rules = []
       var current = node
       var no = 1
@@ -1156,8 +1167,7 @@ export default {
         rules.push({ no: no++, conds: this._extractConds(condNode), condNode: condNode, acts: this._extractActMap(thenNode), hit: hit })
         if (!elseNode) break
         var next = this._unwrapToIf(elseNode)
-        if (next) { current = next }
-        else {
+        if (next) { current = next } else {
           var isEvaled = elseNode.evaluated !== false
           rules.push({ no: no++, conds: { _default: '其他' }, condNode: null, acts: this._extractActMap(elseNode), hit: isEvaled && !this._anyHit(rules) })
           break
@@ -1165,11 +1175,11 @@ export default {
       }
       return rules
     },
-    _anyHit: function (rules) {
+    _anyHit: function(rules) {
       for (var i = 0; i < rules.length; i++) { if (rules[i].hit) return true }
       return false
     },
-    _unwrapToIf: function (node) {
+    _unwrapToIf: function(node) {
       if (!node) return null
       if (node.type === 'IF') return node
       if ((node.type === 'BLOCK' || node.type === 'STATEMENT') && node.children) {
@@ -1179,7 +1189,7 @@ export default {
       }
       return null
     },
-    _extractConds: function (node) {
+    _extractConds: function(node) {
       var map = {}
       if (!node) return map
       var comps = this._flattenAnd(node)
@@ -1195,14 +1205,14 @@ export default {
       }
       return map
     },
-    _flattenAnd: function (node) {
+    _flattenAnd: function(node) {
       if (!node) return []
       if (node.type === 'OPERATOR' && node.token === '&&' && node.children) {
         return this._flattenAnd(node.children[0]).concat(this._flattenAnd(node.children[1]))
       }
       return [node]
     },
-    _extractActMap: function (block) {
+    _extractActMap: function(block) {
       var map = {}
       var assigns = this._extractAssigns(block)
       for (var i = 0; i < assigns.length; i++) {
@@ -1210,10 +1220,10 @@ export default {
       }
       return map
     },
-    _extractAssigns: function (block) {
+    _extractAssigns: function(block) {
       var acts = []
       var self = this
-      var walk = function (n) {
+      var walk = function(n) {
         if (!n) return
         if (n.type === 'OPERATOR' && n.token === '=') {
           var ch = n.children || []
@@ -1228,7 +1238,7 @@ export default {
 
     // ─── 评分卡解析 ───
     /** 生成评分卡公式中的条件紧凑文本，如 "信用等级A" 或 "年营收>=5000万" */
-    _condTextCompact: function (ruleText, dimension) {
+    _condTextCompact: function(ruleText, dimension) {
       if (!ruleText || ruleText === '-') return dimension || '?'
       var trimmed = ruleText.replace(/\s+/g, '')
       if (trimmed.indexOf('等于') !== -1) {
@@ -1236,15 +1246,15 @@ export default {
       }
       return trimmed
     },
-    _getAssignLiteral: function (assignNode) {
+    _getAssignLiteral: function(assignNode) {
       if (!assignNode || !assignNode.children || !assignNode.children[1]) return 0
       var rhs = assignNode.children[1]
       return rhs.value !== undefined ? rhs.value : 0
     },
-    _getScoreDelta: function (thenBlock) {
+    _getScoreDelta: function(thenBlock) {
       var self = this
       var delta = 0
-      var walk = function (n) {
+      var walk = function(n) {
         if (!n) return
         if (n.type === 'OPERATOR' && n.token === '=' && n.children && n.children[0] && n.children[0].token === 'totalScore') {
           var rhs = n.children[1]
@@ -1261,7 +1271,7 @@ export default {
       return delta
     },
     /** 遍历复杂评分卡同维度 if/else if 完整链（含未求值分支） */
-    _walkScoreAdvChain: function (ifNode, dimVarName, currentRunning) {
+    _walkScoreAdvChain: function(ifNode, dimVarName, currentRunning) {
       var items = []
       var current = ifNode
       var dimName = null
@@ -1305,17 +1315,15 @@ export default {
       return items
     },
     /** 从赋值块中提取直接赋值的分数（如 _dim_0_0 = 10） */
-    _getDirectAssignScore: function (block, varName) {
+    _getDirectAssignScore: function(block, varName) {
       var result = null
-      var walk = function (n) {
+      var walk = function(n) {
         if (!n || result !== null) return
         if (n.type === 'OPERATOR' && n.token === '=' && n.children) {
           var left = n.children[0]
           var right = n.children[1]
           if (left && left.token === varName && right) {
-            if (n.value !== undefined && n.value !== null) { result = Number(n.value) }
-            else if (right.value !== undefined && right.value !== null) { result = Number(right.value) }
-            else if (right.token !== undefined && right.token !== null) { result = Number(right.token) }
+            if (n.value !== undefined && n.value !== null) { result = Number(n.value) } else if (right.value !== undefined && right.value !== null) { result = Number(right.value) } else if (right.token !== undefined && right.token !== null) { result = Number(right.token) }
           }
           return
         }
@@ -1324,7 +1332,7 @@ export default {
       walk(block)
       return result !== null && !isNaN(result) ? result : 0
     },
-    _getScoreDimension: function (condNode) {
+    _getScoreDimension: function(condNode) {
       if (!condNode) return '-'
       var comps = this._flattenAnd(condNode)
       if (comps.length === 0) return '-'
@@ -1335,7 +1343,7 @@ export default {
       }
       return '-'
     },
-    _getScoreInputValue: function (condNode) {
+    _getScoreInputValue: function(condNode) {
       if (!condNode) return '-'
       var comps = this._flattenAnd(condNode)
       if (comps.length === 0) return '-'
@@ -1348,7 +1356,7 @@ export default {
       }
       return '-'
     },
-    _condTextSimple: function (node) {
+    _condTextSimple: function(node) {
       if (!node) return '-'
       var comps = this._flattenAnd(node)
       var parts = []
@@ -1368,7 +1376,7 @@ export default {
     /**
      * 追踪节点中是否出现「或」运算（决策表含 OR 时列摊平不可用）。
      */
-    _condHasOr: function (node) {
+    _condHasOr: function(node) {
       if (!node) return false
       if (node.type === 'OPERATOR' && node.token === '||') return true
       if (node.children) {
@@ -1381,7 +1389,7 @@ export default {
     /**
      * 决策表追踪表格：条件列展示（含与/或嵌套的递归文案）。
      */
-    tableCondSummaryText: function (r) {
+    tableCondSummaryText: function(r) {
       if (!r || !r.condNode) return '-'
       if (this._condHasOr(r.condNode)) return this._traceCondText(r.condNode)
       return this._condTextSimple(r.condNode)
@@ -1389,7 +1397,7 @@ export default {
     /**
      * 递归将条件追踪节点格式化为可读中文（支持 && 与 ||）。
      */
-    _traceCondText: function (node) {
+    _traceCondText: function(node) {
       if (!node) return '-'
       if (node.type === 'OPERATOR' && (node.token === '&&' || node.token === '||')) {
         var ch = node.children || []
@@ -1409,7 +1417,7 @@ export default {
       }
       return '-'
     },
-    _findThresholdResult: function (stmts, fromIdx) {
+    _findThresholdResult: function(stmts, fromIdx) {
       for (var i = fromIdx; i < stmts.length; i++) {
         var s = stmts[i]
         if (s.type === 'IF') {
@@ -1421,7 +1429,7 @@ export default {
       }
       return '-'
     },
-    _findThresholdInElse: function (ifNode) {
+    _findThresholdInElse: function(ifNode) {
       if (!ifNode || ifNode.type !== 'IF') return null
       var ch = ifNode.children || []
       if (ch[0] && ch[0].value === true) {
@@ -1436,7 +1444,7 @@ export default {
       }
       return null
     },
-    _buildThresholdText: function (stmts, fromIdx) {
+    _buildThresholdText: function(stmts, fromIdx) {
       var parts = []
       for (var i = fromIdx; i < stmts.length; i++) {
         var s = stmts[i]
@@ -1446,7 +1454,7 @@ export default {
       }
       return parts.join('；') || '-'
     },
-    _collectThresholds: function (ifNode, parts) {
+    _collectThresholds: function(ifNode, parts) {
       if (!ifNode || ifNode.type !== 'IF') return
       var a = this._extractAssigns(ifNode.children && ifNode.children[1])
       if (a.length > 0) {
@@ -1461,7 +1469,7 @@ export default {
 
     // ─── 决策树解析 ───
     /** 递归遍历模型图，按编译器顺序提取标注信息 */
-    _walkTreeGraph: function (nodeId, nodeMap, outEdgeMap, result) {
+    _walkTreeGraph: function(nodeId, nodeMap, outEdgeMap, result) {
       if (!nodeId) return
       var nd = nodeMap[nodeId]
       if (!nd || nd.type !== 'decision') return
@@ -1508,12 +1516,12 @@ export default {
       }
     },
     /** 三态判定：hit=命中, blocked=条件不满足, skipped=兄弟已命中未执行 */
-    _resolveStatus: function (isHit, wasEvaluated) {
+    _resolveStatus: function(isHit, wasEvaluated) {
       if (isHit) return 'hit'
       if (wasEvaluated) return 'blocked'
       return 'skipped'
     },
-    _buildTree: function (ifNode, graphLabels, labelIdx) {
+    _buildTree: function(ifNode, graphLabels, labelIdx) {
       if (!ifNode || ifNode.type !== 'IF') return null
       var ch = ifNode.children || []
       var condNode = ch[0]
@@ -1560,7 +1568,7 @@ export default {
       }
       return { label: decisionLabel, children: children }
     },
-    _buildTreeBranch: function (node, graphLabels, labelIdx) {
+    _buildTreeBranch: function(node, graphLabels, labelIdx) {
       if (!node) return null
       var inner = this._unwrapToIf(node)
       if (inner) return this._buildTree(inner, graphLabels, labelIdx)
@@ -1622,7 +1630,7 @@ export default {
       }
       return null
     },
-    _flattenElseIfBranches: function (ifNode, children, parentCondFalse, parentWasEvaluated, gl, edgeIdx, graphLabels, labelIdx) {
+    _flattenElseIfBranches: function(ifNode, children, parentCondFalse, parentWasEvaluated, gl, edgeIdx, graphLabels, labelIdx) {
       if (!ifNode || ifNode.type !== 'IF') return
       var ch = ifNode.children || []
       var condNode = ch[0]
@@ -1666,7 +1674,7 @@ export default {
         }
       }
     },
-    _parseTreeCond: function (condNode) {
+    _parseTreeCond: function(condNode) {
       if (!condNode) return { varLabel: '?', valueText: '', condText: '' }
       var self = this
       var comps = this._flattenAnd(condNode)
@@ -1684,7 +1692,7 @@ export default {
       }
       return { varLabel: condNode.token || '?', valueText: '', condText: '' }
     },
-    _collectPath: function (node, path) {
+    _collectPath: function(node, path) {
       if (!node) return
       if (node.children) {
         for (var i = 0; i < node.children.length; i++) {
@@ -1702,7 +1710,7 @@ export default {
       }
     },
     /** 递归查找命中的叶子节点值 */
-    _findHitLeaf: function (node) {
+    _findHitLeaf: function(node) {
       if (!node || !node.children) return null
       for (var i = 0; i < node.children.length; i++) {
         var ch = node.children[i]
@@ -1723,7 +1731,7 @@ export default {
      * 赋值右侧是否为简单右值（字面量、null、或单一变量引用，无运算与函数）。
      * 决策流时间线中此类步骤用「赋」与「赋值完成」，与真正的表达式运算「算」区分。
      */
-    _isFlowSimpleAssignmentRhs: function (node) {
+    _isFlowSimpleAssignmentRhs: function(node) {
       if (!node) return true
       var t = node.type
       if (t === 'FUNCTION' || t === 'METHOD') return false
@@ -1732,7 +1740,7 @@ export default {
       return false
     },
     /** 递归构建决策流卡片数据 */
-    _buildFlowCards: function (stmts, cards, stepNo, nodeNames, nameIdx) {
+    _buildFlowCards: function(stmts, cards, stepNo, nodeNames, nameIdx) {
       for (var i = 0; i < stmts.length; i++) {
         var s = stmts[i]
         if (!s) continue
@@ -1826,7 +1834,7 @@ export default {
     /**
      * 决策流步骤卡片右侧展示值：_result 优先用执行日志中的 outputResult（parsedOutput），避免 trace 里 Map 被序列化为 $ref 导致显示异常。
      */
-    _flowCardValueDisplay: function (target, value) {
+    _flowCardValueDisplay: function(target, value) {
       if (target === '_result') {
         var po = this.parsedOutput
         if (po !== null && po !== undefined && typeof po === 'object' && !Array.isArray(po)) {
@@ -1845,13 +1853,13 @@ export default {
     /**
      * 追踪 JSON 中是否为 JSON Pointer 风格的 $ref 占位（无法直接当 Map 展示）。
      */
-    _isTraceJsonRefStub: function (v) {
+    _isTraceJsonRefStub: function(v) {
       return !!(v && typeof v === 'object' && typeof v.$ref === 'string')
     },
     /**
      * 是否按「最后一个 task 节点」过滤决策流多键输出（需有 nodes/edges 模型）。
      */
-    _shouldSummarizeFlowByLastTask: function () {
+    _shouldSummarizeFlowByLastTask: function() {
       var mt = this.modelType || this.effectiveType
       if (mt !== 'FLOW' && mt !== 'SCRIPT') return false
       return !!(this.modelData && this.modelData.nodes && this.modelData.edges)
@@ -1859,15 +1867,15 @@ export default {
     /**
      * 将引擎返回的 Map 格式化为「中文名：值  中文名：值」，仅含最后一个 task 顶层动作对应的变量（可映射时）。
      */
-    _formatFlowResultMapDisplay: function (obj) {
+    _formatFlowResultMapDisplay: function(obj) {
       if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return this._fv(obj)
       var filterKeys = this._shouldSummarizeFlowByLastTask() ? this._flowLastTaskOutputVarCodes() : []
       var keysToShow = filterKeys && filterKeys.length > 0
-        ? filterKeys.filter(function (k) { return Object.prototype.hasOwnProperty.call(obj, k) })
+        ? filterKeys.filter(function(k) { return Object.prototype.hasOwnProperty.call(obj, k) })
         : Object.keys(obj)
       if (keysToShow.length === 0) keysToShow = Object.keys(obj)
       var self = this
-      return keysToShow.map(function (k) {
+      return keysToShow.map(function(k) {
         var lab = self.varMap[k] || k
         return lab + ':' + self._displayVal(obj[k])
       }).join(' ')
@@ -1875,7 +1883,7 @@ export default {
     /**
      * 与 orderedNodeNames 相同主路径上，最后一个 task 节点 actionData「顶层」输出变量码（不递归条件分支内的赋值，便于「减免计算」类节点只展示最终一条赋值如 finalTaxAmount）。
      */
-    _flowLastTaskOutputVarCodes: function () {
+    _flowLastTaskOutputVarCodes: function() {
       if (!this.modelData || !this.modelData.nodes || !this.modelData.edges) return []
       var nodes = this.modelData.nodes
       var edges = this.modelData.edges
@@ -1918,7 +1926,7 @@ export default {
     /**
      * 仅收集 actionData 数组顶层块中的赋值目标（不进入 if-block / switch-block / foreach 内部）。
      */
-    _collectTopLevelActionDataTargets: function (actionData) {
+    _collectTopLevelActionDataTargets: function(actionData) {
       var out = []
       var seen = {}
       if (!actionData || !actionData.length) return out
@@ -1937,7 +1945,7 @@ export default {
       return out
     },
     /** 从条件节点提取各个比较条件 */
-    _extractFlowConditions: function (condNode) {
+    _extractFlowConditions: function(condNode) {
       if (!condNode) return []
       var comps = this._flattenAnd(condNode)
       var result = []
@@ -1962,7 +1970,7 @@ export default {
       return result
     },
     /** 按类型顺序匹配节点名称 */
-    _matchNodeName: function (nodeNames, nameIdx, type) {
+    _matchNodeName: function(nodeNames, nameIdx, type) {
       if (!nodeNames || !nameIdx) return ''
       while (nameIdx.i < nodeNames.length) {
         if (nodeNames[nameIdx.i].type === type) {
@@ -1975,7 +1983,7 @@ export default {
       return ''
     },
     /** 自动推导步骤标题 */
-    _deriveStepTitle: function (conditions, actions) {
+    _deriveStepTitle: function(conditions, actions) {
       if (actions.length > 0) {
         return (this.varMap[actions[0].targetVar] || actions[0].targetVar) + '判定'
       }
@@ -1985,7 +1993,7 @@ export default {
       return '条件判定'
     },
     /** 递归格式化表达式（变量后括号内嵌实际值） */
-    _formatExprReadable: function (node, parentToken) {
+    _formatExprReadable: function(node, parentToken) {
       if (!node) return '?'
       if (node.type === 'VARIABLE') {
         var label = this.varMap[node.token] || node.token
@@ -2011,19 +2019,19 @@ export default {
         }
       }
       if (node.type === 'FUNCTION' || node.type === 'METHOD') {
-        var args = (node.children || []).map(function (c) { return this._formatExprReadable(c) }.bind(this))
+        var args = (node.children || []).map(function(c) { return this._formatExprReadable(c) }.bind(this))
         return (node.token || '?') + '(' + args.join(', ') + ')'
       }
       return node.token || '?'
     },
     /** 运算符优先级（用于判断是否需要括号） */
-    _opPrec: function (token) {
+    _opPrec: function(token) {
       var map = { '+': 1, '-': 1, '*': 2, '/': 2, '%': 2 }
       return map[token] || 0
     },
 
     /** 图遍历：找到决策节点的汇合点（复刻后端 GraphScriptGenerator.findMergeNode 逻辑） */
-    _findGraphMerge: function (decisionId, outEdgeMap, nodeMap) {
+    _findGraphMerge: function(decisionId, outEdgeMap, nodeMap) {
       var outs = outEdgeMap[decisionId] || []
       if (outs.length < 2) return outs.length > 0 ? outs[0].target : null
       var branchSets = []
@@ -2056,7 +2064,7 @@ export default {
     },
 
     // ─── 决策流解析 ───
-    _walkFlow: function (stmts, steps) {
+    _walkFlow: function(stmts, steps) {
       for (var i = 0; i < stmts.length; i++) {
         var s = stmts[i]
         if (!s) continue
@@ -2097,7 +2105,7 @@ export default {
         }
       }
     },
-    _condTextFull: function (node) {
+    _condTextFull: function(node) {
       if (!node) return '?'
       var comps = this._flattenAnd(node)
       var parts = []
@@ -2115,7 +2123,7 @@ export default {
       }
       return parts.join(' 且 ')
     },
-    _condActualValues: function (condNode) {
+    _condActualValues: function(condNode) {
       if (!condNode) return ''
       var comps = this._flattenAnd(condNode)
       var parts = []
@@ -2129,7 +2137,7 @@ export default {
       }
       return parts.join('，')
     },
-    _condBranchLabel: function (condNode, result) {
+    _condBranchLabel: function(condNode, result) {
       if (!condNode) return ''
       var comps = this._flattenAnd(condNode)
       if (comps.length === 0) return ''
@@ -2142,10 +2150,10 @@ export default {
       return ''
     },
     /** 从 FUNCTION/METHOD 追踪节点中提取参数列表 */
-    _buildFuncArgs: function (funcNode) {
+    _buildFuncArgs: function(funcNode) {
       if (!funcNode || !funcNode.children) return []
       var self = this
-      return funcNode.children.map(function (c) {
+      return funcNode.children.map(function(c) {
         var name = c.token || '?'
         var label = (c.type === 'VARIABLE') ? (self.varMap[name] || name) : name
         var val = c.value !== undefined ? self._fv(c.value) : '?'
@@ -2153,7 +2161,7 @@ export default {
       })
     },
     /** 递归在表达式树中查找所有 FUNCTION/METHOD 节点 */
-    _findFuncCalls: function (node) {
+    _findFuncCalls: function(node) {
       if (!node) return []
       var result = []
       if (node.type === 'FUNCTION' || node.type === 'METHOD') {
@@ -2167,11 +2175,11 @@ export default {
       return result
     },
     /** 格式化函数调用表达式（含参数值） */
-    _formatFuncCallExpr: function (funcNode) {
+    _formatFuncCallExpr: function(funcNode) {
       if (!funcNode) return '?'
       var name = this.funcDisplayName(funcNode.token || '?')
       var self = this
-      var args = (funcNode.children || []).map(function (c) {
+      var args = (funcNode.children || []).map(function(c) {
         if (c.type === 'VARIABLE') {
           var label = self.varMap[c.token] || c.token
           return c.value !== undefined ? label + '(' + self._fv(c.value) + ')' : label
@@ -2180,7 +2188,7 @@ export default {
       })
       return name + '(' + args.join(', ') + ')'
     },
-    _unwrapList: function (node) {
+    _unwrapList: function(node) {
       if (!node) return []
       if ((node.type === 'BLOCK' || node.type === 'STATEMENT') && node.children) {
         var result = []

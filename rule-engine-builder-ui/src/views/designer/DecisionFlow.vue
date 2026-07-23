@@ -6,7 +6,7 @@
         <i class="el-icon-share toolbar-icon" />
         <span class="toolbar-title">决策流设计器</span>
         <el-tag size="small" type="info" style="margin-left:8px;">可视化流程规则</el-tag>
-        <span class="toolbar-id" v-if="definitionId">ID: {{ definitionId }}</span>
+        <span v-if="definitionId" class="toolbar-id">ID: {{ definitionId }}</span>
       </div>
       <div class="toolbar-center">
         <span class="toolbar-label">添加节点：</span>
@@ -54,13 +54,19 @@
       <div class="toolbar-right">
         <el-button size="mini" icon="el-icon-circle-check" @click="handleValidate">验证</el-button>
         <el-button size="mini" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <design-version-switcher
+          select-size="mini"
+          :definition-id="definitionId"
+          :scope-comp-id="scopeCompId"
+          @apply-model="onApplyDesignSnapshot"
+        />
         <el-button size="mini" type="warning" icon="el-icon-cpu" @click="handleCompile">编译</el-button>
         <el-button size="mini" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
       </div>
     </div>
 
     <!-- 主体：画布 + 属性面板 -->
-    <div class="flow-body">
+    <div v-loading="scopeContentLoading" class="flow-body">
       <!-- LogicFlow 画布 -->
       <div ref="canvasContainer" class="flow-canvas" />
 
@@ -123,13 +129,16 @@
                     <el-option label="大于等于 (>=)" value=">=" />
                     <el-option label="小于 (<)" value="<" />
                     <el-option label="小于等于 (<=)" value="<=" />
-                    <el-option label="包含 (in)" value="in" />
+                    <el-option label="包含于 (in)" value="in" />
+                    <el-option label="字符串包含 (contains)" value="contains" />
+                    <el-option label="前匹配 (startsWith)" value="startsWith" />
+                    <el-option label="后匹配 (endsWith)" value="endsWith" />
                   </el-select>
                 </div>
                 <div class="cond-row">
                   <span class="cond-label">值</span>
                   <el-input v-model="edgeCondVisual.rightValue" size="mini" placeholder="比较值，如：100000">
-                    <el-select v-model="edgeCondVisual.rightType" slot="prepend" style="width:70px" size="mini">
+                    <el-select slot="prepend" v-model="edgeCondVisual.rightType" style="width:70px" size="mini">
                       <el-option label="值" value="value" />
                       <el-option label="变量" value="var" />
                     </el-select>
@@ -269,11 +278,12 @@
     </div>
 
     <!-- 脚本预览/编辑面板 -->
-    <div class="flow-script-area" v-if="definitionId">
+    <div v-if="definitionId" class="flow-script-area">
       <script-panel
         ref="scriptPanel"
-        :definitionId="definitionId"
-        :onBeforeCompile="handleSave"
+        :definition-id="definitionId"
+        :scope-comp-id="scopeCompId"
+        :on-before-compile="persistModelSilent"
         @mode-change="onScriptModeChange"
       />
     </div>
@@ -285,7 +295,7 @@
         v-model="testParamsJson"
         type="textarea"
         :rows="6"
-        placeholder='{"taxpayerType": "一般纳税人", "amount": 100000}'
+        placeholder="{&quot;taxpayerType&quot;: &quot;一般纳税人&quot;, &quot;amount&quot;: 100000}"
       />
       <template slot="footer">
         <el-button size="small" @click="testVisible = false">取消</el-button>
@@ -310,35 +320,42 @@
         </el-descriptions>
       </div>
     </el-dialog>
+
+    <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
 
 <script>
 import LogicFlow from '@logicflow/core'
-import { SelectionSelect, Menu, Snapshot } from '@logicflow/extension'
+import { Menu, SelectionSelect, Snapshot } from '@logicflow/extension'
 import '@logicflow/core/dist/style/index.css'
 import '@logicflow/extension/lib/style/index.css'
 
-import { registerCustomNodes, getDefaultFlowData } from '@/components/flow/nodes'
+import { getDefaultFlowData, registerCustomNodes } from '@/components/flow/nodes'
 import {
-  normalizeDefaultEdgeLineType,
-  migrateModelJsonForEdgeLineTypes,
-  prepareLogicFlowDataForRender,
   applyGlobalEdgeTypeToInheritedEdges,
-  mergeEdgePropertiesFromForm
+  mergeEdgePropertiesFromForm,
+  migrateModelJsonForEdgeLineTypes,
+  normalizeDefaultEdgeLineType,
+  prepareLogicFlowDataForRender
 } from '@/components/flow/edgeLineType'
-import { saveContent, compileRule, executeRule, getContent } from '@/api/definition'
+import { compileRule, executeRule, getContent, saveContent } from '@/api/definition'
 import { generateScript } from '@/utils/actionDataCodegen'
+import { buildQlConditionExpr, inferConstVarType, parseQlConditionExpr } from '@/utils/conditionExpr'
 import { graphContainsDirectedCycle } from '@/utils/flowGraphCycle'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
+import designerDefinitionIdMixin from '@/mixins/designerDefinitionIdMixin'
+import designerScopeMixin from '@/mixins/designerScopeMixin'
 import ActionBlockEditor from '@/components/flow/ActionBlockEditor.vue'
+import DesignSaveVersionDialog from '@/components/designer/DesignSaveVersionDialog.vue'
+import DesignVersionSwitcher from '@/components/designer/DesignVersionSwitcher.vue'
 
 export default {
   name: 'DecisionFlow',
-  components: { VarPicker, ScriptPanel, ActionBlockEditor },
-  mixins: [varPickerMixin],
+  components: { VarPicker, ScriptPanel, ActionBlockEditor, DesignSaveVersionDialog, DesignVersionSwitcher },
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin],
   data() {
     return {
       definitionId: null,
@@ -392,11 +409,18 @@ export default {
     }
   },
   created() {
-    this.definitionId = this.$route.params.id
+    this.definitionId = this.resolveDefinitionIdFromContext()
   },
   mounted() {
     this.initLogicFlow()
-    this.loadContent()
+    ;(async() => {
+      try {
+        await this.bootstrapDesignerWithScope()
+      } catch (e) {
+        this.$message.error('加载失败: ' + (e.message || '未知错误'))
+        this.loadContent()
+      }
+    })()
   },
   beforeDestroy() {
     if (this.lf) {
@@ -431,7 +455,7 @@ export default {
         history: true,
         style: {
           nodeText: { overflowMode: 'ellipsis', fontSize: 12 },
-          edgeText: { fontSize: 12, background: { fill: '#fff' } },
+          edgeText: { fontSize: 12, background: { fill: '#fff' }},
           polyline: { stroke: '#999', strokeWidth: 1.5 },
           line: { stroke: '#999', strokeWidth: 1.5 },
           bezier: { stroke: '#999', strokeWidth: 1.5 },
@@ -453,14 +477,14 @@ export default {
           { text: '删除节点', callback: node => {
             this.lf.deleteNode(node.id)
             if (this.activeElement && this.activeElement.id === node.id) this.activeElement = null
-          }}
+          } }
         ],
         edgeMenu: [
           { text: '编辑条件', callback: edge => this.selectEdgeById(edge.id) },
           { text: '删除连线', callback: edge => {
             this.lf.deleteEdge(edge.id)
             if (this.activeElement && this.activeElement.id === edge.id) this.activeElement = null
-          }}
+          } }
         ],
         graphMenu: [
           { text: '适应画布', callback: () => this.resetZoom() }
@@ -728,23 +752,11 @@ export default {
 
     async loadContent() {
       try {
-        const res = await getContent(this.definitionId)
+        const res = await getContent(this.definitionId, this.scopeCompId)
         const content = res && res.data ? res.data : res
         if (content && content.modelJson && content.modelJson !== '{}') {
           const modelData = JSON.parse(content.modelJson)
-          migrateModelJsonForEdgeLineTypes(modelData)
-          this.globalEdgeLineType = modelData.defaultEdgeLineType
-          this.lf.setDefaultEdgeType(this.globalEdgeLineType)
-          if (modelData.logicflow) {
-            const prepared = prepareLogicFlowDataForRender(modelData.logicflow, this.globalEdgeLineType)
-            this.lf.render(prepared)
-          } else if (modelData.nodes && modelData.nodes.length > 0) {
-            const converted = this.convertLegacyModel(modelData)
-            const prepared = prepareLogicFlowDataForRender(converted, this.globalEdgeLineType)
-            this.lf.render(prepared)
-          } else {
-            this.lf.render(getDefaultFlowData())
-          }
+          this.applyParsedFlowModel(modelData)
         } else {
           this.globalEdgeLineType = 'polyline'
           this.lf.setDefaultEdgeType('polyline')
@@ -757,6 +769,34 @@ export default {
         this.lf.setDefaultEdgeType('polyline')
         this.lf.render(getDefaultFlowData())
       }
+    },
+
+    /**
+     * 将已解析的流程模型渲染到画布（初始加载与版本回滚共用）。
+     */
+    applyParsedFlowModel(modelData) {
+      migrateModelJsonForEdgeLineTypes(modelData)
+      this.globalEdgeLineType = modelData.defaultEdgeLineType
+      this.lf.setDefaultEdgeType(this.globalEdgeLineType)
+      if (modelData.logicflow) {
+        const prepared = prepareLogicFlowDataForRender(modelData.logicflow, this.globalEdgeLineType)
+        this.lf.render(prepared)
+      } else if (modelData.nodes && modelData.nodes.length > 0) {
+        const converted = this.convertLegacyModel(modelData)
+        const prepared = prepareLogicFlowDataForRender(converted, this.globalEdgeLineType)
+        this.lf.render(prepared)
+      } else {
+        this.lf.render(getDefaultFlowData())
+      }
+    },
+
+    /**
+     * 从历史快照恢复流程图。
+     */
+    onApplyDesignSnapshot(parsed) {
+      if (!parsed || typeof parsed !== 'object' || !this.lf) return
+      this.applyParsedFlowModel(parsed)
+      this.updateZoom()
     },
 
     convertLegacyModel(old) {
@@ -848,15 +888,43 @@ export default {
       }
     },
 
-    async handleSave() {
+    /**
+     * 静默保存当前流程模型（不写设计快照）。
+     */
+    async persistModelSilent() {
       const modelJson = JSON.stringify(this.buildBackendModel())
-      await saveContent({ definitionId: this.definitionId, modelJson })
+      await saveContent({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        modelJson,
+        recordHistory: false
+      })
+    },
+
+    /**
+     * 弹出版本说明后保存并记录快照。
+     */
+    async handleSave() {
+      let changeLog = ''
+      try {
+        changeLog = await this.$refs.designSaveVersionDialog.prompt()
+      } catch (e) {
+        return
+      }
+      const modelJson = JSON.stringify(this.buildBackendModel())
+      await saveContent({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        modelJson,
+        changeLog: changeLog || undefined,
+        recordHistory: true
+      })
       this.$message.success('保存成功')
     },
 
     async handleCompile() {
-      await this.handleSave()
-      const res = await compileRule(this.definitionId)
+      await this.persistModelSilent()
+      const res = await compileRule(this.definitionId, this.scopeCompId)
       if (res && res.data && res.data.success) {
         this.$message.success('编译成功')
         // 异步刷新变量映射和脚本面板
@@ -880,7 +948,7 @@ export default {
         this.$message.error('参数 JSON 格式错误')
         return
       }
-      const res = await executeRule({ definitionId: this.definitionId, params })
+      const res = await executeRule({ definitionId: this.definitionId, scopeCompId: this.scopeCompId, params })
       this.testResult = res && res.data ? res.data : res
     },
     onScriptModeChange(mode) {
@@ -910,16 +978,18 @@ export default {
         this.edgeCondVisual.rightVar = v.varCode
       }
     },
+    /**
+     * 由可视化字段生成 QL 条件（与后端 QlCompareExpression 一致）。
+     */
     buildCondExpr(visual) {
       const left = visual.leftVar
       if (!left) { this.$message.warning('请选择左侧变量'); return null }
       const op = visual.operator
-      let right = visual.rightType === 'var' ? visual.rightVar : visual.rightValue
-      if (!right && right !== 0) { this.$message.warning('请填写比较值'); return null }
-      if (visual.rightType === 'value' && isNaN(right)) {
-        right = "'" + right.replace(/'/g, "\\'") + "'"
-      }
-      return left + ' ' + op + ' ' + right
+      const mode = visual.rightType === 'var' ? 'var' : 'value'
+      const raw = mode === 'var' ? visual.rightVar : visual.rightValue
+      if (raw == null || raw === '') { this.$message.warning('请填写比较值'); return null }
+      const constType = mode === 'value' ? inferConstVarType(raw) : undefined
+      return buildQlConditionExpr(left, op, String(raw), mode, constType)
     },
     applyNodeCondVisual() {
       const expr = this.buildCondExpr(this.nodeCondVisual)
@@ -939,10 +1009,20 @@ export default {
       this.$message.success('已生成: ' + expr)
     },
 
+    /**
+     * 从已有表达式尽量恢复可视化字段。
+     */
     syncCondVisualFromExpr(expr) {
-      const m = (expr || '').match(/^(\S+)\s*(==|!=|>=|<=|>|<|in)\s*(.+)$/)
-      if (m) {
-        return { leftVar: m[1], leftLabel: '', operator: m[2], rightValue: m[3].replace(/^'|'$/g, ''), rightType: 'value', rightVar: '' }
+      const p = parseQlConditionExpr(expr)
+      if (p) {
+        return {
+          leftVar: p.leftVar,
+          leftLabel: '',
+          operator: p.operator,
+          rightValue: p.rightType === 'value' ? p.rightValue : '',
+          rightType: p.rightType,
+          rightVar: p.rightType === 'var' ? (p.rightVar || p.rightValue) : ''
+        }
       }
       return { leftVar: '', leftLabel: '', operator: '==', rightValue: '', rightType: 'value', rightVar: '' }
     },

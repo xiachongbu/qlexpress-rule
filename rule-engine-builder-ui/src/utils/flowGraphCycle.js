@@ -11,7 +11,7 @@
  * @param {string} [excludeEdgeId] 重连/调整边时排除的旧边 id
  * @returns {boolean} 是否会形成环
  */
-export function edgeWouldCompleteCycle (getOutgoing, sourceId, targetId, excludeEdgeId) {
+export function edgeWouldCompleteCycle(getOutgoing, sourceId, targetId, excludeEdgeId) {
   if (!sourceId || !targetId) return false
   if (sourceId === targetId) return true
   const visited = new Set()
@@ -41,7 +41,7 @@ export function edgeWouldCompleteCycle (getOutgoing, sourceId, targetId, exclude
  * @param {string} [excludeEdgeId] 调整边时排除的边 id
  * @returns {boolean}
  */
-export function wouldCreateCycleFromNewEdge (graphModel, sourceId, targetId, excludeEdgeId) {
+export function wouldCreateCycleFromNewEdge(graphModel, sourceId, targetId, excludeEdgeId) {
   if (!graphModel || typeof graphModel.getNodeOutgoingEdge !== 'function') return false
   return edgeWouldCompleteCycle(
     (nodeId) => {
@@ -61,7 +61,7 @@ export function wouldCreateCycleFromNewEdge (graphModel, sourceId, targetId, exc
  * @param {string[]} nodeIds 图中全部节点 id
  * @returns {boolean}
  */
-export function graphContainsDirectedCycle (edges, nodeIds) {
+export function graphContainsDirectedCycle(edges, nodeIds) {
   const ids = nodeIds && nodeIds.length ? [...new Set(nodeIds)] : []
   if (ids.length === 0) return false
   const idSet = new Set(ids)

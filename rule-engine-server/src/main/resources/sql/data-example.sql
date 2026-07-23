@@ -75,16 +75,16 @@ ON DUPLICATE KEY UPDATE `object_label` = VALUES(`object_label`);
 -- ============================================================
 -- 3. 创建八条规则定义（已发布状态，含对象传入和函数调用示例）
 -- ============================================================
-INSERT INTO `rule_definition` (`id`, `project_id`, `rule_code`, `rule_name`, `model_type`, `description`, `current_version`, `published_version`, `status`) VALUES
-(1, 1, 'RC_PRICING_TABLE',        '客商×产品总线定价表',     'TABLE', '根据客商类型与产品总线匹配风险定价费率（决策表示例）',                              1, 1, 1),
-(2, 1, 'RC_CREDIT_TREE', '客户信用分层', 'TREE',  '结合负面记录、合规评分、营收规模、合作年限输出内部信用等级 A/B/C/D',          1, 1, 1),
-(3, 1, 'RC_EXPOSURE_FLOW',        '敞口与费用试算流程',     'FLOW',  '串行试算：定价费率 → 本金/敞口拆分 → 费用 → 减免策略 → 应收费用', 1, 1, 1),
-(4, 1, 'RC_RATE_MATRIX',     '风险定价交叉表',       'CROSS', '客商类型 × 产品总线 交叉矩阵输出风险定价费率（与交叉表设计器示例一致）',                         1, 1, 1),
-(5, 1, 'RC_RISK_SCORECARD',      '综合风险评分卡',     'SCORE', '基于信用等级、营收、年限、指标偏离、历史事件的加权评分与风险档',            1, 1, 1),
-(6, 1, 'RC_PRICING_BY_OBJECT',      '对象传入定价', 'TABLE', '演示对象上下文入参：规则读取 taxpayerType、goodsCategory 等字段', 1, 1, 1),
-(7, 1, 'RC_FLOW_JAVA_SAMPLE',  'JAVA 函数试算',     'FLOW',  '演示 JAVA 函数：反射调用 TaxFunctions.calculateVAT 完成费用试算',      1, 1, 1),
-(8, 1, 'RC_FLOW_BEAN_SAMPLE',  'Spring Bean 试算',     'FLOW',  '演示 BEAN 函数：调用 Spring 容器内 taxFunctions.calculateVAT', 1, 1, 1)
-ON DUPLICATE KEY UPDATE `rule_name` = VALUES(`rule_name`), `description` = VALUES(`description`), `status` = 1, `published_version` = 1;
+INSERT INTO `rule_definition` (`id`, `project_id`, `rule_code`, `rule_name`, `description`) VALUES
+(1, 1, 'RC_PRICING_TABLE',        '客商×产品总线定价表',     '根据客商类型与产品总线匹配风险定价费率（决策表示例）'),
+(2, 1, 'RC_CREDIT_TREE', '客户信用分层', '结合负面记录、合规评分、营收规模、合作年限输出内部信用等级 A/B/C/D'),
+(3, 1, 'RC_EXPOSURE_FLOW',        '敞口与费用试算流程',     '串行试算：定价费率 → 本金/敞口拆分 → 费用 → 减免策略 → 应收费用'),
+(4, 1, 'RC_RATE_MATRIX',     '风险定价交叉表',       '客商类型 × 产品总线 交叉矩阵输出风险定价费率（与交叉表设计器示例一致）'),
+(5, 1, 'RC_RISK_SCORECARD',      '综合风险评分卡',     '基于信用等级、营收、年限、指标偏离、历史事件的加权评分与风险档'),
+(6, 1, 'RC_PRICING_BY_OBJECT',      '对象传入定价', '演示对象上下文入参：规则读取 taxpayerType、goodsCategory 等字段'),
+(7, 1, 'RC_FLOW_JAVA_SAMPLE',  'JAVA 函数试算',     '演示 JAVA 函数：反射调用 TaxFunctions.calculateVAT 完成费用试算'),
+(8, 1, 'RC_FLOW_BEAN_SAMPLE',  'Spring Bean 试算',     '演示 BEAN 函数：调用 Spring 容器内 taxFunctions.calculateVAT')
+ON DUPLICATE KEY UPDATE `rule_name` = VALUES(`rule_name`), `description` = VALUES(`description`);
 
 -- ============================================================
 -- 4. 规则内容（设计态 JSON + 编译产物）
@@ -256,11 +256,11 @@ ON DUPLICATE KEY UPDATE `option_label` = VALUES(`option_label`);
 -- ============================================================
 -- 8. 扩展风控示例 —— 规则定义（3条新规则：复杂交叉表/复杂评分卡/QL脚本）
 -- ============================================================
-INSERT INTO `rule_definition` (`id`, `project_id`, `rule_code`, `rule_name`, `model_type`, `description`, `current_version`, `published_version`, `status`) VALUES
-(9,  1, 'RC_MULTI_DIM_RATE',    '交叉矩阵多维定价（8×6）',       'CROSS_ADV', '行维度：业务类型×结算方式（8）；列维度：客户类型×纳税人资格（6）。与复杂交叉矩阵设计器示例一致（含 ICT 后付一般纳税人 0.13）', 1, 1, 1),
-(10, 1, 'RC_INVOICE_FRAUD_SCORE', '交易票据异常评分',       'SCORE_ADV', '基于客户等级、交易规模、票据偏离与地域异常等指标的分组加权评分（复杂评分卡示例）', 1, 1, 1),
-(11, 1, 'RC_BLEND_CALC_SCRIPT',    '混业组合计费脚本', 'SCRIPT',    '多费率产品线按比例分拆计费，并支持简易计税口径（QL脚本示例）', 1, 1, 1)
-ON DUPLICATE KEY UPDATE `rule_name` = VALUES(`rule_name`), `description` = VALUES(`description`), `status` = 1, `published_version` = 1;
+INSERT INTO `rule_definition` (`id`, `project_id`, `rule_code`, `rule_name`, `description`) VALUES
+(9,  1, 'RC_MULTI_DIM_RATE',    '交叉矩阵多维定价（8×6）',       '行维度：业务类型×结算方式（8）；列维度：客户类型×纳税人资格（6）。与复杂交叉矩阵设计器示例一致（含 ICT 后付一般纳税人 0.13）'),
+(10, 1, 'RC_INVOICE_FRAUD_SCORE', '交易票据异常评分',       '基于客户等级、交易规模、票据偏离与地域异常等指标的分组加权评分（复杂评分卡示例）'),
+(11, 1, 'RC_BLEND_CALC_SCRIPT',    '混业组合计费脚本', '多费率产品线按比例分拆计费，并支持简易计税口径（QL脚本示例）')
+ON DUPLICATE KEY UPDATE `rule_name` = VALUES(`rule_name`), `description` = VALUES(`description`);
 
 -- ============================================================
 -- 9. 扩展风控示例 —— 规则内容
@@ -313,3 +313,30 @@ INSERT INTO `rule_definition_version` (`definition_id`, `version`, `model_json`,
 (10, 1, (SELECT `model_json` FROM `rule_definition_content` WHERE `definition_id` = 10), (SELECT `compiled_script` FROM `rule_definition_content` WHERE `definition_id` = 10), 'QLEXPRESS', '初始发布 - 交易票据异常评分（复杂评分卡）', 'system'),
 (11, 1, (SELECT `model_json` FROM `rule_definition_content` WHERE `definition_id` = 11), (SELECT `compiled_script` FROM `rule_definition_content` WHERE `definition_id` = 11), 'QLEXPRESS', '初始发布 - 混业组合计费脚本（QL脚本）', 'system')
 ON DUPLICATE KEY UPDATE `change_log` = VALUES(`change_log`);
+
+-- ============================================================
+-- 12. 作用域模型适配：示例数据默认全国（0）作用域，将内容行的模型类型/状态/版本
+--     与已发布记录对齐，以便「规则管理」等按作用域展示的页面正确显示模型类型与发布状态。
+--     （新表结构中 model_type/状态/版本位于 rule_definition_content 与 rule_published，而非 rule_definition）
+-- ============================================================
+UPDATE `rule_definition_content` c
+JOIN `rule_published` p ON p.`definition_id` = c.`definition_id`
+SET c.`scope_comp_id`     = '0',
+    c.`comp_id`           = '0',
+    c.`model_type`        = p.`model_type`,
+    c.`status`            = 1,
+    c.`current_version`   = 1,
+    c.`published_version` = p.`version`;
+
+-- ============================================================
+-- 13. 示例规则集：链式串联「客户信用分层(TREE) → 综合风险评分卡(SCORE)」，演示「规则集管理」
+--     （设计态草稿；成员为 definition_id=2 与 5）
+-- ============================================================
+INSERT INTO `rule_rule_set` (`id`, `project_id`, `set_code`, `set_name`, `description`, `comp_id`, `status`, `published_version`)
+VALUES (1, 1, 'RS_RISK_CHAIN', '综合风险评估规则集', '示例：先做客户信用分层，再进行综合风险评分（链式执行）', '0', 0, NULL)
+ON DUPLICATE KEY UPDATE `set_name` = VALUES(`set_name`), `description` = VALUES(`description`);
+
+INSERT INTO `rule_rule_set_member` (`id`, `set_id`, `definition_id`, `sort_order`) VALUES
+(1, 1, 2, 0),
+(2, 1, 5, 1)
+ON DUPLICATE KEY UPDATE `sort_order` = VALUES(`sort_order`);

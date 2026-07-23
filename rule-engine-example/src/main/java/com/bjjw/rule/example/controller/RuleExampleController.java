@@ -303,7 +303,7 @@ public class RuleExampleController {
         Map<String, Object> params = new HashMap<>();
         params.put("totalAmount", request.getOrDefault("totalAmount", 113000));
 
-        RuleResult ruleResult = ruleClient.execute("RC_FLOW_JAVA_SAMPLE", params);
+        RuleResult ruleResult = ruleClient.execute("RC_FLOW_JAVA_SAMPLE", params, null);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", ruleResult.isSuccess());
@@ -333,7 +333,7 @@ public class RuleExampleController {
         Map<String, Object> params = new HashMap<>();
         params.put("totalAmount", request.getOrDefault("totalAmount", 113000));
 
-        RuleResult ruleResult = ruleClient.execute("RC_FLOW_BEAN_SAMPLE", params);
+        RuleResult ruleResult = ruleClient.execute("RC_FLOW_BEAN_SAMPLE", params, null);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", ruleResult.isSuccess());
@@ -360,7 +360,7 @@ public class RuleExampleController {
      */
     @PostMapping("/calc-vat-script")
     public Map<String, Object> calcVatScript(@RequestBody TaxCalcQuery query) {
-        RuleResult ruleResult = ruleClient.execute("RC_EXPOSURE_FLOW", query);
+        RuleResult ruleResult = ruleClient.execute("RC_EXPOSURE_FLOW", query, null);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", ruleResult.isSuccess());
@@ -479,6 +479,6 @@ public class RuleExampleController {
     public RuleResult executeRule(@RequestBody Map<String, Object> request) {
         String ruleCode = request.get("ruleCode").toString();
         Map<String, Object> params = (Map<String, Object>) request.getOrDefault("params", new HashMap<>());
-        return ruleClient.execute(ruleCode, params);
+        return ruleClient.execute(ruleCode, params, null);
     }
 }

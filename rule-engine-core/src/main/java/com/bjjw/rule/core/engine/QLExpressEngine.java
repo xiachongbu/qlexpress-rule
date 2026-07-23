@@ -27,6 +27,18 @@ public class QLExpressEngine {
         AggregateBuiltinFunctionRegistry.register(this.runner);
     }
 
+    /**
+     * @param traceExpression 是否在 runner 级别开启表达式 trace（影响 parse/compile 性能）。
+     *                        注意：设为 false 后，即使执行时 QLOptions.traceExpression(true) 也无法获取 trace 信息。
+     */
+    public QLExpressEngine(boolean traceExpression) {
+        this.runner = new Express4Runner(InitOptions.builder()
+                .traceExpression(traceExpression)
+                .securityStrategy(QLSecurityStrategy.open())
+                .build());
+        AggregateBuiltinFunctionRegistry.register(this.runner);
+    }
+
     public QLExpressEngine(InitOptions initOptions) {
         this.runner = new Express4Runner(initOptions);
         AggregateBuiltinFunctionRegistry.register(this.runner);
@@ -86,5 +98,25 @@ public class QLExpressEngine {
 
     public Express4Runner getRunner() {
         return runner;
+    }
+
+    /**
+     * 预热脚本：以空上下文触发 QLExpress4 内部解析与编译缓存。
+     * <p>预热时变量不存在等运行时异常属正常现象，忽略即可；
+     * QLExpress4 在解析阶段已将编译结果写入内部缓存，首次真实执行将直接命中缓存。</p>
+     */
+    public void warmUp(String script) {
+        if (script == null || script.isEmpty()) {
+            return;
+        }
+        try {
+            QLOptions options = QLOptions.builder()
+                    .cache(true)
+                    .traceExpression(false)
+                    .build();
+            runner.execute(script, Collections.emptyMap(), options);
+        } catch (Exception ignored) {
+            // 预热时上下文为空，变量缺失等运行时异常属正常现象，忽略即可
+        }
     }
 }

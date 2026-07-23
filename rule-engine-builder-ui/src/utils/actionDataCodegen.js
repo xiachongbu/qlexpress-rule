@@ -12,6 +12,8 @@
  *   template-str: 动态字符串    { type:'template-str', target, parts:[{type:'text'|'expr', content}] }
  */
 
+import {buildQlConditionExpr, inferConstVarType} from './conditionExpr'
+
 function wrapValue(val) {
   if (val === null || val === undefined || val === '') return '""'
   const s = String(val).trim()
@@ -19,7 +21,7 @@ function wrapValue(val) {
   if (!isNaN(s) && s !== '') return s
   if (/^[a-zA-Z_]\w*(\.\w+)*$/.test(s)) return s
   if (s.startsWith('"') || s.startsWith("'")) return s
-  if (/[+\-*/()><=!&|,\[\]{}]/.test(s)) return s
+  if (/[+\-*/()><=!&|,[\]{}]/.test(s)) return s
   return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
 }
 
@@ -90,7 +92,7 @@ function generateBlock(block, indent) {
 
     case 'ternary': {
       if (!block.target || !block.condVar) return ''
-      const cond = block.condVar + ' ' + (block.condOp || '==') + ' ' + wrapValue(block.condValue)
+      const cond = buildTernaryCond(block)
       return pad + block.target + ' = ' + cond + ' ? ' + (block.trueValue || '""') + ' : ' + (block.falseValue || '""')
     }
 
@@ -112,9 +114,38 @@ function generateBlock(block, indent) {
   }
 }
 
+/**
+ * if-block / elseif 条件（与后端 ActionDataCompiler.buildCond 一致）。
+ */
 function buildCondExpr(branch) {
   if (!branch.condVar) return 'true'
-  return branch.condVar + ' ' + (branch.condOp || '==') + ' ' + wrapValue(branch.condValue)
+  const raw = branch.condValue
+  if (raw == null || String(raw).trim() === '') return 'true'
+  const expr = buildQlConditionExpr(
+    branch.condVar,
+    branch.condOp || '==',
+    String(raw),
+    'value',
+    inferConstVarType(raw)
+  )
+  return expr || 'true'
+}
+
+/**
+ * 三元表达式块的条件子句。
+ */
+function buildTernaryCond(block) {
+  if (!block.condVar) return 'true'
+  const raw = block.condValue
+  if (raw == null || String(raw).trim() === '') return 'true'
+  const expr = buildQlConditionExpr(
+    block.condVar,
+    block.condOp || '==',
+    String(raw),
+    'value',
+    inferConstVarType(raw)
+  )
+  return expr || 'true'
 }
 
 export function generateScript(actionData) {

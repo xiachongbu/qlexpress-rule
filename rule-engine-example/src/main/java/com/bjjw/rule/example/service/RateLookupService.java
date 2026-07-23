@@ -42,7 +42,7 @@ public class RateLookupService {
      * @return 矩阵中对应的税率值
      */
     public BigDecimal lookupRate(RateLookupQuery query) {
-        RuleResult result = ruleClient.execute(RULE_CODE, query);
+        RuleResult result = ruleClient.execute(RULE_CODE, query, null);
 
         if (!result.isSuccess()) {
             log.error("交叉表执行失败 [{}]: {}", RULE_CODE, result.getErrorMessage());

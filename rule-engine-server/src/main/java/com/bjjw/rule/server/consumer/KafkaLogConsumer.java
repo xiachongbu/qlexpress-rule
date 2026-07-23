@@ -7,7 +7,6 @@ import com.alibaba.fastjson.JSON;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -16,11 +15,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Kafka 批量消费规则执行日志（适配全局 listener.type=batch 配置）。
- * 仅当配置了 {@code spring.kafka.bootstrap-servers} 时启用；默认示例工程不配置 Kafka，避免误连外网集群。
+ * Kafka 批量消费规则执行日志（适配全局 listener.type=batch 配置）
  */
-@Component
-@ConditionalOnProperty(name = "spring.kafka.bootstrap-servers")
+//@Component
 public class KafkaLogConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaLogConsumer.class);

@@ -20,6 +20,14 @@
             <i class="el-icon-folder" />
             <span>规则项目</span>
           </el-menu-item>
+          <el-menu-item index="/rule">
+            <i class="el-icon-tickets" />
+            <span>规则管理</span>
+          </el-menu-item>
+          <el-menu-item index="/ruleset">
+            <i class="el-icon-files" />
+            <span>规则集管理</span>
+          </el-menu-item>
           <el-menu-item index="/variable">
             <i class="el-icon-collection-tag" />
             <span>变量管理</span>
@@ -42,15 +50,32 @@
         <router-view />
       </el-main>
     </el-container>
+    <!-- 规则引擎设计器抽屉（全局挂载，由 Vuex designerDrawer 模块控制显隐；从右侧滑出） -->
+    <el-drawer
+      :visible.sync="designerDrawerSync"
+      direction="rtl"
+      size="92%"
+      :with-header="false"
+      :destroy-on-close="true"
+      append-to-body
+      custom-class="designer-shell-drawer"
+    >
+      <div class="designer-drawer-inner">
+        <DesignerDrawerHost v-if="designerDrawerSync && drawerSegment && drawerDefinitionId" />
+      </div>
+    </el-drawer>
   </el-container>
 </template>
 
 <script>
 import variables from '@/styles/variables.scss'
+import { mapState } from 'vuex'
 import { getConsoleAuthConfig, consoleLogout, getConsoleMe } from '@/api/auth'
+import DesignerDrawerHost from '@/components/common/DesignerDrawerHost.vue'
 
 export default {
   name: 'Layout',
+  components: { DesignerDrawerHost },
   data() {
     return {
       loginEnabled: false,
@@ -61,7 +86,22 @@ export default {
     sideBarWidth() { return parseInt(variables.sideBarWidth) },
     menuBg() { return variables.menuBg },
     menuText() { return variables.menuText },
-    menuActiveText() { return variables.menuActiveText }
+    menuActiveText() { return variables.menuActiveText },
+    ...mapState('designerDrawer', {
+      drawerSegment: 'segment',
+      drawerDefinitionId: 'definitionId'
+    }),
+    /**
+     * 设计器抽屉 visible 双向绑定到 Vuex designerDrawer 模块
+     */
+    designerDrawerSync: {
+      get() {
+        return this.$store.state.designerDrawer.visible
+      },
+      set(v) {
+        if (!v) this.$store.commit('designerDrawer/CLOSE')
+      }
+    }
   },
   async mounted() {
     await this.refreshAuthBar()
@@ -138,5 +178,16 @@ export default {
   overflow-y: auto;
   overflow-x: hidden;
   min-width: 0;
+}
+</style>
+
+<style lang="scss">
+/* 设计器抽屉：内容区可上下滚动、去内边距 */
+.designer-shell-drawer .el-drawer__body {
+  padding: 0;
+  overflow-y: auto;
+}
+.designer-shell-drawer .designer-drawer-inner {
+  min-height: 100%;
 }
 </style>

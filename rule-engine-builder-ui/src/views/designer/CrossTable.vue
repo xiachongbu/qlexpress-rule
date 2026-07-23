@@ -16,171 +16,179 @@
         </el-button-group>
         <el-divider direction="vertical" />
         <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <design-version-switcher
+          :definition-id="definitionId"
+          :scope-comp-id="scopeCompId"
+          @apply-model="onApplyDesignSnapshot"
+        />
         <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">编译</el-button>
         <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
       </div>
     </div>
 
-    <!-- 维度变量定义 -->
-    <div class="ct-dim-panel">
-      <div class="ct-dim-card">
-        <div class="dim-label"><i class="el-icon-s-unfold dim-icon row-icon" /> 行维度</div>
-        <var-picker
-          v-if="varPickerOptions.length"
-          :vars="varPickerOptions"
-          :value="model.rowVar.varCode"
-          placeholder="选择变量、常量或对象字段..."
-          style="margin-bottom:6px;"
-          @select="v => applyVarToDim(v, 'rowVar')"
-        />
-        <el-input v-model="model.rowVar.varLabel" size="small" placeholder="中文名称（如 纳税人类型）" style="margin-bottom:6px;" />
-        <el-input v-model="model.rowVar.varCode" size="small" placeholder="变量编码（如 taxpayerType）" />
+    <div v-loading="scopeContentLoading">
+      <!-- 维度变量定义 -->
+      <div class="ct-dim-panel">
+        <div class="ct-dim-card">
+          <div class="dim-label"><i class="el-icon-s-unfold dim-icon row-icon" /> 行维度</div>
+          <var-picker
+            v-if="varPickerOptions.length"
+            :vars="varPickerOptions"
+            :value="model.rowVar.varCode"
+            placeholder="选择变量、常量或对象字段..."
+            style="margin-bottom:6px;"
+            @select="v => applyVarToDim(v, 'rowVar')"
+          />
+          <el-input v-model="model.rowVar.varLabel" size="small" placeholder="中文名称（如 纳税人类型）" style="margin-bottom:6px;" />
+          <el-input v-model="model.rowVar.varCode" size="small" placeholder="变量编码（如 taxpayerType）" />
+        </div>
+        <div class="ct-dim-cross">
+          <div class="cross-label">×</div>
+          <div class="cross-desc">{{ model.resultVar.varLabel || '结果值' }}</div>
+        </div>
+        <div class="ct-dim-card">
+          <div class="dim-label"><i class="el-icon-s-fold dim-icon col-icon" /> 列维度</div>
+          <var-picker
+            v-if="varPickerOptions.length"
+            :vars="varPickerOptions"
+            :value="model.colVar.varCode"
+            placeholder="选择变量、常量或对象字段..."
+            style="margin-bottom:6px;"
+            @select="v => applyVarToDim(v, 'colVar')"
+          />
+          <el-input v-model="model.colVar.varLabel" size="small" placeholder="中文名称（如 货物类别）" style="margin-bottom:6px;" />
+          <el-input v-model="model.colVar.varCode" size="small" placeholder="变量编码（如 goodsCategory）" />
+        </div>
+        <div class="ct-dim-card">
+          <div class="dim-label"><i class="el-icon-finished dim-icon result-icon" /> 结果变量</div>
+          <var-picker
+            v-if="varPickerOptions.length"
+            :vars="varPickerOptions"
+            :value="model.resultVar.varCode"
+            placeholder="选择变量、常量或对象字段..."
+            style="margin-bottom:6px;"
+            @select="v => applyVarToDim(v, 'resultVar')"
+          />
+          <el-input v-model="model.resultVar.varLabel" size="small" placeholder="中文名称（如 适用税率）" style="margin-bottom:6px;" />
+          <el-input v-model="model.resultVar.varCode" size="small" placeholder="变量编码（如 taxRate）" />
+          <el-select v-model="model.resultVar.varType" size="small" style="width:100%;margin-top:6px;" popper-append-to-body>
+            <el-option v-for="opt in varTypeFormOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+          </el-select>
+        </div>
       </div>
-      <div class="ct-dim-cross">
-        <div class="cross-label">×</div>
-        <div class="cross-desc">{{ model.resultVar.varLabel || '结果值' }}</div>
-      </div>
-      <div class="ct-dim-card">
-        <div class="dim-label"><i class="el-icon-s-fold dim-icon col-icon" /> 列维度</div>
-        <var-picker
-          v-if="varPickerOptions.length"
-          :vars="varPickerOptions"
-          :value="model.colVar.varCode"
-          placeholder="选择变量、常量或对象字段..."
-          style="margin-bottom:6px;"
-          @select="v => applyVarToDim(v, 'colVar')"
-        />
-        <el-input v-model="model.colVar.varLabel" size="small" placeholder="中文名称（如 货物类别）" style="margin-bottom:6px;" />
-        <el-input v-model="model.colVar.varCode" size="small" placeholder="变量编码（如 goodsCategory）" />
-      </div>
-      <div class="ct-dim-card">
-        <div class="dim-label"><i class="el-icon-finished dim-icon result-icon" /> 结果变量</div>
-        <var-picker
-          v-if="varPickerOptions.length"
-          :vars="varPickerOptions"
-          :value="model.resultVar.varCode"
-          placeholder="选择变量、常量或对象字段..."
-          style="margin-bottom:6px;"
-          @select="v => applyVarToDim(v, 'resultVar')"
-        />
-        <el-input v-model="model.resultVar.varLabel" size="small" placeholder="中文名称（如 适用税率）" style="margin-bottom:6px;" />
-        <el-input v-model="model.resultVar.varCode" size="small" placeholder="变量编码（如 taxRate）" />
-        <el-select v-model="model.resultVar.varType" size="small" style="width:100%;margin-top:6px;" popper-append-to-body>
-          <el-option v-for="opt in varTypeFormOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-        </el-select>
-      </div>
-    </div>
 
-    <!-- 交叉矩阵 -->
-    <div class="ct-matrix-wrap">
-      <table class="ct-matrix">
-        <colgroup>
-          <col class="col-row-header" />
-          <col v-for="(col, ci) in model.colHeaders" :key="'col-' + ci" class="col-data" />
-          <col class="col-action" />
-        </colgroup>
-        <thead>
-          <tr>
-            <!-- 左上角交叉单元格 -->
-            <th class="corner-cell">
-              <div class="corner-row">{{ model.rowVar.varLabel || '行' }}</div>
-              <div class="corner-divider" />
-              <div class="corner-col">{{ model.colVar.varLabel || '列' }}</div>
-            </th>
-            <!-- 列头单元格 -->
-            <th v-for="(col, ci) in model.colHeaders" :key="'ch-' + ci" class="col-header-cell">
-              <div class="header-cell-inner">
-                <el-input
-                  v-model="model.colHeaders[ci]"
-                  size="mini"
-                  placeholder="列值"
-                  class="header-input"
-                />
-                <el-tooltip content="删除此列" placement="top">
-                  <el-button
-                    type="text"
+      <!-- 交叉矩阵 -->
+      <div class="ct-matrix-wrap">
+        <table class="ct-matrix">
+          <colgroup>
+            <col class="col-row-header">
+            <col v-for="(col, ci) in model.colHeaders" :key="'col-' + ci" class="col-data">
+            <col class="col-action">
+          </colgroup>
+          <thead>
+            <tr>
+              <!-- 左上角交叉单元格 -->
+              <th class="corner-cell">
+                <div class="corner-row">{{ model.rowVar.varLabel || '行' }}</div>
+                <div class="corner-divider" />
+                <div class="corner-col">{{ model.colVar.varLabel || '列' }}</div>
+              </th>
+              <!-- 列头单元格 -->
+              <th v-for="(col, ci) in model.colHeaders" :key="'ch-' + ci" class="col-header-cell">
+                <div class="header-cell-inner">
+                  <el-input
+                    v-model="model.colHeaders[ci]"
                     size="mini"
-                    icon="el-icon-close"
-                    class="delete-col-btn"
-                    @click="removeColumn(ci)"
+                    placeholder="列值"
+                    class="header-input"
                   />
-                </el-tooltip>
-              </div>
-            </th>
-            <!-- 添加列按钮 -->
-            <th class="add-col-cell">
-              <el-button type="text" size="mini" icon="el-icon-plus" @click="addColumn" style="color:#1890ff;" />
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(row, ri) in model.rowHeaders" :key="'row-' + ri">
-            <!-- 行头单元格 -->
-            <td class="row-header-cell">
-              <div class="row-header-inner">
-                <el-input
-                  v-model="model.rowHeaders[ri]"
-                  size="mini"
-                  placeholder="行值"
-                  class="header-input"
-                />
-                <el-tooltip content="删除此行" placement="right">
-                  <el-button
-                    type="text"
+                  <el-tooltip content="删除此列" placement="top">
+                    <el-button
+                      type="text"
+                      size="mini"
+                      icon="el-icon-close"
+                      class="delete-col-btn"
+                      @click="removeColumn(ci)"
+                    />
+                  </el-tooltip>
+                </div>
+              </th>
+              <!-- 添加列按钮 -->
+              <th class="add-col-cell">
+                <el-button type="text" size="mini" icon="el-icon-plus" style="color:#1890ff;" @click="addColumn" />
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, ri) in model.rowHeaders" :key="'row-' + ri">
+              <!-- 行头单元格 -->
+              <td class="row-header-cell">
+                <div class="row-header-inner">
+                  <el-input
+                    v-model="model.rowHeaders[ri]"
                     size="mini"
-                    icon="el-icon-close"
-                    class="delete-row-btn"
-                    @click="removeRow(ri)"
+                    placeholder="行值"
+                    class="header-input"
                   />
-                </el-tooltip>
-              </div>
-            </td>
-            <!-- 数据单元格 -->
-            <td
-              v-for="(col, ci) in model.colHeaders"
-              :key="'cell-' + ri + '-' + ci"
-              :class="['data-cell', { 'cell-filled': isCellFilled(ri, ci), 'cell-focused': focusedCell === ri + '_' + ci }]"
-            >
-              <el-input
-                v-model="model.cells[ri][ci]"
-                size="mini"
-                :placeholder="model.resultVar.varType === 'NUMBER' ? '0' : ''"
-                class="cell-input"
-                @focus="focusedCell = ri + '_' + ci"
-                @blur="focusedCell = null"
-              />
-            </td>
-            <!-- 行操作 -->
-            <td class="add-row-cell" />
-          </tr>
-          <!-- 添加行按钮行 -->
-          <tr>
-            <td class="add-row-trigger" @click="addRow">
-              <el-button type="text" size="mini" icon="el-icon-plus" style="color:#1890ff;">添加行</el-button>
-            </td>
-            <td v-for="(col, ci) in model.colHeaders" :key="'add-' + ci" class="add-row-trigger" @click="addRow" />
-            <td class="add-row-trigger" />
-          </tr>
-        </tbody>
-      </table>
-    </div>
+                  <el-tooltip content="删除此行" placement="right">
+                    <el-button
+                      type="text"
+                      size="mini"
+                      icon="el-icon-close"
+                      class="delete-row-btn"
+                      @click="removeRow(ri)"
+                    />
+                  </el-tooltip>
+                </div>
+              </td>
+              <!-- 数据单元格 -->
+              <td
+                v-for="(col, ci) in model.colHeaders"
+                :key="'cell-' + ri + '-' + ci"
+                :class="['data-cell', { 'cell-filled': isCellFilled(ri, ci), 'cell-focused': focusedCell === ri + '_' + ci }]"
+              >
+                <el-input
+                  v-model="model.cells[ri][ci]"
+                  size="mini"
+                  :placeholder="model.resultVar.varType === 'NUMBER' ? '0' : ''"
+                  class="cell-input"
+                  @focus="focusedCell = ri + '_' + ci"
+                  @blur="focusedCell = null"
+                />
+              </td>
+              <!-- 行操作 -->
+              <td class="add-row-cell" />
+            </tr>
+            <!-- 添加行按钮行 -->
+            <tr>
+              <td class="add-row-trigger" @click="addRow">
+                <el-button type="text" size="mini" icon="el-icon-plus" style="color:#1890ff;">添加行</el-button>
+              </td>
+              <td v-for="(col, ci) in model.colHeaders" :key="'add-' + ci" class="add-row-trigger" @click="addRow" />
+              <td class="add-row-trigger" />
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-    <!-- 说明预览 -->
-    <div class="ct-preview">
-      <i class="el-icon-info preview-icon" />
-      <span>查询逻辑：当 <strong>{{ model.rowVar.varCode || '行变量' }}</strong> = [行值] 且 <strong>{{ model.colVar.varCode || '列变量' }}</strong> = [列值] 时，输出 <strong>{{ model.resultVar.varCode || '结果变量' }}</strong> = [对应单元格值]</span>
-    </div>
+      <!-- 说明预览 -->
+      <div class="ct-preview">
+        <i class="el-icon-info preview-icon" />
+        <span>查询逻辑：当 <strong>{{ model.rowVar.varCode || '行变量' }}</strong> = [行值] 且 <strong>{{ model.colVar.varCode || '列变量' }}</strong> = [列值] 时，输出 <strong>{{ model.resultVar.varCode || '结果变量' }}</strong> = [对应单元格值]</span>
+      </div>
 
-    <!-- 脚本预览/编辑面板 -->
-    <script-panel
-      v-if="definitionId"
-      ref="scriptPanel"
-      :definitionId="definitionId"
-      :onBeforeCompile="handleSave"
-      @mode-change="mode => scriptMode = mode"
-    />
-    <div v-if="scriptMode === 'script'" class="script-override-banner">
-      <i class="el-icon-warning" /> 脚本覆盖模式已激活，可视化编辑暂停。
+      <!-- 脚本预览/编辑面板 -->
+      <script-panel
+        v-if="definitionId"
+        ref="scriptPanel"
+        :definition-id="definitionId"
+        :scope-comp-id="scopeCompId"
+        :on-before-compile="persistModelSilent"
+        @mode-change="mode => scriptMode = mode"
+      />
+      <div v-if="scriptMode === 'script'" class="script-override-banner">
+        <i class="el-icon-warning" /> 脚本覆盖模式已激活，可视化编辑暂停。
+      </div>
     </div>
 
     <!-- 测试执行弹窗 -->
@@ -222,20 +230,26 @@
         </el-descriptions>
       </div>
     </el-dialog>
+
+    <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
 
 <script>
-import { saveContent, compileRule, executeRule, getContent } from '@/api/definition'
+import { compileRule, executeRule, getContent, saveContent } from '@/api/definition'
 import { VAR_TYPE_FORM_OPTIONS } from '@/constants/varTypes'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
+import DesignSaveVersionDialog from '@/components/designer/DesignSaveVersionDialog.vue'
+import DesignVersionSwitcher from '@/components/designer/DesignVersionSwitcher.vue'
+import designerDefinitionIdMixin from '@/mixins/designerDefinitionIdMixin'
+import designerScopeMixin from '@/mixins/designerScopeMixin'
 
 export default {
   name: 'CrossTable',
-  components: { VarPicker, ScriptPanel },
-  mixins: [varPickerMixin],
+  components: { VarPicker, ScriptPanel, DesignSaveVersionDialog, DesignVersionSwitcher },
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin],
   data() {
     return {
       definitionId: null,
@@ -257,8 +271,15 @@ export default {
     }
   },
   created() {
-    this.definitionId = this.$route.params.id
-    this.loadContent()
+    this.definitionId = this.resolveDefinitionIdFromContext()
+    ;(async() => {
+      try {
+        await this.bootstrapDesignerWithScope()
+      } catch (e) {
+        this.$message.error('加载失败: ' + (e.message || '未知错误'))
+        this.contentLoaded = true
+      }
+    })()
   },
   methods: {
     applyVarToDim(variable, dimKey) {
@@ -283,10 +304,9 @@ export default {
             const colCount = this.model.colHeaders.length
             this.model.cells = vals.map((_, ri) =>
               ri < oldLen ? [...(this.model.cells[ri] || []), ...Array(Math.max(0, colCount - (this.model.cells[ri] || []).length)).fill('')]
-                          : Array(colCount).fill('')
+                : Array(colCount).fill('')
             )
           } else if (dimKey === 'colVar') {
-            const oldLen = this.model.colHeaders.length
             this.model.colHeaders = vals
             this.model.cells = this.model.cells.map(row => {
               const newRow = [...row]
@@ -299,7 +319,7 @@ export default {
     },
     async loadContent() {
       try {
-        const res = await getContent(this.definitionId)
+        const res = await getContent(this.definitionId, this.scopeCompId)
         const content = res && res.data ? res.data : res
         if (content && content.modelJson && content.modelJson !== '{}') {
           this.model = JSON.parse(content.modelJson)
@@ -364,13 +384,48 @@ export default {
       this.model.colHeaders.splice(ci, 1)
       this.model.cells.forEach(row => row.splice(ci, 1))
     },
+    /**
+     * 将历史快照写回交叉表模型。
+     */
+    onApplyDesignSnapshot(parsed) {
+      if (!parsed || typeof parsed !== 'object') return
+      this.model = parsed
+    },
+
+    /**
+     * 静默保存（不写设计快照）。
+     */
+    async persistModelSilent() {
+      await saveContent({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        modelJson: JSON.stringify(this.model),
+        recordHistory: false
+      })
+    },
+
+    /**
+     * 带版本说明的保存并记录快照。
+     */
     async handleSave() {
-      await saveContent({ definitionId: this.definitionId, modelJson: JSON.stringify(this.model) })
+      let changeLog = ''
+      try {
+        changeLog = await this.$refs.designSaveVersionDialog.prompt()
+      } catch (e) {
+        return
+      }
+      await saveContent({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        modelJson: JSON.stringify(this.model),
+        changeLog: changeLog || undefined,
+        recordHistory: true
+      })
       this.$message.success('保存成功')
     },
     async handleCompile() {
-      await this.handleSave()
-      const res = await compileRule(this.definitionId)
+      await this.persistModelSilent()
+      const res = await compileRule(this.definitionId, this.scopeCompId)
       if (res && res.data && res.data.success) {
         this.$message.success('编译成功')
         // 异步刷新变量映射和脚本面板
@@ -391,7 +446,11 @@ export default {
       this.testVisible = true
     },
     async doTest() {
-      const res = await executeRule({ definitionId: this.definitionId, params: this.testParams })
+      const res = await executeRule({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        params: this.testParams
+      })
       this.testResult = res && res.data ? res.data : res
     }
   }

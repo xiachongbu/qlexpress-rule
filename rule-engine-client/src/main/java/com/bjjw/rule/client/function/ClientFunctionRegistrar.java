@@ -11,9 +11,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 客户端函数注册器 —— 根据服务端同步的函数元数据，自动注册到本地 QLExpress 引擎。
@@ -34,6 +37,11 @@ public class ClientFunctionRegistrar {
     private final QLExpressEngine engine;
     private final ApplicationContext applicationContext;
 
+    /** 已注册的函数元数据，用于 no-op 替身 / 恢复真实函数 */
+    private final List<JSONObject> registeredFunctions = new ArrayList<>();
+    /** 已注册的函数名集合 */
+    private final Set<String> registeredFuncCodes = new HashSet<>();
+
     public ClientFunctionRegistrar(QLExpressEngine engine, ApplicationContext applicationContext) {
         this.engine = engine;
         this.applicationContext = applicationContext;
@@ -48,6 +56,36 @@ public class ClientFunctionRegistrar {
             registerOne(func);
         }
         AggregateBuiltinFunctionRegistry.register(engine.getRunner());
+    }
+
+    /**
+     * 安装 no-op 替身：将所有已注册的自定义函数替换为空操作 lambda。
+     * <p>用于预热阶段，使 runner.execute 只走 parse + compile 写缓存，不触发真实函数调用（DB/HTTP/RPC）。</p>
+     */
+    public void installNoOpStubs() {
+        for (String funcCode : registeredFuncCodes) {
+            engine.getRunner().addVarArgsFunction(funcCode, params -> null);
+        }
+        log.debug("[ClientFuncReg] Installed {} no-op stubs for warm-up", registeredFuncCodes.size());
+    }
+
+    /**
+     * 恢复真实函数：将所有已注册的函数重新以原始元数据注册回 runner。
+     * <p>预热完成后调用，确保业务执行时走真实逻辑。</p>
+     */
+    public void restoreRealFunctions() {
+        for (JSONObject func : registeredFunctions) {
+            registerOne(func);
+        }
+        AggregateBuiltinFunctionRegistry.register(engine.getRunner());
+        log.debug("[ClientFuncReg] Restored {} real functions after warm-up", registeredFunctions.size());
+    }
+
+    /**
+     * 获取已注册的函数名集合（只读）
+     */
+    public Set<String> getRegisteredFuncCodes() {
+        return Collections.unmodifiableSet(registeredFuncCodes);
     }
 
     /**
@@ -71,7 +109,12 @@ public class ClientFunctionRegistrar {
                     break;
                 default:
                     log.warn("[ClientFuncReg] 未知函数类型: {} for {}", implType, funcCode);
+                    return;
             }
+            // 注册成功后记录元数据，用于 no-op 替身 / 恢复
+            registeredFuncCodes.add(funcCode);
+            registeredFunctions.removeIf(f -> funcCode.equals(f.getString("funcCode")));
+            registeredFunctions.add(func);
         } catch (Exception e) {
             log.error("[ClientFuncReg] 注册函数 {} ({}) 失败: {}", funcCode, implType, e.getMessage(), e);
         }

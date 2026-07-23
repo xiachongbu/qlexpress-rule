@@ -9,24 +9,24 @@
         <el-option v-for="p in projects" :key="p.id" :label="p.projectName" :value="p.id" />
       </el-select>
       <div class="toolbar-right">
-        <el-button size="small" icon="el-icon-plus" type="primary" :disabled="!currentProjectId" @click="handleCreate">新建函数</el-button>
+        <el-button icon="el-icon-plus" type="success" :disabled="!currentProjectId" @click="handleCreate">新建函数</el-button>
       </div>
     </div>
 
-    <el-table :data="funcList" border size="small" v-loading="loading" style="width:100%;margin-top:12px;">
-      <el-table-column prop="funcCode" label="函数编码" min-width="120" show-overflow-tooltip />
-      <el-table-column prop="funcName" label="函数名称" min-width="120" show-overflow-tooltip />
-      <el-table-column prop="returnType" label="返回类型" width="90" align="center">
+    <el-table v-loading="loading" :data="funcList" border size="small" row-class-name="uiueTable" header-row-class-name="uiueTableHeader" style="margin-top:12px;">
+      <el-table-column prop="funcCode" label="函数编码" min-width="90" show-overflow-tooltip sortable />
+      <el-table-column prop="funcName" label="函数名称" min-width="90" show-overflow-tooltip sortable />
+      <el-table-column prop="returnType" label="返回类型" width="90" align="center" show-overflow-tooltip sortable>
         <template slot-scope="{ row }">
           <el-tag size="mini">{{ typeLabel(row.returnType) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="implType" label="实现方式" width="110" align="center">
+      <el-table-column prop="implType" label="实现方式" width="110" align="center" show-overflow-tooltip sortable>
         <template slot-scope="{ row }">
           <el-tag :type="implTypeTagType(row.implType)" size="mini">{{ implTypeLabel(row.implType) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="参数" min-width="150">
+      <el-table-column label="参数" min-width="150" sortable>
         <template slot-scope="{ row }">
           <span v-if="row.paramsJson">
             <el-tag v-for="(p, pi) in parseParams(row.paramsJson)" :key="pi" size="mini" type="info" style="margin:1px 2px;">
@@ -36,29 +36,31 @@
           <span v-else style="color:#999">无参</span>
         </template>
       </el-table-column>
-      <el-table-column prop="status" label="状态" width="60" align="center">
+      <el-table-column prop="status" label="状态" width="70" align="center" sortable>
         <template slot-scope="{ row }">
           <el-tag :type="row.status===1?'success':'info'" size="mini">{{ row.status===1?'启用':'停用' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="140" align="center">
+      <el-table-column label="操作" width="190" align="center">
         <template slot-scope="{ row }">
           <el-button type="text" size="small" @click="handleEdit(row)">编辑</el-button>
           <el-button type="text" size="small" style="color:#F56C6C;" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
+
+      <template #empty>
+        <el-empty :image-size="230">
+          <template #image>
+            <img src="@/assets/uiueImages/uiue_emptyIcon.png">
+          </template>
+          <template #description style="margin: 0">
+            <span v-if="!loading && funcList.length === 0 && currentProjectId" style="color: #595959;">暂无自定义函数，可点击「新建函数」添加</span>
+            <span v-if="!loading && !currentProjectId" style="color: #595959;">请先选择一个项目</span>
+          </template>
+        </el-empty>
+      </template>
     </el-table>
-
-    <div v-if="!loading && funcList.length === 0 && currentProjectId" style="text-align:center;padding:40px;color:#bbb;">
-      暂无自定义函数，可点击「新建函数」添加
-    </div>
-    <div v-if="!loading && !currentProjectId" style="text-align:center;padding:40px;color:#bbb;">
-      请先选择一个项目
-    </div>
-
-    <el-pagination v-if="currentProjectId" style="margin-top:16px;text-align:right;" :current-page="qp.pageNum" :page-size="qp.pageSize" :total="total"
-      layout="total,sizes,prev,pager,next" :page-sizes="[10,30,50,100,200,500]"
-      @current-change="onPageChange" @size-change="onSizeChange" />
+    <pagination v-show="total>0" :total="total" :page.sync="listQuery.pageNum" :limit.sync="listQuery.pageSize" @pagination="loadFunctions" />
 
     <!-- 新建/编辑弹窗 -->
     <el-dialog :title="editForm.id ? '编辑函数' : '新建函数'" :visible.sync="dialogVisible" width="600px" append-to-body>
@@ -95,44 +97,46 @@
             <el-radio label="BEAN">Spring Bean</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="实现脚本" v-if="editForm.implType === 'SCRIPT'">
+        <el-form-item v-if="editForm.implType === 'SCRIPT'" label="实现脚本">
           <el-input v-model="editForm.implScript" type="textarea" :rows="6" placeholder="QLExpress 脚本，参数可直接使用" class="mono-input" />
         </el-form-item>
-        <el-form-item label="Java类名" v-if="editForm.implType === 'JAVA'">
+        <el-form-item v-if="editForm.implType === 'JAVA'" label="Java类名">
           <el-input v-model="editForm.implClass" placeholder="如 com.bjjw.rule.example.functions.TaxFunctions" />
         </el-form-item>
-        <el-form-item label="方法名" v-if="editForm.implType === 'JAVA'">
+        <el-form-item v-if="editForm.implType === 'JAVA'" label="方法名">
           <el-input v-model="editForm.implMethod" placeholder="Java 方法名，如 calculateVAT（不填则默认使用函数编码）" />
         </el-form-item>
-        <el-form-item label="Bean名称" v-if="editForm.implType === 'BEAN'">
+        <el-form-item v-if="editForm.implType === 'BEAN'" label="Bean名称">
           <el-input v-model="editForm.implBeanName" placeholder="Spring Bean 名称，如 taxFunctions" />
         </el-form-item>
-        <el-form-item label="方法名" v-if="editForm.implType === 'BEAN'">
+        <el-form-item v-if="editForm.implType === 'BEAN'" label="方法名">
           <el-input v-model="editForm.implMethod" placeholder="Bean 上的方法名，如 calculateVAT（不填则默认使用函数编码）" />
         </el-form-item>
       </el-form>
       <template slot="footer">
-        <el-button size="small" @click="dialogVisible = false">取消</el-button>
-        <el-button size="small" type="primary" @click="handleSave">保存</el-button>
+        <el-button type="primary" @click="dialogVisible = false">取消</el-button>
+        <el-button type="success" @click="handleSave">保存</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script>
-import { listFunctionsByProject, createFunction, updateFunction, deleteFunction } from '@/api/function'
-import request from '@/api/request'
+import { createFunction, deleteFunction, listFunctionsByProject, updateFunction } from '@/api/function'
+import { listProjects } from '@/api/project'
 import { VAR_TYPE_FORM_OPTIONS, varTypeLabel } from '@/constants/varTypes'
+import Pagination from '@/components/Pagination/index.vue'
 
 export default {
   name: 'FunctionList',
+  components: { Pagination },
   data() {
     return {
       projects: [],
       currentProjectId: null,
       funcList: [],
       total: 0,
-      qp: { pageNum: 1, pageSize: 10 },
+      listQuery: { pageNum: 1, pageSize: 10 },
       loading: false,
       dialogVisible: false,
       editForm: { funcCode: '', funcName: '', description: '', returnType: 'STRING', implType: 'SCRIPT', implScript: '', implClass: '', implMethod: '', implBeanName: '', status: 1 },
@@ -146,12 +150,12 @@ export default {
   methods: {
     async loadProjects() {
       try {
-        const res = await request.get('/rule/project/list', { params: { pageNum: 1, pageSize: 200 } })
-        this.projects = (res && res.data && res.data.records) || (res && res.data) || []
+        const res = await listProjects({ pageNum: 1, pageSize: 200 })
+        this.projects = (res && res.data && res.data.records) || []
       } catch (e) { /* ignore */ }
     },
     async onProjectChange() {
-      this.qp.pageNum = 1
+      this.listQuery.pageNum = 1
       if (!this.currentProjectId) { this.funcList = []; this.total = 0; return }
       this.loadFunctions()
     },
@@ -159,7 +163,7 @@ export default {
       if (!this.currentProjectId) return
       this.loading = true
       try {
-        const res = await listFunctionsByProject(this.currentProjectId, this.qp)
+        const res = await listFunctionsByProject(this.currentProjectId, this.listQuery)
         this.funcList = (res && res.data && res.data.records) || []
         this.total = (res && res.data && res.data.total) || 0
       } catch (e) {
@@ -167,16 +171,6 @@ export default {
       } finally {
         this.loading = false
       }
-    },
-    onPageChange(p) {
-      this.qp.pageNum = p
-      this.loadFunctions()
-    },
-    /** 每页条数变更 */
-    onSizeChange(s) {
-      this.qp.pageSize = s
-      this.qp.pageNum = 1
-      this.loadFunctions()
     },
     parseParams(json) {
       try { return JSON.parse(json) } catch (e) { return [] }

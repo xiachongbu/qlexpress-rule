@@ -31,7 +31,7 @@ public class InvoiceFraudScoreService {
      * @return 评分结果 Map
      */
     public Map<String, Object> assessRisk(InvoiceFraudScoreQuery query) {
-        RuleResult result = ruleClient.execute(RULE_CODE, query);
+        RuleResult result = ruleClient.execute(RULE_CODE, query, null);
 
         if (!result.isSuccess()) {
             log.error("复杂评分卡执行失败 [{}]: {}", RULE_CODE, result.getErrorMessage());

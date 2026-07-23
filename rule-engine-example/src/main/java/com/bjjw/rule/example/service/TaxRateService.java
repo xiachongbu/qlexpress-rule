@@ -38,7 +38,7 @@ public class TaxRateService {
      * @return 风险定价费率，如 0.13、0.09、0.06、0.03
      */
     public BigDecimal queryTaxRate(TaxRateQuery query) {
-        RuleResult result = ruleClient.execute(RULE_CODE, query);
+        RuleResult result = ruleClient.execute(RULE_CODE, query, null);
 
         if (!result.isSuccess()) {
             log.error("决策表执行失败 [{}]: {}", RULE_CODE, result.getErrorMessage());

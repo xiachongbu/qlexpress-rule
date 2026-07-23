@@ -6,12 +6,12 @@
 
     <!-- Toolbar -->
     <div class="var-toolbar">
-      <el-select v-model="currentProjectId" placeholder="选择项目" size="small" style="width:200px;" clearable @change="onProjectChange">
+      <el-select v-model="currentProjectId" placeholder="选择项目" style="width:200px;" clearable @change="onProjectChange">
         <el-option v-for="p in projects" :key="p.id" :label="p.projectName" :value="p.id" />
       </el-select>
       <div class="toolbar-right">
-        <el-dropdown trigger="click" @command="handleImportCmd" :disabled="!currentProjectId">
-          <el-button size="small" type="primary" icon="el-icon-upload2">批量导入 <i class="el-icon-arrow-down el-icon--right" /></el-button>
+        <el-dropdown trigger="click" :disabled="!currentProjectId" @command="handleImportCmd">
+          <el-button type="primary" icon="el-icon-upload2">批量导入 <i class="el-icon-arrow-down el-icon--right" /></el-button>
           <el-dropdown-menu slot="dropdown">
             <el-dropdown-item command="java-entity" icon="el-icon-document">导入 Java 实体类</el-dropdown-item>
             <el-dropdown-item command="json-object" icon="el-icon-tickets">导入 JSON 对象</el-dropdown-item>
@@ -20,8 +20,8 @@
             <el-dropdown-item command="json-const" icon="el-icon-price-tag">导入 JSON 常量</el-dropdown-item>
           </el-dropdown-menu>
         </el-dropdown>
-        <el-button size="small" icon="el-icon-plus" @click="handlePrimaryCreate" :disabled="!currentProjectId">{{ primaryCreateLabel }}</el-button>
-        <el-button size="small" icon="el-icon-video-play" type="warning" @click="handleBatchValidate" :disabled="!currentProjectId" :loading="validating">验证规则</el-button>
+        <el-button type="primary" icon="el-icon-plus" :disabled="!currentProjectId" @click="handlePrimaryCreate">{{ primaryCreateLabel }}</el-button>
+        <el-button icon="el-icon-video-play" type="success" :disabled="!currentProjectId" :loading="validating" style="margin-left: 0" @click="handleBatchValidate">验证规则</el-button>
       </div>
     </div>
 
@@ -35,14 +35,14 @@
             <el-option v-for="opt in varTypeFilterOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
           <el-input v-model="qp.keyword" placeholder="搜索编码或名称" size="mini" clearable style="width:180px;" @keyup.enter.native="handleQuery" />
-          <el-button size="mini" type="primary" @click="handleQuery">查询</el-button>
-          <el-button size="mini" @click="resetQuery">重置</el-button>
+          <el-button type="success" @click="handleQuery">查询</el-button>
+          <el-button type="primary" @click="resetQuery">重置</el-button>
         </div>
 
         <!-- 1. 普通变量（系统新增） -->
         <div v-if="standaloneVars.length > 0" class="var-list-section">
           <div class="section-title">普通变量</div>
-          <el-table :data="standaloneVars" border size="small" v-loading="loading" style="width:100%;">
+          <el-table v-loading="loading" :data="standaloneVars" border size="small" style="width:100%;">
             <el-table-column prop="varCode" label="变量编码" min-width="130" show-overflow-tooltip />
             <el-table-column prop="varLabel" label="名称（中文）" min-width="120" show-overflow-tooltip />
             <el-table-column label="脚本名称" min-width="130">
@@ -65,28 +65,63 @@
             <el-table-column label="操作" min-width="140" align="center">
               <template slot-scope="{ row }">
                 <el-button type="text" size="small" @click="handleEdit(row)">编辑</el-button>
-                <el-button type="text" size="small" @click="handleOptions(row)" v-if="row.varType==='ENUM'">选项</el-button>
+                <el-button v-if="row.varType==='ENUM'" type="text" size="small" @click="handleOptions(row)">选项</el-button>
                 <el-button type="text" size="small" style="color:#F56C6C;" @click="handleDelete(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
-          <el-pagination style="margin-top:12px;text-align:right;" :current-page="qp.pageNum" :page-size="qp.pageSize" :total="standaloneTotal"
-            layout="total,sizes,prev,pager,next" :page-sizes="[10,30,50,100,200,500]"
-            @current-change="p=>{qp.pageNum=p;loadData()}" @size-change="s=>{qp.pageSize=s;qp.pageNum=1;loadData()}" />
+          <el-pagination
+            style="margin-top:12px;text-align:right;"
+            :current-page="qp.pageNum"
+            :page-size="qp.pageSize"
+            :total="standaloneTotal"
+            layout="total,sizes,prev,pager,next"
+            :page-sizes="[10,30,50,100,200,500]"
+            @current-change="p=>{qp.pageNum=p;loadData()}"
+            @size-change="s=>{qp.pageSize=s;qp.pageNum=1;loadData()}"
+          />
         </div>
 
         <!-- 空状态 -->
         <div v-if="!loading && standaloneVars.length===0" class="tab-empty">
-          <template v-if="!currentProjectId">请先在顶部选择一个项目</template>
-          <template v-else>暂无变量，可点击「新建变量」或「批量导入」添加</template>
+          <el-empty v-if="!currentProjectId" :image-size="200">
+            <template #image>
+              <img src="@/assets/uiueImages/uiue_emptyIcon.png">
+            </template>
+            <template #description>
+              <span style="color: #595959;">请先在顶部选择一个项目</span>
+            </template>
+          </el-empty>
+          <el-empty v-else :image-size="200">
+            <template #image>
+              <img src="@/assets/uiueImages/uiue_emptyIcon.png">
+            </template>
+            <template #description>
+              <span style="color: #595959;">暂无变量，可点击「新建变量」或「批量导入」添加</span>
+            </template>
+          </el-empty>
         </div>
       </el-tab-pane>
 
       <!-- Tab 2: Data Objects -->
       <el-tab-pane label="数据对象" name="objects">
-        <div v-if="!currentProjectId" class="tab-empty">请先在顶部选择一个项目</div>
-        <div v-else-if="objectTree.length===0 && !objLoading" class="tab-empty">暂无数据对象，点击「批量导入」导入 Java、JSON 或 DDL</div>
-        <div v-loading="objLoading" v-else>
+        <el-empty v-if="!currentProjectId" :image-size="200">
+          <template #image>
+            <img src="@/assets/uiueImages/uiue_emptyIcon.png">
+          </template>
+          <template #description>
+            <span style="color: #595959;">请先在顶部选择一个项目</span>
+          </template>
+        </el-empty>
+        <el-empty v-else-if="objectTree.length===0 && !objLoading" :image-size="200">
+          <template #image>
+            <img src="@/assets/uiueImages/uiue_emptyIcon.png">
+          </template>
+          <template #description>
+            <span style="color: #595959;">暂无数据对象，点击「批量导入」导入 Java、JSON 或 DDL</span>
+          </template>
+        </el-empty>
+        <div v-else v-loading="objLoading">
           <div v-for="node in paginatedObjectTree" :key="node.object.id" class="var-group-card">
             <div class="var-group-header" @click="toggleObjectExpand(node)">
               <i :class="node._expanded ? 'el-icon-arrow-down' : 'el-icon-arrow-right'" class="expand-icon" />
@@ -97,7 +132,7 @@
                 <el-option label="输入对象" value="INPUT" /><el-option label="输出对象" value="OUTPUT" /><el-option label="输入输出" value="INOUT" />
               </el-select>
               <el-tag size="mini" :type="objTypeColor(node.object.objectType)">{{ objTypeLabel(node.object.objectType) }}</el-tag>
-              <el-tag size="mini" type="info" v-if="node.object.sourceType">{{ node.object.sourceType }}</el-tag>
+              <el-tag v-if="node.object.sourceType" size="mini" type="info">{{ node.object.sourceType }}</el-tag>
               <span class="var-group-count">{{ node.variables.length }} 个字段</span>
               <el-button type="text" size="small" icon="el-icon-plus" style="margin-left:auto;" @click.stop="handleAddObjectField(node)">添加字段</el-button>
               <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click.stop="handleDeleteObject(node.object)" />
@@ -120,21 +155,27 @@
                 <el-table-column label="操作" width="140" align="center">
                   <template slot-scope="{ row }">
                     <el-button type="text" size="small" @click="handleEditObjectField(row, node)">编辑</el-button>
-                    <el-button type="text" size="small" @click="handleOptions(row, true)" v-if="row.varType==='ENUM'">选项</el-button>
+                    <el-button v-if="row.varType==='ENUM'" type="text" size="small" @click="handleOptions(row, true)">选项</el-button>
                     <el-button type="text" size="small" style="color:#F56C6C;" @click="handleDeleteObjectField(row)">删除</el-button>
                   </template>
                 </el-table-column>
               </el-table>
             </div>
           </div>
-          <el-pagination style="margin-top:12px;text-align:right;" :current-page="objPageNum" :page-size="objPageSize" :total="objectTree.length"
-            layout="total,prev,pager,next" @current-change="handleObjPageChange" />
+          <el-pagination
+            style="margin-top:12px;text-align:right;"
+            :current-page="objPageNum"
+            :page-size="objPageSize"
+            :total="objectTree.length"
+            layout="total,prev,pager,next"
+            @current-change="handleObjPageChange"
+          />
         </div>
       </el-tab-pane>
 
       <!-- Tab 3: 常量列表（与变量列表相同分页模型，必须有默认值） -->
       <el-tab-pane label="常量列表" name="constants">
-        <div class="tab-filter-row" v-if="currentProjectId">
+        <div v-if="currentProjectId" class="tab-filter-row">
           <el-select v-model="constQp.varType" clearable placeholder="数据类型" size="mini" style="width:110px;" @change="handleConstQuery">
             <el-option v-for="opt in varTypeFilterOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
@@ -142,9 +183,23 @@
           <el-button size="mini" type="primary" @click="handleConstQuery">查询</el-button>
           <el-button size="mini" @click="resetConstQuery">重置</el-button>
         </div>
-        <div v-if="!currentProjectId" class="tab-empty">请先在顶部选择一个项目</div>
-        <div v-else-if="constantRows.length===0 && !constLoading" class="tab-empty">暂无常量，可点击「新建常量」或「批量导入」添加</div>
-        <div v-loading="constLoading" v-else>
+        <el-empty v-if="!currentProjectId" :image-size="200">
+          <template #image>
+            <img src="@/assets/uiueImages/uiue_emptyIcon.png">
+          </template>
+          <template #description>
+            <span style="color: #595959;">请先在顶部选择一个项目</span>
+          </template>
+        </el-empty>
+        <el-empty v-else-if="constantRows.length===0 && !constLoading" :image-size="200">
+          <template #image>
+            <img src="@/assets/uiueImages/uiue_emptyIcon.png">
+          </template>
+          <template #description>
+            <span style="color: #595959;">暂无常量，可点击「新建常量」或「批量导入」添加</span>
+          </template>
+        </el-empty>
+        <div v-else v-loading="constLoading">
           <el-table :data="constantRows" border size="small" style="width:100%;">
             <el-table-column prop="varCode" label="常量编码" min-width="130" show-overflow-tooltip />
             <el-table-column prop="varLabel" label="名称" min-width="120" show-overflow-tooltip />
@@ -171,15 +226,22 @@
               </template>
             </el-table-column>
           </el-table>
-          <el-pagination style="margin-top:12px;text-align:right;" :current-page="constQp.pageNum" :page-size="constQp.pageSize" :total="constantTotal"
-            layout="total,sizes,prev,pager,next" :page-sizes="[10,30,50,100]"
-            @current-change="p=>{constQp.pageNum=p;loadConstants()}" @size-change="s=>{constQp.pageSize=s;constQp.pageNum=1;loadConstants()}" />
+          <el-pagination
+            style="margin-top:12px;text-align:right;"
+            :current-page="constQp.pageNum"
+            :page-size="constQp.pageSize"
+            :total="constantTotal"
+            layout="total,sizes,prev,pager,next"
+            :page-sizes="[10,30,50,100]"
+            @current-change="p=>{constQp.pageNum=p;loadConstants()}"
+            @size-change="s=>{constQp.pageSize=s;constQp.pageNum=1;loadConstants()}"
+          />
         </div>
       </el-tab-pane>
     </el-tabs>
 
     <!-- Create/Edit Variable Dialog -->
-    <el-dialog :title="variableDialogTitle" :visible.sync="dialogVisible" width="600px" :close-on-click-modal="false">
+    <el-dialog :title="variableDialogTitle" :visible.sync="dialogVisible" width="510px" :close-on-click-modal="false" custom-class="middleDialog">
       <el-form ref="form" :model="form" :rules="rules" label-width="120px" size="small">
         <el-form-item v-if="!form.id && isObjectField && objectFieldParentId" label="所属数据对象">
           <span class="text-muted">{{ getObjectCode(objectFieldParentId) }}</span>
@@ -214,13 +276,13 @@
         <el-form-item v-if="!isObjectField" label="说明"><el-input v-model="form.description" type="textarea" :rows="2" /></el-form-item>
       </el-form>
       <div slot="footer">
-        <el-button size="small" @click="dialogVisible=false">取消</el-button>
-        <el-button size="small" type="primary" @click="handleSubmit">确定</el-button>
+        <el-button type="primary" @click="dialogVisible=false">取消</el-button>
+        <el-button type="success" @click="handleSubmit">确定</el-button>
       </div>
     </el-dialog>
 
     <!-- Enum Options Dialog -->
-    <el-dialog title="枚举选项管理" :visible.sync="optionDialogVisible" width="600px" :close-on-click-modal="false">
+    <el-dialog title="枚举选项管理" :visible.sync="optionDialogVisible" width="510px" :close-on-click-modal="false" custom-class="middleDialog">
       <div style="margin-bottom:12px;">
         <span style="font-weight:bold;">{{ currentVar ? currentVar.varLabel : '' }}</span>
         <span style="color:#999;margin-left:8px;">{{ currentVar ? currentVar.varCode : '' }}</span>
@@ -238,8 +300,8 @@
       </el-table>
       <el-button type="text" size="small" icon="el-icon-plus" style="margin-top:8px;" @click="optionList.push({optionValue:'',optionLabel:'',sortOrder:optionList.length})">添加选项</el-button>
       <div slot="footer">
-        <el-button size="small" @click="optionDialogVisible=false">取消</el-button>
-        <el-button size="small" type="primary" @click="handleSaveOptions">保存选项</el-button>
+        <el-button type="primary" @click="optionDialogVisible=false">取消</el-button>
+        <el-button type="success" @click="handleSaveOptions">保存选项</el-button>
       </div>
     </el-dialog>
 
@@ -261,8 +323,8 @@
         </el-form-item>
       </el-form>
       <div slot="footer">
-        <el-button size="small" @click="importJavaEntityVisible=false">取消</el-button>
-        <el-button size="small" type="primary" :loading="importing" @click="doImportJavaEntity">导入</el-button>
+        <el-button type="primary" @click="importJavaEntityVisible=false">取消</el-button>
+        <el-button type="success" :loading="importing" @click="doImportJavaEntity">导入</el-button>
       </div>
     </el-dialog>
 
@@ -276,12 +338,12 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="JSON 样本">
-          <el-input v-model="importForm.jsonContent" type="textarea" :rows="14" placeholder='粘贴 JSON 样本数据，如：{"name":"张三","age":30,"address":{"city":"北京"}}' style="font-family:Consolas,monospace;" />
+          <el-input v-model="importForm.jsonContent" type="textarea" :rows="14" placeholder="粘贴 JSON 样本数据，如：{&quot;name&quot;:&quot;张三&quot;,&quot;age&quot;:30,&quot;address&quot;:{&quot;city&quot;:&quot;北京&quot;}}" style="font-family:Consolas,monospace;" />
         </el-form-item>
       </el-form>
       <div slot="footer">
-        <el-button size="small" @click="importJsonObjectVisible=false">取消</el-button>
-        <el-button size="small" type="primary" :loading="importing" @click="doImportJsonObject">导入</el-button>
+        <el-button type="primary" @click="importJsonObjectVisible=false">取消</el-button>
+        <el-button type="success" :loading="importing" @click="doImportJsonObject">导入</el-button>
       </div>
     </el-dialog>
 
@@ -298,8 +360,8 @@
         </el-form-item>
       </el-form>
       <div slot="footer">
-        <el-button size="small" @click="importDdlVisible=false">取消</el-button>
-        <el-button size="small" type="primary" :loading="importing" @click="doImportDdl">导入</el-button>
+        <el-button type="primary" @click="importDdlVisible=false">取消</el-button>
+        <el-button type="success" :loading="importing" @click="doImportDdl">导入</el-button>
       </div>
     </el-dialog>
 
@@ -316,8 +378,8 @@
         </el-form-item>
       </el-form>
       <div slot="footer">
-        <el-button size="small" @click="importJavaConstVisible=false">取消</el-button>
-        <el-button size="small" type="primary" :loading="importing" @click="doImportJavaConst">导入</el-button>
+        <el-button type="primary" @click="importJavaConstVisible=false">取消</el-button>
+        <el-button type="success" :loading="importing" @click="doImportJavaConst">导入</el-button>
       </div>
     </el-dialog>
 
@@ -325,12 +387,12 @@
     <el-dialog title="导入 JSON 常量" :visible.sync="importJsonConstVisible" width="700px" :close-on-click-modal="false">
       <el-form size="small" label-width="100px">
         <el-form-item label="JSON 数据">
-          <el-input v-model="importForm.jsonContent" type="textarea" :rows="14" placeholder='扁平 JSON 键值对，如：{"riskScore":72,"creditLevel":"A","channel":"ONLINE"}' style="font-family:Consolas,monospace;" />
+          <el-input v-model="importForm.jsonContent" type="textarea" :rows="14" placeholder="扁平 JSON 键值对，如：{&quot;VAT_RATE&quot;:0.13,&quot;TAX_FREE&quot;:5000,&quot;REGION&quot;:&quot;CN&quot;}" style="font-family:Consolas,monospace;" />
         </el-form-item>
       </el-form>
       <div slot="footer">
-        <el-button size="small" @click="importJsonConstVisible=false">取消</el-button>
-        <el-button size="small" type="primary" :loading="importing" @click="doImportJsonConst">导入</el-button>
+        <el-button type="primary" @click="importJsonConstVisible=false">取消</el-button>
+        <el-button type="success" :loading="importing" @click="doImportJsonConst">导入</el-button>
       </div>
     </el-dialog>
 
@@ -348,7 +410,8 @@
         </el-table-column>
         <el-table-column prop="errorMsg" label="错误信息" min-width="200" show-overflow-tooltip />
       </el-table>
-      <div slot="footer"><el-button size="small" @click="validateVisible=false">关闭</el-button></div>
+      <div slot="footer">
+        <el-button type="success" @click="validateVisible=false">关闭</el-button></div>
     </el-dialog>
 
     <!-- Import Result Dialog -->
@@ -360,18 +423,46 @@
         <p v-if="importResult.constantCount != null">创建/更新 <b>{{ importResult.constantCount }}</b> 个常量</p>
       </div>
       <div slot="footer">
-        <el-button size="small" type="warning" icon="el-icon-video-play" @click="importResultVisible=false;handleBatchValidate()">验证项目规则</el-button>
-        <el-button size="small" @click="importResultVisible=false">关闭</el-button>
+        <el-button type="warning" icon="el-icon-video-play" @click="importResultVisible=false;handleBatchValidate()">验证项目规则</el-button>
+        <el-button type="primary" @click="importResultVisible=false">关闭</el-button>
       </div>
     </el-dialog>
   </div>
 </template>
 
 <script>
-import { listVariables, createVariable, updateVariable, deleteVariable, getVariableOptions, saveVariableOptions, importJavaConstants, importJsonConstants } from '@/api/variable'
+import {
+  createVariable,
+  deleteVariable,
+  getVariableOptions,
+  importJavaConstants,
+  importJsonConstants,
+  listVariables,
+  saveVariableOptions,
+  updateVariable
+} from '@/api/variable'
 import { listProjects } from '@/api/project'
-import { importJavaEntity, importJsonObject, importDdlTable, getVariableTree, updateObjectType, updateObjectScriptName, deleteDataObject, batchValidateRules, createDataObjectField, updateDataObjectField, deleteDataObjectField, getDataObjectFieldOptions, saveDataObjectFieldOptions } from '@/api/dataObject'
-import { VAR_TYPE_FILTER_OPTIONS, VAR_TYPE_FORM_OPTIONS, varTypeLabel, varTypeTagColor } from '@/constants/varTypes'
+import {
+  batchValidateRules,
+  createDataObjectField,
+  deleteDataObject,
+  deleteDataObjectField,
+  getDataObjectFieldOptions,
+  getVariableTree,
+  importDdlTable,
+  importJavaEntity,
+  importJsonObject,
+  saveDataObjectFieldOptions,
+  updateDataObjectField,
+  updateObjectScriptName,
+  updateObjectType
+} from '@/api/dataObject'
+import {
+  VAR_TYPE_FILTER_OPTIONS,
+  VAR_TYPE_FORM_OPTIONS,
+  varTypeLabel,
+  varTypeTagColor
+} from '@/constants/varTypes'
 
 export default {
   name: 'VariableList',
@@ -438,12 +529,9 @@ export default {
       // 数据对象 tab 分页与展开
       objPageNum: 1,
       objPageSize: 10,
-      objExpanded: {},
+      objExpanded: {}
 
     }
-  },
-  created() {
-    this.loadProjects()
   },
   computed: {
     standaloneVars() {
@@ -476,6 +564,9 @@ export default {
       if (tab === 'objects' && this.currentProjectId) this.loadObjectTree()
       if (tab === 'constants' && this.currentProjectId) this.loadConstants()
     }
+  },
+  created() {
+    this.loadProjects()
   },
   methods: {
     initForm() {
@@ -544,8 +635,7 @@ export default {
         this.objectTree = res.data || []
         this.objectMap = {}
         this.objectTree.forEach(n => { this.objectMap[n.object.id] = n.object })
-      } catch (e) { this.objectTree = [] }
-      finally { this.objLoading = false }
+      } catch (e) { this.objectTree = [] } finally { this.objLoading = false }
     },
     async onObjectTypeChange(obj) {
       await updateObjectType(obj.id, obj.objectType)
@@ -720,7 +810,7 @@ export default {
       this.$nextTick(() => { if (this.$refs.form) this.$refs.form.clearValidate() })
     },
     handleSubmit() {
-      this.$refs.form.validate(async (valid) => {
+      this.$refs.form.validate(async(valid) => {
         if (!valid) return
         if (this.isObjectField) {
           if (!this.form.projectId) this.form.projectId = this.currentProjectId
@@ -765,7 +855,7 @@ export default {
     },
     handleDelete(row) {
       this.$confirm(`确定删除「${row.varLabel}」？`, '确认删除', { type: 'warning' })
-        .then(async () => {
+        .then(async() => {
           await deleteVariable(row.id)
           this.$message.success('删除成功')
           this.loadData()
@@ -820,8 +910,7 @@ export default {
         this.importJavaEntityVisible = false
         this.importResultVisible = true
         this.loadData(); this.loadObjectTree()
-      } catch (e) { this.$message.error('导入失败: ' + (e.message || '')) }
-      finally { this.importing = false }
+      } catch (e) { this.$message.error('导入失败: ' + (e.message || '')) } finally { this.importing = false }
     },
     async doImportJsonObject() {
       if (!this.importForm.objectCode.trim()) { this.$message.warning('请输入对象编码'); return }
@@ -833,8 +922,7 @@ export default {
         this.importJsonObjectVisible = false
         this.importResultVisible = true
         this.loadData(); this.loadObjectTree()
-      } catch (e) { this.$message.error('导入失败: ' + (e.message || '')) }
-      finally { this.importing = false }
+      } catch (e) { this.$message.error('导入失败: ' + (e.message || '')) } finally { this.importing = false }
     },
     /** 从 CREATE TABLE DDL 导入数据对象（COMMENT → 变量名称） */
     async doImportDdl() {
@@ -846,8 +934,7 @@ export default {
         this.importDdlVisible = false
         this.importResultVisible = true
         this.loadData(); this.loadObjectTree()
-      } catch (e) { this.$message.error('导入失败: ' + (e.message || '')) }
-      finally { this.importing = false }
+      } catch (e) { this.$message.error('导入失败: ' + (e.message || '')) } finally { this.importing = false }
     },
     async doImportJavaConst() {
       if (!this.importForm.javaSource.trim()) { this.$message.warning('请输入或上传 Java 源码'); return }
@@ -858,8 +945,7 @@ export default {
         this.importJavaConstVisible = false
         this.importResultVisible = true
         this.loadData(); this.loadConstants()
-      } catch (e) { this.$message.error('导入失败: ' + (e.message || '')) }
-      finally { this.importing = false }
+      } catch (e) { this.$message.error('导入失败: ' + (e.message || '')) } finally { this.importing = false }
     },
     async doImportJsonConst() {
       if (!this.importForm.jsonContent.trim()) { this.$message.warning('请输入 JSON 内容'); return }
@@ -870,8 +956,7 @@ export default {
         this.importJsonConstVisible = false
         this.importResultVisible = true
         this.loadData(); this.loadConstants()
-      } catch (e) { this.$message.error('导入失败: ' + (e.message || '')) }
-      finally { this.importing = false }
+      } catch (e) { this.$message.error('导入失败: ' + (e.message || '')) } finally { this.importing = false }
     },
 
     // ── Batch Validate ──
@@ -882,17 +967,16 @@ export default {
         const res = await batchValidateRules(this.currentProjectId)
         this.validateResults = res.data || []
         this.validateVisible = true
-      } catch (e) { this.$message.error('验证失败: ' + (e.message || '')) }
-      finally { this.validating = false }
+      } catch (e) { this.$message.error('验证失败: ' + (e.message || '')) } finally { this.validating = false }
     },
 
     // ── Helpers ──
     typeLabel: varTypeLabel,
     typeTagColor: varTypeTagColor,
-    sourceLabel(s) { return { INPUT:'输入', COMPUTED:'计算', CONSTANT:'常量', DB:'数据库', API:'接口' }[s] || s },
-    sourceTagColor(s) { return { INPUT:'', COMPUTED:'warning', CONSTANT:'success', DB:'info', API:'info' }[s] || '' },
-    objTypeLabel(t) { return { INPUT:'输入对象', OUTPUT:'输出对象', INOUT:'输入输出' }[t] || t },
-    objTypeColor(t) { return { INPUT:'', OUTPUT:'success', INOUT:'warning' }[t] || '' }
+    sourceLabel(s) { return { INPUT: '输入', COMPUTED: '计算', CONSTANT: '常量', DB: '数据库', API: '接口' }[s] || s },
+    sourceTagColor(s) { return { INPUT: '', COMPUTED: 'warning', CONSTANT: 'success', DB: 'info', API: 'info' }[s] || '' },
+    objTypeLabel(t) { return { INPUT: '输入对象', OUTPUT: '输出对象', INOUT: '输入输出' }[t] || t },
+    objTypeColor(t) { return { INPUT: '', OUTPUT: 'success', INOUT: 'warning' }[t] || '' }
   }
 }
 </script>

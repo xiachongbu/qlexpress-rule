@@ -14,8 +14,12 @@ public class RuleExecutionLog {
     private Integer ruleVersion;
     private String modelType;
     private String source;
+    /** 执行时的省份编码 */
+    private String compId;
     private String clientAppName;
     private String clientIp;
+    /** 业务主键ID，用于关联具体业务记录 */
+    private String businessId;
     private String inputParams;
     private String outputResult;
     private String traceInfo;

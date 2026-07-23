@@ -39,6 +39,18 @@ const routes = [
         meta: { title: '项目详情' }
       },
       {
+        path: 'rule',
+        name: 'RuleManagement',
+        component: () => import('@/views/rule/RuleManagement.vue'),
+        meta: { title: '规则管理' }
+      },
+      {
+        path: 'ruleset',
+        name: 'RuleSetManagement',
+        component: () => import('@/views/ruleSet/RuleSetManagement.vue'),
+        meta: { title: '规则集管理' }
+      },
+      {
         path: 'designer/table/:id',
         name: 'DecisionTable',
         component: () => import('@/views/designer/DecisionTable.vue'),

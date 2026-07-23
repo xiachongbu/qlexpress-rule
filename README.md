@@ -4,7 +4,7 @@
 
 ## 1. 项目简介
 
-**qlexpress-rule** 是一套基于 **Spring Boot 2.3** 与 **QLExpress 4** 的可视化规则引擎：在 Web 控制台中编排 **决策表、决策树、决策流、交叉表、评分卡、复杂交叉表、复杂评分卡、QL 脚本** 等模型，编译发布后由 **rule-engine-client** SDK 在业务系统中执行；支持 Redis 推送规则变更、可选 Kafka 执行日志等扩展。**部署拓扑与业务侧集成步骤见 §3。**
+**qlexpress-rule** 是一套基于 **Spring Boot 2.3** 与 **QLExpress 4** 的可视化规则引擎：在 Web 控制台中编排 **决策表、决策树、决策流、交叉表、评分卡、复杂交叉表、复杂评分卡、QL 脚本** 等模型，并可将多条规则编排为 **规则集（RuleSet）** 链式执行；编译发布后由 **rule-engine-client** SDK 在业务系统中执行。支持基于 **作用域（scope）** 的多变体规则、Redis 推送规则/规则集变更、客户端 **L1/L2** 缓存、可选 Kafka 执行日志等扩展。**部署拓扑与业务侧集成步骤见 §3。**
 
 ---
 
@@ -46,7 +46,7 @@ flowchart TB
   end
   subgraph Biz["业务应用（你的服务）"]
     App["Spring Boot\n业务代码"]
-    SDK["rule-engine-client\n+ L1 规则缓存"]
+    SDK["rule-engine-client\n+ L1/L2 规则缓存"]
   end
   Browser --> UI
   Browser --> API
@@ -65,6 +65,7 @@ flowchart TB
 - 业务应用**不直连 MySQL** 读取规则定义；通过 **HTTP** 拉取服务端已编译规则，缓存在进程内 **L1**。
 - **Redis 必须与 rule-engine-server 使用同一实例**（含密码、database）。服务端在规则发布等事件时向频道 **`rule:push:{appName}`** 发布消息；客户端使用配置项 **`app-name`** 订阅对应频道，用于实时更新本地缓存。
 - **执行日志**：默认通过 **HTTP** 向服务端批量上报；若 classpath 中存在 **`KafkaTemplate`** Bean 且未自行提供 **`ExecutionLogReporter`** Bean，自动改用 **Kafka**（主题默认 **`rule-execution-log`**，可用 `rule-engine.client.kafka-log-topic` 覆盖）。
+- **客户端缓存**：进程内 **L1** 缓存；可选 **L2 Redis** 缓存（`rule-engine.client.l2-redis-cache-enabled`，默认开启），L1 未命中时回源 Redis 已发布快照；可配置启动预热 **`warm-up-on-start`**。规则集变更亦通过 Redis 频道推送。
 
 ### 3.2 启动、执行与推送（时序示意）
 
@@ -109,13 +110,15 @@ sequenceDiagram
 rule-engine:
   client:
     server-url: http://localhost:8080
-    app-name: your-service-name
+    app-name: <项目编码 project_code；SDK 以此作为同步 projectCode、缓存键前缀与推送频道>
     token: <与控制台项目「访问令牌」一致>
     project-id: 1
     # l1-cache-max-size: 1000
     # http-timeout-ms: 3000
     # trace-enabled: true
     # kafka-log-topic: rule-execution-log  # 使用 Kafka 上报执行日志时（需存在 KafkaTemplate Bean）
+    # l2-redis-cache-enabled: true        # L1 未命中时读取 Redis L2 已发布快照（默认开启）
+    # warm-up-on-start: true              # 启动时预热全量已缓存脚本（默认开启）
 
 spring:
   redis:
@@ -214,103 +217,103 @@ mvn spring-boot:run
 
 本地开发时控制台入口为前端 devServer：**http://localhost:9090/**（见 **§6.2**）；未登录会跳转登录页。若你将 **`dist/`** 与 API 配成同源（例如统一域名反代），则入口以你的部署地址为准。
 
-![控制台登录页](docs/project-usage/project-usage-01-login.png)
+![控制台登录页](docs/project-usage/shot-login.png)
 
 ---
 
 ## 8. 规则项目列表
 
-登录后左侧菜单进入 **「规则项目」**：可检索、新建、编辑、删除项目，并通过 **「进入」** 打开项目内规则列表。项目上的 **访问令牌（Token）** 供客户端 SDK 调用同步接口时校验（见后文）。
+登录后左侧菜单包含：**规则项目、规则管理、规则集管理、变量管理、函数管理、规则测试、执行日志**。
 
-![规则项目列表](docs/project-usage/project-usage-02-project-list.png)
+进入 **「规则项目」**：可检索、新建、编辑、删除项目，并通过 **「进入」** 打开项目详情页。项目上的 **访问令牌（Token）** 供客户端 SDK 调用同步接口时校验（见后文）。
 
----
-
-## 9. 项目内规则管理
-
-在项目详情页可查看规则编码、名称、**模型类型**、发布状态、设计/发布版本；可对单条规则进行 **设计、重新发布、下线、删除**，或 **新建规则**。
-
-![项目内规则列表](docs/project-usage/project-usage-07-project-detail.png)
-
-**模型类型与路由对应关系（设计器路径）：**
-
-| 类型 | 前端路由示例 |
-|------|----------------|
-| 决策表 | `#/designer/table/{definitionId}` |
-| 决策树 | `#/designer/tree/{definitionId}` |
-| 决策流 | `#/designer/flow/{definitionId}` |
-| 交叉表 | `#/designer/cross/{definitionId}` |
-| 评分卡 | `#/designer/score/{definitionId}` |
-| 复杂交叉表 | `#/designer/cross-adv/{definitionId}` |
-| 复杂评分卡 | `#/designer/score-adv/{definitionId}` |
-| QL 脚本 | `#/designer/script/{definitionId}` |
+![规则项目列表](docs/project-usage/shot-project-list.png)
 
 ---
 
-## 10. 各模型设计器（示例数据）
+## 9. 规则管理
 
-在项目规则列表中点击 **「设计」** 进入对应类型的可视化编排界面；工具栏通常包含 **保存、编译、测试** 等能力。下列截图来自示例库 **`data-example.sql`** 中 **综合风控示例项目** 的已发布规则（`definition_id` 与路由见下表），本地环境需已导入该脚本，并启动 **rule-engine-server**（API）与 **`rule-engine-builder-ui`** 的 **`npm run dev`**（控制台，见 **§6.2**）。
+左侧菜单 **「规则管理」**：先在顶部 **「筛选项目」** 选择项目，即可查看/检索该项目下所有规则，按 **模型类型** 过滤，并进行 **设计、修改、发布/下线、删除**、**新建规则** 等操作。（由「规则项目 → 进入」进入的项目详情页也可管理该项目下的规则。）
 
-| 模型 | 示例规则（规则编码） | 设计器路由 |
-|------|----------------------|------------|
-| 决策表 | `RC_PRICING_TABLE`（客商×产品总线定价表） | `#/designer/table/1` |
-| 决策树 | `RC_CREDIT_TREE`（客户信用分层） | `#/designer/tree/2` |
-| 决策流 | `RC_EXPOSURE_FLOW`（敞口与费用试算流程） | `#/designer/flow/3` |
-| 交叉表 | `RC_RATE_MATRIX`（风险定价交叉表） | `#/designer/cross/4` |
-| 评分卡 | `RC_RISK_SCORECARD`（综合风险评分卡） | `#/designer/score/5` |
-| 复杂交叉表 | `RC_MULTI_DIM_RATE`（交叉矩阵多维定价 8×6） | `#/designer/cross-adv/9` |
-| 复杂评分卡 | `RC_INVOICE_FRAUD_SCORE`（交易票据异常评分） | `#/designer/score-adv/10` |
-| QL 脚本 | `RC_BLEND_CALC_SCRIPT`（混业组合计费脚本） | `#/designer/script/11` |
+![规则管理](docs/project-usage/shot-rule-management.png)
 
-仓库提供脚本 **`scripts/capture-designer-screenshots.cjs`**（依赖 **`scripts/`** 下已执行 `npm install` 与 `npx playwright install chromium`），请将脚本中的控制台基址配为与当前部署一致（开发时一般为 **http://localhost:9090**），再自动登录并批量导出截图至 **`docs/project-usage/project-usage-designer-*.png`**。
+### 9.1 设计器（右侧抽屉）
+
+点击某条规则的 **「设计」**，对应模型的可视化设计器会从 **右侧抽屉** 滑出（不跳转整页路由），工具栏通常包含 **保存、编译、测试、版本切换** 等，内容区可上下滚动，点击遮罩即可关闭。各模型设计器界面见 **§10**。
+
+> 设计器也可通过独立路由直接打开（便于收藏/分享）：`#/designer/{table|tree|flow|cross|score|cross-adv|score-adv|script}/{definitionId}`。
+
+### 9.2 规则集管理
+
+左侧菜单 **「规则集管理」**：选择项目后，将同一项目内的多条规则按顺序编排为 **规则集（RuleSet）**，支持成员维护、链式试跑与整体发布/下线；发布后客户端可通过 SDK 按规则集编码链式执行（上一步输出合并到下一步上下文）。示例数据 `data-example.sql` 内置规则集 `RS_RISK_CHAIN`（客户信用分层 → 综合风险评分卡）。
+
+![规则集管理](docs/project-usage/shot-rule-set-management.png)
+
+点击 **「成员」** 维护规则集的成员及其执行顺序（自上而下即链式执行顺序）：
+
+![规则集成员维护](docs/project-usage/shot-rule-set-members.png)
+
+### 9.3 作用域（scope）与系统字典
+
+规则内容、发布记录与设计快照均带 **作用域标识 `scopeCompId`**（`0` 为默认/通用），可为同一规则维护多套按作用域区分的变体；作用域取值来自 **系统字典** 表 `rule_sys_dict`（字典类型 `COMP_SCOPE`），默认仅内置 `0=通用`，可按需在库中增删。开源部署默认单一通用作用域即可，无需额外配置。
+
+### 9.4 设计版本快照
+
+设计器保存时会记录设计快照（`rule_definition_design_snapshot`），工具栏的版本切换器可回放历史设计，与发布版本（`rule_definition_version`）相互独立。
+
+---
+
+## 10. 各模型设计器
+
+在「规则管理」中点击某条规则的 **「设计」**，即可在右侧抽屉打开对应模型的可视化设计器。下列截图来自示例库 `data-example.sql` 中「综合风控示例项目」的各模型已发布规则。
 
 ### 10.1 决策表（TABLE）
 
-可维护命中策略、条件（IF）、动作（THEN）等。
+命中策略 + 行式「条件(IF) → 动作(THEN)」配置。
 
-![决策表设计器](docs/project-usage/project-usage-designer-table.png)
+![决策表设计器](docs/project-usage/shot-designer-table.png)
 
 ### 10.2 决策树（TREE）
 
 树形节点与分支条件编排。
 
-![决策树设计器](docs/project-usage/project-usage-designer-tree.png)
+![决策树设计器](docs/project-usage/shot-designer-tree.png)
 
 ### 10.3 决策流（FLOW）
 
 流程节点、连线与脚本/任务步骤。
 
-![决策流设计器](docs/project-usage/project-usage-designer-flow.png)
+![决策流设计器](docs/project-usage/shot-designer-flow.png)
 
 ### 10.4 交叉表（CROSS）
 
-行×列矩阵与交叉单元结果。
+行×列二维矩阵与交叉单元结果。
 
-![交叉表设计器](docs/project-usage/project-usage-designer-cross.png)
+![交叉表设计器](docs/project-usage/shot-designer-cross.png)
 
 ### 10.5 评分卡（SCORE）
 
-指标、权重与评分汇总。
+评分项、命中得分、权重与分数等级配置。
 
-![评分卡设计器](docs/project-usage/project-usage-designer-score.png)
+![评分卡设计器](docs/project-usage/shot-designer-score.png)
 
 ### 10.6 复杂交叉表（CROSS_ADV）
 
-多维度交叉（如 ICT 场景下的多维定价矩阵）。
+多维行/列（如 8×6）交叉矩阵。
 
-![复杂交叉表设计器](docs/project-usage/project-usage-designer-cross-adv.png)
+![复杂交叉表设计器](docs/project-usage/shot-designer-cross-adv.png)
 
 ### 10.7 复杂评分卡（SCORE_ADV）
 
-分组指标与复杂加权策略。
+分组维度 + 组权重 + 分项加权评分。
 
-![复杂评分卡设计器](docs/project-usage/project-usage-designer-score-adv.png)
+![复杂评分卡设计器](docs/project-usage/shot-designer-score-adv.png)
 
 ### 10.8 QL 脚本（SCRIPT）
 
-脚本编辑与编译执行。
+直接编写并校验 QLExpress 脚本。
 
-![QL 脚本设计器](docs/project-usage/project-usage-designer-script.png)
+![QL 脚本编辑器](docs/project-usage/shot-designer-script.png)
 
 ---
 
@@ -318,7 +321,7 @@ mvn spring-boot:run
 
 菜单 **「变量管理」**：请先 **选择项目**，再维护变量列表、数据对象、常量等；支持批量导入（如 Java 实体、JSON、DDL 等，以页面实际选项为准）与 **验证规则**。
 
-![变量管理](docs/project-usage/project-usage-03-variable.png)
+![变量管理](docs/project-usage/shot-variable.png)
 
 ---
 
@@ -326,7 +329,7 @@ mvn spring-boot:run
 
 菜单 **「函数管理」**：按项目维护可在决策流/决策树脚本任务中调用的自定义函数，实现方式支持 **QLExpress 脚本、Java 类、Spring Bean** 等（见页面说明）。
 
-![函数管理](docs/project-usage/project-usage-04-function.png)
+![函数管理](docs/project-usage/shot-function.png)
 
 ---
 
@@ -334,55 +337,51 @@ mvn spring-boot:run
 
 菜单 **「规则测试」**：选择 **项目** 与 **已发布规则**，可 **加载项目变量** 填充入参，编辑后点击 **「执行测试」** 查看返回结果与追踪信息。
 
-![规则测试](docs/project-usage/project-usage-05-rule-test.png)
+![规则测试](docs/project-usage/shot-rule-test.png)
 
 ---
 
 ## 14. 执行日志
 
-菜单 **「执行日志」**：按来源（服务端/客户端）、项目、规则、时间范围筛选；列表中可查看耗时、结果、追踪摘要，**「详情」** 查看单次执行明细。
+菜单 **「执行日志」**：按来源（服务端/客户端）、项目、规则、时间范围筛选；列表中可查看耗时、结果、追踪摘要，**「详情」** 查看单次执行明细。日志详情弹窗默认在 **「基本信息」**，切换到 **「表达式追踪树」** 可查看逐步判定、赋值与汇总等追踪信息（与规则测试中的追踪一致，便于对照线上/客户端执行结果）。
 
-![执行日志](docs/project-usage/project-usage-06-execution-log.png)
+![执行日志](docs/project-usage/shot-execution-log.png)
 
-### 14.1 日志详情与「表达式追踪树」
+### 14.1 表达式追踪树（按模型）
 
-在列表中点击某次执行的 **「详情」** 打开弹窗；默认在 **「基本信息」**，切换到 **「表达式追踪树」** 可查看逐步判定、赋值与汇总等追踪信息（与规则测试中的追踪类似，便于对照线上/客户端执行结果）。
+在日志列表点击 **「详情」** 打开弹窗，切换到 **「表达式追踪树」** 查看该次执行的逐步命中 / 赋值 / 汇总。不同模型的追踪展示形式不同：
 
-**推荐操作：** 在 **「全部规则」** 中输入规则名称关键字，用键盘 **↓** 选中后 **Enter** 确认，再点 **「查询」**，可避免下拉项被表格遮挡。若弹窗异常无法关闭，可尝试 **Esc** 或刷新 **#/log** 页面。
+#### 决策表（TABLE）
 
-下列截图按 **模型类型** 与示例数据中的规则名称对应（以你环境中的实际规则为准）。
+![执行日志 · 追踪 · 决策表](docs/project-usage/shot-log-trace-table.png)
 
-#### 决策表（TABLE）— 客群×产品线定价表
+#### 决策树（TREE）
 
-![执行日志 · 表达式追踪树 · 决策表](docs/project-usage/project-usage-log-trace-TABLE.png)
+![执行日志 · 追踪 · 决策树](docs/project-usage/shot-log-trace-tree.png)
 
-#### 决策树（TREE）— 客户信用分层
+#### 决策流（FLOW）
 
-![执行日志 · 表达式追踪树 · 决策树](docs/project-usage/project-usage-log-trace-TREE.png)
+![执行日志 · 追踪 · 决策流](docs/project-usage/shot-log-trace-flow.png)
 
-#### 决策流（FLOW）— 敞口与费用试算流程
+#### 交叉表（CROSS）
 
-![执行日志 · 表达式追踪树 · 决策流](docs/project-usage/project-usage-log-trace-FLOW.png)
+![执行日志 · 追踪 · 交叉表](docs/project-usage/shot-log-trace-cross.png)
 
-#### 交叉表（CROSS）— 二维风险参数矩阵
+#### 评分卡（SCORE）
 
-![执行日志 · 表达式追踪树 · 交叉表](docs/project-usage/project-usage-log-trace-CROSS.png)
+![执行日志 · 追踪 · 评分卡](docs/project-usage/shot-log-trace-score.png)
 
-#### 评分卡（SCORE）— 综合风险评分卡
+#### 复杂交叉表（CROSS_ADV）
 
-![执行日志 · 表达式追踪树 · 评分卡](docs/project-usage/project-usage-log-trace-SCORE.png)
+![执行日志 · 追踪 · 复杂交叉表](docs/project-usage/shot-log-trace-cross-adv.png)
 
-#### 复杂交叉表（CROSS_ADV）— 多维场景定价矩阵
+#### 复杂评分卡（SCORE_ADV）
 
-![执行日志 · 表达式追踪树 · 复杂交叉表](docs/project-usage/project-usage-log-trace-CROSS_ADV.png)
+![执行日志 · 追踪 · 复杂评分卡](docs/project-usage/shot-log-trace-score-adv.png)
 
-#### 复杂评分卡（SCORE_ADV）— 交易票据异常评分
+#### QL 脚本（SCRIPT）
 
-![执行日志 · 表达式追踪树 · 复杂评分卡](docs/project-usage/project-usage-log-trace-SCORE_ADV.png)
-
-#### QL 脚本（SCRIPT）— 混业组合计费脚本
-
-![执行日志 · 表达式追踪树 · QL 脚本](docs/project-usage/project-usage-log-trace-SCRIPT.png)
+![执行日志 · 追踪 · QL 脚本](docs/project-usage/shot-log-trace-script.png)
 
 ---
 
@@ -405,7 +404,7 @@ mvn spring-boot:run
 
 ## 16. 客户端鉴权（Token）
 
-`TokenAuthInterceptor` 对 **`/api/sync/`** 等路径校验令牌：请求头 **`X-Rule-Token`** 或 Query **`token`**，须与 `rule_project.access_token` 匹配。业务应用通过 SDK 同步规则时需配置与控制台一致的 Token。
+`TokenAuthInterceptor` 对 **`/api/rule/sync/`** 等同步接口校验令牌：请求头 **`X-Rule-Token`** 或 Query **`token`**，须与 `rule_project.access_token` 匹配。业务应用通过 SDK 同步规则/规则集时需配置与控制台一致的 Token。
 
 ---
 

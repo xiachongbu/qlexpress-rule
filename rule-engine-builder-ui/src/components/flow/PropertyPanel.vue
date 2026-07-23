@@ -1,5 +1,5 @@
 <template>
-  <div class="property-panel" v-if="activeElement">
+  <div v-if="activeElement" class="property-panel">
     <div class="panel-header">
       <span class="panel-title">{{ isEdge ? '连线属性' : '节点属性' }}</span>
       <i class="el-icon-close panel-close" @click="$emit('close')" />
@@ -118,7 +118,7 @@
           <el-divider content-position="left">动作配置</el-divider>
           <div class="action-list">
             <div v-for="(action, idx) in nodeProps.actions" :key="idx" class="action-item">
-              <el-select v-model="action.variable" size="mini" placeholder="变量" style="width: 140px;" @change="onNodeChange" filterable>
+              <el-select v-model="action.variable" size="mini" placeholder="变量" style="width: 140px;" filterable @change="onNodeChange">
                 <!-- 项目变量库（优先） -->
                 <el-option-group v-if="projectVars.length" label="项目变量">
                   <el-option
@@ -137,7 +137,7 @@
               <el-input v-model="action.value" size="mini" placeholder="值" style="flex:1;" @change="onNodeChange" />
               <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C;" @click="removeAction(idx)" />
             </div>
-            <el-button type="primary" size="mini" plain icon="el-icon-plus" @click="addAction" style="width:100%;margin-top:8px;">
+            <el-button type="primary" size="mini" plain icon="el-icon-plus" style="width:100%;margin-top:8px;" @click="addAction">
               添加动作
             </el-button>
           </div>
@@ -177,7 +177,7 @@
 </template>
 
 <script>
-import { varTypeTagColor } from '@/constants/varTypes'
+import {varTypeTagColor} from '@/constants/varTypes'
 
 export default {
   name: 'PropertyPanel',

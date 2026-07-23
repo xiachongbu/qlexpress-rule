@@ -197,34 +197,10 @@ public class DecisionTableCompiler implements RuleCompiler {
         String valueKind = leaf.getString("valueKind");
         if (valueKind == null) valueKind = "CONST";
 
-        if ("VAR".equalsIgnoreCase(valueKind)) {
-            String right = leaf.getString("value");
-            if (right == null || right.trim().isEmpty()) {
-                return "true";
-            }
-            return varCode + " " + operator + " " + right.trim();
-        }
-
         String value = leaf.getString("value");
-        if (value == null || value.isEmpty()) {
-            return "true";
-        }
-
         String varType = leaf.getString("varType");
         if (varType == null) varType = "STRING";
-
-        String rhs = formatConstantRhs(varType, value);
-        return varCode + " " + operator + " " + rhs;
-    }
-
-    /**
-     * 按类型格式化常量右侧（引号与转义）。
-     */
-    static String formatConstantRhs(String varType, String value) {
-        if ("STRING".equals(varType) || "ENUM".equals(varType) || "DATE".equals(varType)) {
-            return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
-        }
-        return value;
+        return QlCompareExpression.emitLeafComparison(varCode, operator, valueKind, varType, value);
     }
 
     /**
@@ -249,12 +225,7 @@ public class DecisionTableCompiler implements RuleCompiler {
             }
 
             String varType = condDef != null ? condDef.getString("varType") : "STRING";
-            script.append(varCode).append(" ").append(operator).append(" ");
-            if ("STRING".equals(varType) || "ENUM".equals(varType)) {
-                script.append("\"").append(value.replace("\\", "\\\\").replace("\"", "\\\"")).append("\"");
-            } else {
-                script.append(value);
-            }
+            script.append(QlCompareExpression.emitLeafComparison(varCode, operator, "CONST", varType, value));
         }
         return script.toString();
     }

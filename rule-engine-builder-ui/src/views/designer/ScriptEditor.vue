@@ -9,12 +9,17 @@
       </div>
       <div class="se-toolbar">
         <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <design-version-switcher
+          :definition-id="definitionId"
+          :scope-comp-id="scopeCompId"
+          @apply-model="onApplyDesignSnapshot"
+        />
         <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">验证脚本</el-button>
         <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
       </div>
     </div>
 
-    <div class="se-body">
+    <div v-loading="scopeContentLoading" class="se-body">
       <!-- 左侧变量面板 -->
       <div class="se-var-panel" :class="{ collapsed: varPanelCollapsed }">
         <div class="se-var-header" @click="varPanelCollapsed = !varPanelCollapsed">
@@ -27,7 +32,7 @@
           </div>
           <div v-else-if="varsLoadError" style="text-align:center;padding:20px;color:#F56C6C;">
             <i class="el-icon-warning" /> 加载失败
-            <el-button type="text" size="mini" @click="loadProjectVars($route.params.id)" style="display:block;margin:6px auto 0;">重试</el-button>
+            <el-button type="text" size="mini" style="display:block;margin:6px auto 0;" @click="loadProjectVars(definitionId)">重试</el-button>
           </div>
           <div v-else-if="varTree.length === 0" style="text-align:center;padding:20px;color:#bbb;">
             <i class="el-icon-folder-opened" /> 暂无项目变量
@@ -114,7 +119,7 @@
 
         <!-- 编辑器 -->
         <div class="se-editor-container">
-          <div class="se-line-numbers" ref="lineNums">
+          <div ref="lineNums" class="se-line-numbers">
             <div v-for="n in lineCount" :key="n" class="se-line-num">{{ n }}</div>
           </div>
           <textarea
@@ -147,7 +152,7 @@
         v-model="testParamsJson"
         type="textarea"
         :rows="6"
-        placeholder='{"taxpayerQualification": "一般纳税人", "billingAmount": 10000}'
+        placeholder="{&quot;taxpayerQualification&quot;: &quot;一般纳税人&quot;, &quot;billingAmount&quot;: 10000}"
       />
       <template slot="footer">
         <el-button size="small" @click="testVisible = false">取消</el-button>
@@ -157,7 +162,9 @@
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"
           :type="testResult.success ? 'success' : 'error'"
-          :closable="false" show-icon style="margin-bottom:10px;"
+          :closable="false"
+          show-icon
+          style="margin-bottom:10px;"
         />
         <el-descriptions :column="1" border size="small">
           <el-descriptions-item label="返回值">
@@ -170,16 +177,23 @@
         </el-descriptions>
       </div>
     </el-dialog>
+
+    <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
 
 <script>
-import { saveContent, compileRule, executeRule, getContent } from '@/api/definition'
+import { compileRule, executeRule, getContent, saveContent } from '@/api/definition'
 import varPickerMixin from '@/mixins/varPickerMixin'
+import DesignSaveVersionDialog from '@/components/designer/DesignSaveVersionDialog.vue'
+import DesignVersionSwitcher from '@/components/designer/DesignVersionSwitcher.vue'
+import designerDefinitionIdMixin from '@/mixins/designerDefinitionIdMixin'
+import designerScopeMixin from '@/mixins/designerScopeMixin'
 
 export default {
   name: 'ScriptEditor',
-  mixins: [varPickerMixin],
+  components: { DesignSaveVersionDialog, DesignVersionSwitcher },
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin],
   data() {
     return {
       definitionId: null,
@@ -281,11 +295,11 @@ export default {
         const cats = { ...this.expandedCats }
         const groups = { ...this.expandedGroups }
         tree.forEach(cat => {
-          if (cats[cat.key] === undefined) cats[cat.key] = true
+          if (cats[cat.key] === undefined) cats[cat.key] = false
           if (cat.hasSubGroups) {
             cat.children.forEach(g => {
               const gk = cat.key + '.' + g.key
-              if (groups[gk] === undefined) groups[gk] = true
+              if (groups[gk] === undefined) groups[gk] = false
             })
           }
         })
@@ -295,8 +309,15 @@ export default {
     }
   },
   created() {
-    this.definitionId = this.$route.params.id
-    this.loadContent()
+    this.definitionId = this.resolveDefinitionIdFromContext()
+    ;(async() => {
+      try {
+        await this.bootstrapDesignerWithScope()
+      } catch (e) {
+        this.$message.error('加载失败: ' + (e.message || '未知错误'))
+        this.contentLoaded = true
+      }
+    })()
   },
   methods: {
     toggleCat(key) {
@@ -312,7 +333,7 @@ export default {
     },
     async loadContent() {
       try {
-        const res = await getContent(this.definitionId)
+        const res = await getContent(this.definitionId, this.scopeCompId)
         const content = res && res.data ? res.data : res
         if (content) {
           if (content.compiledScript) {
@@ -334,14 +355,52 @@ export default {
         this.contentLoaded = true
       }
     },
-    async handleSave() {
+    /**
+     * 将快照中的 script 字段写回编辑器。
+     */
+    onApplyDesignSnapshot(parsed) {
+      if (!parsed || typeof parsed !== 'object') return
+      if (parsed.script != null) {
+        this.script = String(parsed.script)
+      }
+    },
+
+    /**
+     * 静默保存脚本模型（不写设计快照）。
+     */
+    async persistModelSilent() {
       const modelJson = JSON.stringify({ script: this.script })
-      await saveContent({ definitionId: this.definitionId, modelJson })
+      await saveContent({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        modelJson,
+        recordHistory: false
+      })
+    },
+
+    /**
+     * 带版本说明保存。
+     */
+    async handleSave() {
+      let changeLog = ''
+      try {
+        changeLog = await this.$refs.designSaveVersionDialog.prompt()
+      } catch (e) {
+        return
+      }
+      const modelJson = JSON.stringify({ script: this.script })
+      await saveContent({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        modelJson,
+        changeLog: changeLog || undefined,
+        recordHistory: true
+      })
       this.$message.success('保存成功')
     },
     async handleCompile() {
-      await this.handleSave()
-      const res = await compileRule(this.definitionId)
+      await this.persistModelSilent()
+      const res = await compileRule(this.definitionId, this.scopeCompId)
       const result = res && res.data ? res.data : res
       if (result && result.success) {
         this.compileStatus = 1
@@ -364,7 +423,11 @@ export default {
         this.$message.error('参数 JSON 格式错误')
         return
       }
-      const res = await executeRule({ definitionId: this.definitionId, params })
+      const res = await executeRule({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        params
+      })
       this.testResult = res && res.data ? res.data : res
     },
     insertVar(code) {

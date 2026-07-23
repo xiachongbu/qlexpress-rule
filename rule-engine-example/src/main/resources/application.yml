@@ -7,8 +7,11 @@ server:
 rule-engine:
   client:
     server-url: http://localhost:8080
-    app-name: risk-control-example
-    token: ${PROJECT_ACCESS_TOKEN:demo-token-change-me}
+    # app-name 必须与规则项目的「项目编码(project_code)」一致：
+    # SDK 以它作为同步 projectCode、L1/L2 缓存键前缀与 Redis 推送订阅频道 rule:push:{app-name}。
+    # 示例项目（data-example.sql）的项目编码为 RISK_DEMO。
+    app-name: ${PROJECT_CODE:RISK_DEMO}
+    token: ${PROJECT_ACCESS_TOKEN:88f2ad5ac48544b8bc990d3164f76066}
     l1-cache-max-size: 500
     http-timeout-ms: 3000
     project-id: 1

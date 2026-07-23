@@ -5,12 +5,13 @@ export function checkVariableHealth() {
   return request({ url: '/rule/variable/health', method: 'get' })
 }
 
-export function listVariables(params) {
-  return request({ url: '/rule/variable/list', method: 'get', params })
+/** 分页查询变量（POST + JSON） */
+export function listVariables(data) {
+  return request({ url: '/rule/variable/list', method: 'post', data })
 }
 
 export function listVariablesByProject(projectId) {
-  return request({ url: `/rule/variable/project/${projectId}`, method: 'get' })
+  return request({ url: '/rule/variable/project/query', method: 'post', data: { projectId }})
 }
 
 export function getVariable(id) {
@@ -39,10 +40,10 @@ export function saveVariableOptions(variableId, options) {
 
 /** 从 Java 常量类批量导入（写入变量表，来源为 CONSTANT） */
 export function importJavaConstants(projectId, javaSource) {
-  return request({ url: '/rule/variable/import/constants/java', method: 'post', data: { projectId, javaSource } })
+  return request({ url: '/rule/variable/import/constants/java', method: 'post', data: { projectId, javaSource }})
 }
 
 /** 从扁平 JSON 批量导入常量 */
 export function importJsonConstants(projectId, jsonContent) {
-  return request({ url: '/rule/variable/import/constants/json', method: 'post', data: { projectId, jsonContent } })
+  return request({ url: '/rule/variable/import/constants/json', method: 'post', data: { projectId, jsonContent }})
 }

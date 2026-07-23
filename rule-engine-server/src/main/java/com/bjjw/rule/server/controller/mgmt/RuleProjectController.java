@@ -1,5 +1,6 @@
 package com.bjjw.rule.server.controller.mgmt;
 
+import com.bjjw.rule.model.dto.mgmt.RuleProjectListRequest;
 import com.bjjw.rule.model.entity.RuleProject;
 import com.bjjw.rule.server.common.R;
 import com.bjjw.rule.server.service.RuleProjectService;
@@ -19,12 +20,14 @@ public class RuleProjectController {
     @Resource
     private RuleProjectService projectService;
 
-    @GetMapping("/list")
-    public R<IPage<RuleProject>> list(
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(required = false) String keyword) {
-        return R.ok(projectService.pageList(pageNum, pageSize, keyword));
+    /**
+     * 项目分页列表（POST + JSON）
+     */
+    @PostMapping("/list")
+    public R<IPage<RuleProject>> list(@RequestBody RuleProjectListRequest req) {
+        int pageNum = req.getPageNum() == null ? 1 : req.getPageNum();
+        int pageSize = req.getPageSize() == null ? 10 : req.getPageSize();
+        return R.ok(projectService.pageList(pageNum, pageSize, req.getKeyword()));
     }
 
     @GetMapping("/{id}")

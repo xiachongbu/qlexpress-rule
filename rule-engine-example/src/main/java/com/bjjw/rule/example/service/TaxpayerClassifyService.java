@@ -37,7 +37,7 @@ public class TaxpayerClassifyService {
      * @return 内部信用等级：A/B/C/D
      */
     public String classifyCreditLevel(TaxpayerClassifyQuery query) {
-        RuleResult result = ruleClient.execute(RULE_CODE, query);
+        RuleResult result = ruleClient.execute(RULE_CODE, query, null);
 
         if (!result.isSuccess()) {
             log.error("决策树执行失败 [{}]: {}", RULE_CODE, result.getErrorMessage());

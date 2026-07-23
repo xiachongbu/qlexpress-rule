@@ -11,6 +11,11 @@
         <el-button size="small" icon="el-icon-plus" @click="addRule">添加行</el-button>
         <el-divider direction="vertical" />
         <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <design-version-switcher
+          :definition-id="definitionId"
+          :scope-comp-id="scopeCompId"
+          @apply-model="onApplyDesignSnapshot"
+        />
         <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">编译</el-button>
         <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
         <el-divider direction="vertical" />
@@ -35,7 +40,7 @@
     </div>
 
     <!-- 规则列表：每条含条件树 + 动作 -->
-    <div class="dt-rules-wrap">
+    <div v-loading="scopeContentLoading" class="dt-rules-wrap">
       <template v-if="contentLoaded && model.rules.length > 0">
         <div
           v-for="(row, ri) in model.rules"
@@ -169,8 +174,9 @@
     <script-panel
       v-if="definitionId"
       ref="scriptPanel"
-      :definitionId="definitionId"
-      :onBeforeCompile="handleSave"
+      :definition-id="definitionId"
+      :scope-comp-id="scopeCompId"
+      :on-before-compile="persistModelSilent"
       @mode-change="onScriptModeChange"
     />
 
@@ -235,28 +241,34 @@
         </el-descriptions>
       </div>
     </el-dialog>
+
+    <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
 
 <script>
-import { saveContent, compileRule, executeRule, getContent } from '@/api/definition'
+import { compileRule, executeRule, getContent, saveContent } from '@/api/definition'
 import { VAR_TYPE_FORM_OPTIONS } from '@/constants/varTypes'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
+import designerDefinitionIdMixin from '@/mixins/designerDefinitionIdMixin'
+import designerScopeMixin from '@/mixins/designerScopeMixin'
 import ConditionGroupEditor from '@/components/decision/ConditionGroupEditor.vue'
+import DesignSaveVersionDialog from '@/components/designer/DesignSaveVersionDialog.vue'
+import DesignVersionSwitcher from '@/components/designer/DesignVersionSwitcher.vue'
 import {
-  createEmptyLeaf,
-  createEmptyActionItem,
-  migrateRuleConditionsToTree,
   collectVarCodesFromConditionTree,
+  createEmptyActionItem,
+  createEmptyLeaf,
+  migrateRuleConditionsToTree,
   walkConditionLeaves
 } from '@/utils/decisionConditionTree'
 
 export default {
   name: 'DecisionTable',
-  components: { VarPicker, ScriptPanel, ConditionGroupEditor },
-  mixins: [varPickerMixin],
+  components: { VarPicker, ScriptPanel, ConditionGroupEditor, DesignSaveVersionDialog, DesignVersionSwitcher },
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin],
   data() {
     return {
       definitionId: null,
@@ -305,13 +317,20 @@ export default {
     }
   },
   created() {
-    this.definitionId = this.$route.params.id
-    this.loadContent()
+    this.definitionId = this.resolveDefinitionIdFromContext()
+    ;(async() => {
+      try {
+        await this.bootstrapDesignerWithScope()
+      } catch (e) {
+        this.$message.error('加载失败: ' + (e.message || '未知错误'))
+        this.contentLoaded = true
+      }
+    })()
   },
   methods: {
     async loadContent() {
       try {
-        const res = await getContent(this.definitionId)
+        const res = await getContent(this.definitionId, this.scopeCompId)
         const content = res && res.data ? res.data : res
         if (content && content.modelJson && content.modelJson !== '{}') {
           this.model = JSON.parse(content.modelJson)
@@ -351,7 +370,7 @@ export default {
         })
       })
       ;(this.model.rules || []).forEach(rule => {
-        ;(rule.actions || []).forEach(item => { if (item && item.varCode && this.syncVarItem(item)) changed = true })
+        (rule.actions || []).forEach(item => { if (item && item.varCode && this.syncVarItem(item)) changed = true })
       })
       if (changed) this.$forceUpdate()
     },
@@ -539,15 +558,52 @@ export default {
       this.model.rules.splice(index, 1)
     },
 
-    async handleSave() {
+    /**
+     * 将历史快照解析结果写回当前决策表模型。
+     */
+    onApplyDesignSnapshot(parsed) {
+      if (!parsed || typeof parsed !== 'object') return
+      this.model = parsed
       this.normalizeModel()
-      await saveContent({ definitionId: this.definitionId, modelJson: JSON.stringify(this.model) })
+    },
+
+    /**
+     * 静默保存当前模型（不写设计快照），供编译或脚本面板编译前调用。
+     */
+    async persistModelSilent() {
+      this.normalizeModel()
+      await saveContent({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        modelJson: JSON.stringify(this.model),
+        recordHistory: false
+      })
+    },
+
+    /**
+     * 弹出版本说明后保存并记录设计快照。
+     */
+    async handleSave() {
+      let changeLog = ''
+      try {
+        changeLog = await this.$refs.designSaveVersionDialog.prompt()
+      } catch (e) {
+        return
+      }
+      this.normalizeModel()
+      await saveContent({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        modelJson: JSON.stringify(this.model),
+        changeLog: changeLog || undefined,
+        recordHistory: true
+      })
       this.$message.success('保存成功')
     },
 
     async handleCompile() {
-      await this.handleSave()
-      const res = await compileRule(this.definitionId)
+      await this.persistModelSilent()
+      const res = await compileRule(this.definitionId, this.scopeCompId)
       if (res && res.data && res.data.success) {
         this.$message.success('编译成功')
         await this.loadProjectVars(this.definitionId)
@@ -590,7 +646,11 @@ export default {
     },
 
     async doTest() {
-      const res = await executeRule({ definitionId: this.definitionId, params: this.testParams })
+      const res = await executeRule({
+        definitionId: this.definitionId,
+        scopeCompId: this.scopeCompId,
+        params: this.testParams
+      })
       this.testResult = res && res.data ? res.data : res
     },
 

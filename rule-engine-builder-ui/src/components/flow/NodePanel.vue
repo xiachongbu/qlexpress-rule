@@ -30,7 +30,7 @@
 </template>
 
 <script>
-import { NODE_PANEL_LIST } from './nodes'
+import {NODE_PANEL_LIST} from './nodes'
 
 export default {
   name: 'NodePanel',

@@ -121,7 +121,7 @@
 
 <script>
 import VarPicker from '@/components/common/VarPicker.vue'
-import { createEmptyGroup, createEmptyLeaf } from '@/utils/decisionConditionTree'
+import {createEmptyGroup, createEmptyLeaf} from '@/utils/decisionConditionTree'
 
 export default {
   name: 'ConditionGroupEditor',
@@ -145,7 +145,10 @@ export default {
         { l: '大于等于', v: '>=' },
         { l: '小于', v: '<' },
         { l: '小于等于', v: '<=' },
-        { l: '包含', v: 'in' },
+        { l: '包含于(in)', v: 'in' },
+        { l: '字符串包含', v: 'contains' },
+        { l: '前匹配', v: 'startsWith' },
+        { l: '后匹配', v: 'endsWith' },
         { l: '任意', v: '*' }
       ]
     }

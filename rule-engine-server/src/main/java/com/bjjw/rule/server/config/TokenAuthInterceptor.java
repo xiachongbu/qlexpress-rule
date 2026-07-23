@@ -23,7 +23,7 @@ public class TokenAuthInterceptor implements HandlerInterceptor {
     
     // 需要验证Token的路径（同步API）
     private static final String[] PROTECTED_PATHS = {
-        "/api/sync/"
+        "/api/rule/sync/"
     };
     
     @Override

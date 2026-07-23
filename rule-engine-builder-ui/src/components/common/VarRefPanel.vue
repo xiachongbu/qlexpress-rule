@@ -30,7 +30,7 @@
 </template>
 
 <script>
-import { varTypeLabel, varTypeTagColor } from '@/constants/varTypes'
+import {varTypeLabel, varTypeTagColor} from '@/constants/varTypes'
 
 export default {
   name: 'VarRefPanel',

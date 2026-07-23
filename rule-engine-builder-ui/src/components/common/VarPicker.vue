@@ -47,7 +47,7 @@
           @change="onChange"
           @clear="$emit('input', ''); $emit('select', null)"
         >
-          <el-option-group v-if="grouped" v-for="group in groupedOptions" :key="group.label" :label="group.label">
+          <el-option-group v-for="group in groupedOptions" v-if="grouped" :key="group.label" :label="group.label">
             <el-option v-for="v in group.vars" :key="v.varCode" :value="v.varCode" :label="v.varLabel + ' (' + v.varCode + ')'" />
           </el-option-group>
           <template v-if="!grouped">
@@ -78,7 +78,7 @@
 </template>
 
 <script>
-import { varTypeLabel, varTypeTagColor } from '@/constants/varTypes'
+import {varTypeLabel, varTypeTagColor} from '@/constants/varTypes'
 
 export default {
   name: 'VarPicker',
@@ -103,25 +103,6 @@ export default {
       /** 手动输入模式下的本地值，避免依赖 prop 异步更新导致失焦清空 */
       localCustomValue: this.value || ''
     }
-  },
-  watch: {
-    vars() {
-      if (!this.hasVarOptions) {
-        this.customMode = false
-      } else {
-        this._autoSwitchIfUnmatched()
-      }
-    },
-    value(newVal) {
-      this.localCustomValue = newVal || ''
-      this._autoSwitchIfUnmatched()
-    },
-    customMode(val) {
-      if (val) this.localCustomValue = this.value || ''
-    }
-  },
-  mounted() {
-    this._autoSwitchIfUnmatched()
   },
   computed: {
     /** 是否有可选的变量选项 */
@@ -238,6 +219,25 @@ export default {
       })
       return groups.filter(g => g.vars.length > 0)
     }
+  },
+  watch: {
+    vars() {
+      if (!this.hasVarOptions) {
+        this.customMode = false
+      } else {
+        this._autoSwitchIfUnmatched()
+      }
+    },
+    value(newVal) {
+      this.localCustomValue = newVal || ''
+      this._autoSwitchIfUnmatched()
+    },
+    customMode(val) {
+      if (val) this.localCustomValue = this.value || ''
+    }
+  },
+  mounted() {
+    this._autoSwitchIfUnmatched()
   },
   methods: {
     onCascaderChange(path) {

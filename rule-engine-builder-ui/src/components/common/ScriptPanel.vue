@@ -36,13 +36,13 @@
 
         <!-- 状态栏 -->
         <div class="sp-statusbar">
-          <span class="sp-statusbar-item" v-if="content.compileTime">
+          <span v-if="content.compileTime" class="sp-statusbar-item">
             <i class="el-icon-time" /> {{ formatTime(content.compileTime) }}
           </span>
-          <span class="sp-statusbar-item sp-error" v-if="content.compileStatus === 2 && content.compileMessage">
+          <span v-if="content.compileStatus === 2 && content.compileMessage" class="sp-statusbar-item sp-error">
             <i class="el-icon-close-circle" /> {{ content.compileMessage }}
           </span>
-          <span class="sp-statusbar-item sp-manual" v-if="content.compileMessage && content.compileMessage.includes('手动')">
+          <span v-if="content.compileMessage && content.compileMessage.includes('手动')" class="sp-statusbar-item sp-manual">
             <i class="el-icon-user" /> {{ content.compileMessage }}
           </span>
           <div class="sp-statusbar-spacer" />
@@ -102,27 +102,26 @@
 </template>
 
 <script>
-import { getContent, compileRule, saveScript, updateScriptMode, validateScript } from '@/api/definition'
+import {compileRule, getContent, saveScript, updateScriptMode, validateScript} from '@/api/definition'
 
 export default {
   name: 'ScriptPanel',
   props: {
     definitionId: { type: [String, Number], required: true },
+    /** 与后端 scope_comp_id 一致，默认 0 通用 */
+    scopeCompId: { type: String, default: '0' },
     /** 父组件传入用于触发编译时保存 model */
     onBeforeCompile: { type: Function, default: null }
   },
   data() {
     return {
       expanded: false,
-      mode: 'visual',          // 'visual' | 'script'
-      content: {},             // RuleDefinitionContent
+      mode: 'visual', // 'visual' | 'script'
+      content: {}, // RuleDefinitionContent
       editScript: '',
       compiling: false,
       saving: false
     }
-  },
-  created() {
-    this.initMode()
   },
   computed: {
     isScriptMode() {
@@ -138,11 +137,24 @@ export default {
       return { type: 'info', text: '未编译' }
     }
   },
+  created() {
+    this.initMode()
+  },
   methods: {
     /** 初始化：从后端加载编辑模式 */
+    /**
+     * 切换作用域后重置脚本面板状态并重新拉取
+     */
+    reloadForScope() {
+      this.mode = 'visual'
+      this.editScript = ''
+      this.content = {}
+      this.initMode()
+    },
+
     async initMode() {
       try {
-        const res = await getContent(this.definitionId)
+        const res = await getContent(this.definitionId, this.scopeCompId)
         const content = (res && res.data ? res.data : res) || {}
         this.content = content
         if (content.scriptMode === 'script') {
@@ -167,7 +179,7 @@ export default {
 
     async loadContent() {
       try {
-        const res = await getContent(this.definitionId)
+        const res = await getContent(this.definitionId, this.scopeCompId)
         this.content = (res && res.data ? res.data : res) || {}
         if (!this.editScript) {
           this.editScript = this.content.compiledScript || ''
@@ -186,7 +198,7 @@ export default {
       }
       this.compiling = true
       try {
-        const res = await compileRule(this.definitionId)
+        const res = await compileRule(this.definitionId, this.scopeCompId)
         const result = res && res.data ? res.data : res
         if (result && result.success) {
           this.editScript = result.compiledScript || ''
@@ -208,7 +220,7 @@ export default {
       }
       this.compiling = true
       try {
-        await saveScript(this.definitionId, this.editScript)
+        await saveScript(this.definitionId, this.editScript, this.scopeCompId)
         const res = await validateScript(this.definitionId, this.editScript)
         const result = res && res.data ? res.data : res
         if (result && result.success) {
@@ -231,8 +243,8 @@ export default {
       }
       this.saving = true
       try {
-        await saveScript(this.definitionId, this.editScript)
-        this.$message.success('脚本已保存，若规则已发布则自动同步到客户端')
+        await saveScript(this.definitionId, this.editScript, this.scopeCompId)
+        this.$message.success('脚本已保存，请点击「发布」后才会同步到客户端')
         await this.loadContent()
         this.$emit('script-saved', this.editScript)
       } finally {
@@ -261,7 +273,7 @@ export default {
     switchToVisual() {
       this.mode = 'visual'
       this.$emit('mode-change', 'visual')
-      updateScriptMode(this.definitionId, 'visual').catch(() => {})
+      updateScriptMode(this.definitionId, 'visual', this.scopeCompId).catch(() => {})
     },
 
     copyScript() {

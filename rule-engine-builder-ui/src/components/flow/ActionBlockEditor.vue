@@ -5,8 +5,8 @@
       <div class="block-header">
         <span class="block-type-tag" :style="{background: typeColor(block.type)}">{{ typeLabel(block.type) }}</span>
         <div class="block-header-actions">
-          <el-button type="text" size="mini" icon="el-icon-top" v-if="bi > 0" @click="moveBlock(bi, -1)" />
-          <el-button type="text" size="mini" icon="el-icon-bottom" v-if="bi < blocks.length - 1" @click="moveBlock(bi, 1)" />
+          <el-button v-if="bi > 0" type="text" size="mini" icon="el-icon-top" @click="moveBlock(bi, -1)" />
+          <el-button v-if="bi < blocks.length - 1" type="text" size="mini" icon="el-icon-bottom" @click="moveBlock(bi, 1)" />
           <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C" @click="removeBlock(bi)" />
         </div>
       </div>
@@ -45,12 +45,16 @@
             </div>
             <div v-if="br.type !== 'else'" class="cond-area">
               <var-picker :vars="vars" :value="br.condVar" placeholder="条件变量" size="mini" @select="v => { br.condVar = v.varCode; sync() }" />
-              <el-select v-model="br.condOp" size="mini" style="width:68px" @change="sync">
+              <el-select v-model="br.condOp" size="mini" style="width:100px" @change="sync">
                 <el-option label="==" value="==" /><el-option label="!=" value="!=" />
                 <el-option label=">" value=">" /><el-option label=">=" value=">=" />
                 <el-option label="<" value="<" /><el-option label="<=" value="<=" />
+                <el-option label="in" value="in" />
+                <el-option label="含" value="contains" />
+                <el-option label="前" value="startsWith" />
+                <el-option label="后" value="endsWith" />
               </el-select>
-              <el-input v-model="br.condValue" size="mini" placeholder="值" @input="sync" style="width:90px" />
+              <el-input v-model="br.condValue" size="mini" placeholder="值" style="width:90px" @input="sync" />
             </div>
             <div class="branch-body">
               <div v-for="(a, ai) in br.actions" :key="ai" class="inline-row">
@@ -59,12 +63,12 @@
                 <el-input v-model="a.value" size="mini" placeholder="值" @input="sync" />
                 <el-button v-if="br.actions.length > 1" type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C" @click="br.actions.splice(ai,1); sync()" />
               </div>
-              <el-button size="mini" icon="el-icon-plus" @click="br.actions.push({type:'assign',target:'',value:''})" style="width:100%;margin-top:2px">添加赋值</el-button>
+              <el-button size="mini" icon="el-icon-plus" style="width:100%;margin-top:2px" @click="br.actions.push({type:'assign',target:'',value:''})">添加赋值</el-button>
             </div>
           </div>
           <div class="branch-add-row">
-            <el-button size="mini" @click="addBranch(block, 'elseif')" v-if="!hasElse(block)">+ ELSE IF</el-button>
-            <el-button size="mini" @click="addBranch(block, 'else')" v-if="!hasElse(block)">+ ELSE</el-button>
+            <el-button v-if="!hasElse(block)" size="mini" @click="addBranch(block, 'elseif')">+ ELSE IF</el-button>
+            <el-button v-if="!hasElse(block)" size="mini" @click="addBranch(block, 'else')">+ ELSE</el-button>
           </div>
         </template>
 
@@ -77,7 +81,7 @@
           <div v-for="(c, ci) in block.cases" :key="ci" class="case-card">
             <div class="case-head">
               <span class="case-tag">CASE</span>
-              <el-input v-model="c.value" size="mini" placeholder="匹配值" @input="sync" style="flex:1" />
+              <el-input v-model="c.value" size="mini" placeholder="匹配值" style="flex:1" @input="sync" />
               <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C" @click="block.cases.splice(ci,1); sync()" />
             </div>
             <div class="case-body">
@@ -88,7 +92,7 @@
               </div>
             </div>
           </div>
-          <div class="case-card default-case" v-if="block.defaultActions">
+          <div v-if="block.defaultActions" class="case-card default-case">
             <div class="case-head"><span class="case-tag default-tag">DEFAULT</span></div>
             <div class="case-body">
               <div v-for="(a, ai) in block.defaultActions" :key="ai" class="inline-row">
@@ -98,7 +102,7 @@
               </div>
             </div>
           </div>
-          <el-button size="mini" icon="el-icon-plus" @click="block.cases.push({value:'',actions:[{type:'assign',target:'',value:''}]}); sync()" style="width:100%;margin-top:4px">添加 Case</el-button>
+          <el-button size="mini" style="width:100%;margin-top:4px" @click="block.cases.push({value:'',actions:[{type:'assign',target:'',value:''}]}); sync()">添加 Case</el-button>
         </template>
 
         <!-- ===== 函数调用 ===== -->
@@ -114,19 +118,19 @@
             </el-select>
             <el-input v-else v-model="block.funcName" size="mini" placeholder="函数名" @input="sync" />
           </div>
-          <div class="inline-row" v-for="(arg, ai) in block.args" :key="ai" style="margin-bottom:2px">
-            <span class="mini-label">参数{{ai+1}}</span>
+          <div v-for="(arg, ai) in block.args" :key="ai" class="inline-row" style="margin-bottom:2px">
+            <span class="mini-label">参数{{ ai+1 }}</span>
             <el-input v-model="block.args[ai]" size="mini" placeholder="参数表达式" @input="sync" />
             <el-button v-if="block.args.length > 1" type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C" @click="block.args.splice(ai,1); sync()" />
           </div>
-          <el-button size="mini" icon="el-icon-plus" @click="block.args.push(''); sync()" style="width:100%;margin-top:2px">添加参数</el-button>
+          <el-button size="mini" style="width:100%;margin-top:2px" @click="block.args.push(''); sync()">添加参数</el-button>
         </template>
 
         <!-- ===== ForEach ===== -->
         <template v-if="block.type === 'foreach'">
           <div class="inline-row" style="margin-bottom:4px">
             <span class="mini-label">循环变量</span>
-            <el-input v-model="block.itemVar" size="mini" placeholder="item" @input="sync" style="width:80px" />
+            <el-input v-model="block.itemVar" size="mini" placeholder="item" style="width:80px" @input="sync" />
             <span class="mini-label" style="margin-left:6px">列表</span>
             <el-input v-model="block.listExpr" size="mini" placeholder="列表变量/表达式" @input="sync" />
           </div>
@@ -136,7 +140,7 @@
               <span class="eq">=</span>
               <el-input v-model="a.value" size="mini" placeholder="值/表达式" @input="sync" />
             </div>
-            <el-button size="mini" icon="el-icon-plus" @click="block.actions.push({type:'assign',target:'',value:''})" style="width:100%;margin-top:2px">添加赋值</el-button>
+            <el-button size="mini" style="width:100%;margin-top:2px" @click="block.actions.push({type:'assign',target:'',value:''})">添加赋值</el-button>
           </div>
         </template>
 
@@ -147,11 +151,17 @@
             <var-picker :vars="vars" :value="block.target" placeholder="变量" size="mini" @select="v => { block.target = v.varCode; sync() }" />
           </div>
           <div class="cond-area" style="margin-bottom:4px">
-            <el-input v-model="block.condVar" size="mini" placeholder="条件变量" @input="sync" style="width:80px" />
-            <el-select v-model="block.condOp" size="mini" style="width:60px" @change="sync">
-              <el-option label="==" value="==" /><el-option label="!=" value="!=" /><el-option label=">" value=">" /><el-option label="<" value="<" />
+            <el-input v-model="block.condVar" size="mini" placeholder="条件变量" style="width:80px" @input="sync" />
+            <el-select v-model="block.condOp" size="mini" style="width:100px" @change="sync">
+              <el-option label="==" value="==" /><el-option label="!=" value="!=" />
+              <el-option label=">" value=">" /><el-option label=">=" value=">=" />
+              <el-option label="<" value="<" /><el-option label="<=" value="<=" />
+              <el-option label="in" value="in" />
+              <el-option label="含" value="contains" />
+              <el-option label="前" value="startsWith" />
+              <el-option label="后" value="endsWith" />
             </el-select>
-            <el-input v-model="block.condValue" size="mini" placeholder="值" @input="sync" style="width:80px" />
+            <el-input v-model="block.condValue" size="mini" placeholder="值" style="width:80px" @input="sync" />
           </div>
           <div class="inline-row">
             <span class="mini-label" style="color:#52c41a">真</span>
@@ -195,14 +205,14 @@
             <el-input v-model="p.content" size="mini" :placeholder="p.type === 'expr' ? '变量/表达式' : '文本内容'" @input="sync" />
             <el-button v-if="block.parts.length > 1" type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C" @click="block.parts.splice(pi,1); sync()" />
           </div>
-          <el-button size="mini" icon="el-icon-plus" @click="block.parts.push({type:'text',content:''}); sync()" style="width:100%;margin-top:2px">添加片段</el-button>
+          <el-button size="mini" style="width:100%;margin-top:2px" @click="block.parts.push({type:'text',content:''}); sync()">添加片段</el-button>
         </template>
 
       </div>
     </div>
 
     <!-- 添加块按钮 -->
-    <el-dropdown trigger="click" @command="addBlock" style="width:100%;margin-top:6px">
+    <el-dropdown trigger="click" style="width:100%;margin-top:6px" @command="addBlock">
       <el-button size="mini" icon="el-icon-plus" style="width:100%">添加动作块</el-button>
       <el-dropdown-menu slot="dropdown">
         <el-dropdown-item v-for="bt in blockTypes" :key="bt.type" :command="bt.type">
@@ -214,7 +224,13 @@
 </template>
 
 <script>
-import { blocksToActionData, actionDataToBlocks, newBlock, generateScript, BLOCK_TYPES } from '@/utils/actionDataCodegen'
+import {
+  actionDataToBlocks,
+  BLOCK_TYPES,
+  blocksToActionData,
+  generateScript,
+  newBlock
+} from '@/utils/actionDataCodegen'
 import VarPicker from '@/components/common/VarPicker.vue'
 
 export default {
@@ -230,6 +246,11 @@ export default {
       blocks: [],
       blockTypes: BLOCK_TYPES,
       newInValue: ''
+    }
+  },
+  computed: {
+    scriptPreview() {
+      return generateScript(blocksToActionData(this.blocks))
     }
   },
   watch: {
@@ -250,11 +271,6 @@ export default {
         this.$set(inCheckBlock, 'inValues', vals)
         this.$emit('update', blocksToActionData(this.blocks))
       }
-    }
-  },
-  computed: {
-    scriptPreview() {
-      return generateScript(blocksToActionData(this.blocks))
     }
   },
   methods: {

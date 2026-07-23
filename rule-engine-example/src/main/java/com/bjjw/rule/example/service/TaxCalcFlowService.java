@@ -40,7 +40,7 @@ public class TaxCalcFlowService {
      * @return 计算结果（包含多个输出变量）
      */
     public Map<String, Object> calculateTax(TaxCalcQuery query) {
-        RuleResult result = ruleClient.execute(RULE_CODE, query);
+        RuleResult result = ruleClient.execute(RULE_CODE, query, null);
 
         if (!result.isSuccess()) {
             log.error("决策流执行失败 [{}]: {}", RULE_CODE, result.getErrorMessage());
