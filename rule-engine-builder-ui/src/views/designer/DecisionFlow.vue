@@ -341,7 +341,7 @@ import {
 } from '@/components/flow/edgeLineType'
 import { compileRule, executeRule, getContent, saveContent } from '@/api/definition'
 import { generateScript } from '@/utils/actionDataCodegen'
-import { buildQlConditionExpr, inferConstVarType, parseQlConditionExpr } from '@/utils/conditionExpr'
+import { buildQlConditionExpr, constTypeFromVarType, inferConstVarType, parseQlConditionExpr } from '@/utils/conditionExpr'
 import { graphContainsDirectedCycle } from '@/utils/flowGraphCycle'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import VarPicker from '@/components/common/VarPicker.vue'
@@ -367,9 +367,9 @@ export default {
       nodeProps: {},
       edgeProps: {},
       nodeCondMode: 'visual',
-      nodeCondVisual: { leftVar: '', leftLabel: '', operator: '>', rightValue: '', rightType: 'value', rightVar: '' },
+      nodeCondVisual: { leftVar: '', leftLabel: '', leftVarType: '', operator: '>', rightValue: '', rightType: 'value', rightVar: '', rightConstType: '' },
       edgeCondMode: 'visual',
-      edgeCondVisual: { leftVar: '', leftLabel: '', operator: '==', rightValue: '', rightType: 'value', rightVar: '' },
+      edgeCondVisual: { leftVar: '', leftLabel: '', leftVarType: '', operator: '==', rightValue: '', rightType: 'value', rightVar: '', rightConstType: '' },
       actionMode: 'visual',
       currentActionData: [],
       testVisible: false,
@@ -905,6 +905,7 @@ export default {
      * 弹出版本说明后保存并记录快照。
      */
     async handleSave() {
+      if (!this.ensureVisualEditable()) return
       let changeLog = ''
       try {
         changeLog = await this.$refs.designSaveVersionDialog.prompt()
@@ -912,17 +913,22 @@ export default {
         return
       }
       const modelJson = JSON.stringify(this.buildBackendModel())
-      await saveContent({
+      // 后端“保存即编译”：校验失败回滚不落库（错误由统一拦截器弹出）；拦截器不 reject，须判返回码
+      const res = await saveContent({
         definitionId: this.definitionId,
         scopeCompId: this.scopeCompId,
         modelJson,
         changeLog: changeLog || undefined,
         recordHistory: true
       })
-      this.$message.success('保存成功')
+      if (res && res.code === 200) {
+        this.$message.success('保存成功，规则已生效，可直接「发布」')
+        if (this.$refs.scriptPanel) this.$refs.scriptPanel.refresh()
+      }
     },
 
     async handleCompile() {
+      if (!this.ensureVisualEditable()) return
       await this.persistModelSilent()
       const res = await compileRule(this.definitionId, this.scopeCompId)
       if (res && res.data && res.data.success) {
@@ -964,6 +970,7 @@ export default {
       if (side === 'left') {
         this.nodeCondVisual.leftVar = v.varCode
         this.nodeCondVisual.leftLabel = label
+        this.nodeCondVisual.leftVarType = (!v._custom && v.varType) || ''
       } else {
         this.nodeCondVisual.rightVar = v.varCode
       }
@@ -974,12 +981,15 @@ export default {
       if (side === 'left') {
         this.edgeCondVisual.leftVar = v.varCode
         this.edgeCondVisual.leftLabel = label
+        this.edgeCondVisual.leftVarType = (!v._custom && v.varType) || ''
       } else {
         this.edgeCondVisual.rightVar = v.varCode
       }
     },
     /**
      * 由可视化字段生成 QL 条件（与后端 QlCompareExpression 一致）。
+     * 常量类型优先级：左变量元数据类型 > 反解保留的字面量类型 > 启发式推断，
+     * 避免字符串型变量（如税号）的纯数字比较值丢失引号。
      */
     buildCondExpr(visual) {
       const left = visual.leftVar
@@ -988,7 +998,9 @@ export default {
       const mode = visual.rightType === 'var' ? 'var' : 'value'
       const raw = mode === 'var' ? visual.rightVar : visual.rightValue
       if (raw == null || raw === '') { this.$message.warning('请填写比较值'); return null }
-      const constType = mode === 'value' ? inferConstVarType(raw) : undefined
+      const constType = mode === 'value'
+        ? (constTypeFromVarType(visual.leftVarType) || visual.rightConstType || inferConstVarType(raw))
+        : undefined
       return buildQlConditionExpr(left, op, String(raw), mode, constType)
     },
     applyNodeCondVisual() {
@@ -1010,7 +1022,8 @@ export default {
     },
 
     /**
-     * 从已有表达式尽量恢复可视化字段。
+     * 从已有表达式尽量恢复可视化字段；反解时保留常量字面量类型（rightConstType），
+     * 确保带引号的字符串值重新生成时不会因启发式判断变成数值。
      */
     syncCondVisualFromExpr(expr) {
       const p = parseQlConditionExpr(expr)
@@ -1018,13 +1031,15 @@ export default {
         return {
           leftVar: p.leftVar,
           leftLabel: '',
+          leftVarType: '',
           operator: p.operator,
           rightValue: p.rightType === 'value' ? p.rightValue : '',
           rightType: p.rightType,
-          rightVar: p.rightType === 'var' ? (p.rightVar || p.rightValue) : ''
+          rightVar: p.rightType === 'var' ? (p.rightVar || p.rightValue) : '',
+          rightConstType: p.rightConstType || ''
         }
       }
-      return { leftVar: '', leftLabel: '', operator: '==', rightValue: '', rightType: 'value', rightVar: '' }
+      return { leftVar: '', leftLabel: '', leftVarType: '', operator: '==', rightValue: '', rightType: 'value', rightVar: '', rightConstType: '' }
     },
 
     insertVarCode(code) {
@@ -1048,6 +1063,7 @@ export default {
   flex-direction: column;
   height: calc(100vh - 82px);
   background: #fff;
+  position: relative;
   border-radius: 4px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);

@@ -347,11 +347,16 @@ export default {
     onProjectChange() {
       this.listQuery.pageNum = 1
       const id = this.selectedProjectId
-      this.$router.replace({ path: this.$route.path, query: id ? { projectId: String(id) } : {}}).catch(() => {})
       if (id) this.loadRules()
       else {
         this.list = []
         this.total = 0
+      }
+      // vue-router 3.0.2 的 replace 不返回 Promise，避免对其调用 .catch() 抛错中断上面的查询逻辑
+      try {
+        this.$router.replace({ path: this.$route.path, query: id ? { projectId: String(id) } : {}})
+      } catch (e) {
+        /* 忽略重复导航异常 */
       }
     },
     /**

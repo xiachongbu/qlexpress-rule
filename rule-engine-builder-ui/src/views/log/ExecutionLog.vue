@@ -94,14 +94,37 @@
     />
     <el-drawer title="日志详情" :visible.sync="detailVis" size="92%" @opened="onDetailDrawerOpened">
       <div v-if="detail" style="padding:16px">
+        <!-- 汇总条：结论前置（成功/失败、耗时、模型、版本、来源、业务ID、执行时间） -->
+        <div class="log-summary-bar">
+          <el-tag :type="detail.success === 1 ? 'success' : 'danger'" size="small">{{ detail.success === 1 ? '执行成功' : '执行失败' }}</el-tag>
+          <span class="log-summary-cost"><i class="el-icon-timer" /> {{ detail.executeTimeMs != null ? detail.executeTimeMs : '-' }}<small> ms</small></span>
+          <span class="log-summary-item"><span class="lbl">模型</span><el-tag size="mini">{{ modelTypeMap[detail.modelType] || detail.modelType || '-' }}</el-tag></span>
+          <span v-if="detail.ruleVersion != null" class="log-summary-item"><span class="lbl">版本</span><span class="val">v{{ detail.ruleVersion }}</span></span>
+          <span class="log-summary-item">
+            <span class="lbl">来源</span>
+            <el-tag :type="detail.source === 'SERVER' ? '' : 'success'" size="mini">{{ detail.source === 'SERVER' ? '服务端' : '客户端' }}</el-tag>
+            <span v-if="detail.clientAppName" class="val mono">{{ detail.clientAppName }}</span>
+          </span>
+          <span v-if="detail.businessId" class="log-summary-item">
+            <span class="lbl">业务ID</span><span class="val mono">{{ detail.businessId }}</span>
+            <i class="el-icon-document-copy copy-icon" title="复制业务ID" @click="copyText(detail.businessId, '业务ID')" />
+          </span>
+          <span class="log-summary-item"><span class="lbl">执行时间</span><span class="val mono">{{ formatTime(detail.createTime) }}</span></span>
+        </div>
         <el-tabs v-model="detailTab" @tab-click="onDetailTabClick">
           <el-tab-pane label="基本信息" name="basic">
             <div class="uiue-card">
-              <div class="uiue-card-title">输入参数</div>
+              <div class="uiue-card-title copyable-title">
+                <span>输入参数</span>
+                <i class="el-icon-document-copy copy-icon" title="复制输入参数" @click="copyText(fj(detail.inputParams), '输入参数')" />
+              </div>
               <pre class="log-pre">{{ fj(detail.inputParams) }}</pre>
             </div>
             <div class="uiue-card" style="margin-top:12px">
-              <div class="uiue-card-title">输出结果</div>
+              <div class="uiue-card-title copyable-title">
+                <span>输出结果</span>
+                <i class="el-icon-document-copy copy-icon" title="复制输出结果" @click="copyText(fj(detail.outputResult), '输出结果')" />
+              </div>
               <pre class="log-pre">{{ fj(detail.outputResult) }}</pre>
             </div>
             <div v-if="detail.errorMessage" class="uiue-card" style="margin-top:12px">
@@ -118,6 +141,7 @@
               <flow-trace-logic-flow
                 ref="flowTraceLf"
                 :definition-model="definitionModel"
+                :trace-path="flowTracePath"
               />
               <trace-tree
                 :trace-info="detail.traceInfo"
@@ -160,7 +184,8 @@
                     <div class="rs-step-head">
                       <span class="rs-step-title">{{ ruleMap[step.ruleCode] || step.ruleCode }}</span>
                       <code class="rs-step-code">{{ step.ruleCode }}</code>
-                      <el-tag :type="step.success ? 'success' : 'danger'" size="mini" style="margin-left:auto">{{ step.success ? '成功' : '失败' }}</el-tag>
+                      <span v-if="step.executeTimeMs != null" class="rs-step-cost" style="margin-left:auto">{{ step.executeTimeMs }} ms</span>
+                      <el-tag :type="step.success ? 'success' : 'danger'" size="mini" :style="step.executeTimeMs != null ? 'margin-left:8px' : 'margin-left:auto'">{{ step.success ? '成功' : '失败' }}</el-tag>
                     </div>
                     <div v-if="step.result !== undefined && step.result !== null" class="rs-step-body">
                       <pre class="log-pre" style="max-height:120px">{{ formatStepResult(step.result) }}</pre>
@@ -185,6 +210,7 @@ import { listProjects } from '@/api/project'
 import { listAllFunctionsByProject } from '@/api/function'
 import TraceTree from '@/components/common/TraceTree.vue'
 import FlowTraceLogicFlow from '@/components/common/FlowTraceLogicFlow.vue'
+import { deriveFlowTracePath } from '@/utils/flowTracePath'
 
 export default {
   name: 'ExecutionLog',
@@ -271,6 +297,16 @@ export default {
         if (output && Array.isArray(output.steps)) return output.steps
       } catch (e) { /* ignore */ }
       return []
+    },
+    /** FLOW 日志的执行路径（推导失败返回 null，画布不高亮） */
+    flowTracePath: function() {
+      if (!this.detail || this.detail.modelType !== 'FLOW' || !this.detail.traceInfo) return null
+      if (!this.definitionModel) return null
+      try {
+        return deriveFlowTracePath(this.definitionModel, this.detail.traceInfo)
+      } catch (e) {
+        return null
+      }
     }
   },
   watch: {
@@ -498,6 +534,37 @@ export default {
         return s || '(空)'
       }
     },
+    /** 复制文本到剪贴板并给出成功/失败提示 */
+    copyText: function(text, label) {
+      var self = this
+      var content = (text === undefined || text === null) ? '' : String(text)
+      var done = function() { self.$message.success((label || '内容') + '已复制到剪贴板') }
+      var fail = function() { self.$message.error('复制失败，请手动复制') }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(content).then(done).catch(function() {
+          self._fallbackCopy(content) ? done() : fail()
+        })
+      } else {
+        this._fallbackCopy(content) ? done() : fail()
+      }
+    },
+    /** 兼容不支持 Clipboard API 环境的降级复制方案 */
+    _fallbackCopy: function(content) {
+      try {
+        var ta = document.createElement('textarea')
+        ta.value = content
+        ta.style.position = 'fixed'
+        ta.style.top = '-9999px'
+        document.body.appendChild(ta)
+        ta.focus()
+        ta.select()
+        var ok = document.execCommand('copy')
+        document.body.removeChild(ta)
+        return ok
+      } catch (e) {
+        return false
+      }
+    },
     formatTime: function(time) {
       if (!time) return '-'
       var d = new Date(time)
@@ -525,6 +592,20 @@ export default {
   margin: 0;
   font-size: 12px;
   line-height: 1.6;
+}
+.copyable-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.copy-icon {
+  cursor: pointer;
+  color: #909399;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+.copy-icon:hover {
+  color: #409EFF;
 }
 .log-pre.error {
   background: #fff2f2;
@@ -564,8 +645,26 @@ export default {
 }
 .rs-step-title { font-size: 14px; font-weight: 600; color: #303133; }
 .rs-step-code { font-size: 12px; color: #909399; background: #f5f7fa; padding: 1px 6px; border-radius: 3px; }
+.rs-step-cost {
+  font-size: 12px; color: #606266; background: #f4f4f5;
+  padding: 1px 10px; border-radius: 10px;
+  font-family: Consolas, Monaco, monospace;
+}
 .rs-step-body { padding: 10px 16px; }
 .rs-empty { text-align: center; padding: 36px 0; color: #C0C4CC; font-size: 13px; }
+/* ═══════ 详情汇总条 ═══════ */
+.log-summary-bar {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 8px 22px;
+  background: #f8f9fb; border: 1px solid #ebeef5; border-radius: 6px;
+  padding: 10px 16px; margin-bottom: 14px;
+}
+.log-summary-cost { font-size: 15px; font-weight: 700; color: #303133; }
+.log-summary-cost small { font-size: 12px; color: #909399; font-weight: 400; }
+.log-summary-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #606266; }
+.log-summary-item .lbl { color: #909399; }
+.log-summary-item .val { color: #303133; font-weight: 600; }
+.log-summary-item .val.mono { font-family: Consolas, Monaco, monospace; font-weight: 400; }
 
 /* 表格操作项：蓝色可点击链接 + 手型光标 */
 .tableOperateBtn {

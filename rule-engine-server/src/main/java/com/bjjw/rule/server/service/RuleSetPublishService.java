@@ -1,6 +1,7 @@
 package com.bjjw.rule.server.service;
 
 import com.alibaba.fastjson.JSON;
+import com.bjjw.rule.core.util.RuleSetHitPolicies;
 import com.bjjw.rule.model.constant.RuleCompIds;
 import com.bjjw.rule.model.dto.RulePushMessage;
 import com.bjjw.rule.model.entity.RuleDefinition;
@@ -108,6 +109,7 @@ public class RuleSetPublishService {
         }
 
         String memberJson = JSON.toJSONString(orderedCodes);
+        String hitPolicy = RuleSetHitPolicies.normalize(set.getHitPolicy());
         int batchVersion = (set.getPublishedVersion() != null ? set.getPublishedVersion() : 0) + 1;
 
         for (String compId : toPublish) {
@@ -120,6 +122,7 @@ public class RuleSetPublishService {
             if (existing != null) {
                 existing.setVersion(rowVer);
                 existing.setMemberRuleCodes(memberJson);
+                existing.setHitPolicy(hitPolicy);
                 existing.setProjectCode(projectCode);
                 existing.setStatus(1);
                 existing.setPublishTime(LocalDateTime.now());
@@ -132,6 +135,7 @@ public class RuleSetPublishService {
                 row.setCompId(compId);
                 row.setVersion(rowVer);
                 row.setMemberRuleCodes(memberJson);
+                row.setHitPolicy(hitPolicy);
                 row.setStatus(1);
                 row.setPublishTime(LocalDateTime.now());
                 publishedSetMapper.insert(row);
@@ -141,6 +145,7 @@ public class RuleSetPublishService {
             push.setAction("SET_PUBLISH");
             push.setSetCode(set.getSetCode());
             push.setMemberRuleCodes(memberJson);
+            push.setHitPolicy(hitPolicy);
             push.setVersion(rowVer);
             push.setModelType("RULE_SET");
             push.setProjectCode(projectCode);

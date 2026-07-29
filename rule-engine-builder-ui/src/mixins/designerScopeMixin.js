@@ -37,6 +37,19 @@ export default {
   },
   methods: {
     /**
+     * 脚本覆盖模式下拦截可视化“保存/编译”：
+     * 这两个操作会写入 modelJson 并把 compileStatus 置回 0（或用可视化编译结果覆盖手写脚本），
+     * 导致“保存即生效、可直接发布”的脚本模式行为被破坏。
+     * 依赖宿主设计器 data 中的 scriptMode 字段（'visual' | 'script'）。
+     */
+    ensureVisualEditable() {
+      if (this.scriptMode === 'script') {
+        this.$message.warning('当前为脚本覆盖模式，请在脚本面板中「保存脚本」（保存即生效，可直接发布）；如需可视化编辑请先退出脚本模式')
+        return false
+      }
+      return true
+    },
+    /**
      * 从抽屉 store 或路由 query 初始化 scopeCompId（新建规则打开抽屉时带 scopeCompId）
      * 抽屉内编辑规则时 OPEN 往往传 query:{}，若仍读取主页面 URL 上残留的 scopeCompId，会拉错作用域内容导致设计无法反显。
      */

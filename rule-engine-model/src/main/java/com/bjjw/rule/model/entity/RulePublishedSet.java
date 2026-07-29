@@ -21,6 +21,8 @@ public class RulePublishedSet {
     private Integer version;
     /** 成员 rule_code 有序 JSON 数组字符串 */
     private String memberRuleCodes;
+    /** 命中策略（发布快照）：ALL/FIRST/UNIQUE */
+    private String hitPolicy;
     private Integer status;
     private String publishBy;
     private LocalDateTime publishTime;

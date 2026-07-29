@@ -251,6 +251,7 @@ public class HttpSyncClient {
         }
         s.setVersion(obj.getIntValue("version"));
         s.setMemberRuleCodes(parseMemberRuleCodesField(obj));
+        s.setHitPolicy(obj.getString("hitPolicy"));
         s.setLastUpdateTime(System.currentTimeMillis());
         return s;
     }

@@ -1,5 +1,9 @@
 package com.bjjw.rule.server.service;
 
+import com.bjjw.rule.core.compiler.CompileResult;
+import com.bjjw.rule.core.compiler.RuleCompiler;
+import com.bjjw.rule.core.compiler.RuleModelCompilers;
+import com.bjjw.rule.core.compiler.ScriptSyntaxValidator;
 import com.bjjw.rule.model.constant.RuleCompIds;
 import com.bjjw.rule.model.constant.RuleDictTypes;
 import com.bjjw.rule.model.dto.RuleDefinitionDesignSnapshotListVO;
@@ -20,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -219,6 +224,8 @@ public class RuleDefinitionService extends ServiceImpl<RuleDefinitionMapper, Rul
     /**
      * 保存模型 JSON；若作用域行不存在则返回（不自动创建，需先 {@link #addContentScope}）。
      * 默认写入设计快照历史；编译前隐式保存可传 recordHistory=false。
+     * <p>所有模型类型统一为“保存即编译”：同一事务内编译校验失败抛异常回滚（不落库），
+     * 成功则写入编译产物并置 compileStatus=1，保存后可直接发布，无需单独编译步骤。</p>
      *
      * @param changeLog      版本说明，可空
      * @param recordHistory  为 true 且在内容行存在并更新成功时插入 design_snapshot
@@ -230,9 +237,35 @@ public class RuleDefinitionService extends ServiceImpl<RuleDefinitionMapper, Rul
         boolean updated = false;
         if (content != null) {
             content.setModelJson(modelJson);
-            content.setCompileStatus(0);
             int newVer = (content.getCurrentVersion() != null ? content.getCurrentVersion() : 0) + 1;
             content.setCurrentVersion(newVer);
+            if ("SCRIPT".equals(content.getModelType())) {
+                // SCRIPT 类型：直接对脚本正文做语法校验
+                String script = extractScript(modelJson);
+                CompileResult cr = ScriptSyntaxValidator.validate(script);
+                if (!cr.isSuccess()) {
+                    throw new IllegalArgumentException("脚本存在错误，无法保存：" + cr.getErrorMessage());
+                }
+                content.setCompiledScript(script);
+                content.setCompiledType("QLEXPRESS");
+                content.setScriptMode("script");
+            } else {
+                // 可视化类型：用对应编译器将模型编译为脚本，编译失败视同校验不通过，拒绝保存
+                RuleCompiler compiler = RuleModelCompilers.get(content.getModelType());
+                if (compiler == null) {
+                    throw new IllegalArgumentException("暂不支持的模型类型: " + content.getModelType());
+                }
+                CompileResult cr = compiler.compile(modelJson);
+                if (!cr.isSuccess()) {
+                    throw new IllegalArgumentException("规则校验未通过，无法保存：" + cr.getErrorMessage());
+                }
+                content.setCompiledScript(cr.getCompiledScript());
+                content.setCompiledType(cr.getCompiledType());
+                content.setScriptMode("visual");
+            }
+            content.setCompileStatus(1);
+            content.setCompileMessage(null);
+            content.setCompileTime(LocalDateTime.now());
             contentMapper.updateById(content);
             updated = true;
 
@@ -246,6 +279,20 @@ public class RuleDefinitionService extends ServiceImpl<RuleDefinitionMapper, Rul
                 snap.setCreateTime(LocalDateTime.now());
                 designSnapshotMapper.insert(snap);
             }
+        }
+    }
+
+    /** 从 modelJson 中提取脚本正文（{"script": "..."}）；非 JSON 包装则视为脚本原文 */
+    private String extractScript(String modelJson) {
+        if (modelJson == null) {
+            return "";
+        }
+        try {
+            com.alibaba.fastjson.JSONObject obj = com.alibaba.fastjson.JSON.parseObject(modelJson);
+            String s = obj != null ? obj.getString("script") : null;
+            return s != null ? s : modelJson;
+        } catch (Exception e) {
+            return modelJson;
         }
     }
 
@@ -355,7 +402,9 @@ public class RuleDefinitionService extends ServiceImpl<RuleDefinitionMapper, Rul
     }
 
     /**
-     * 技术人员手动编辑脚本，直接写入 compiledScript，跳过编译器。
+     * 技术人员手动编辑脚本，直接写入 compiledScript，跳过可视化编译器。
+     * 与 SCRIPT 类型的 saveContent 一致：同一事务内“校验 + 持久化”，
+     * 语法校验失败抛异常回滚（不落库），避免无效脚本以已编译状态被直接发布。
      */
     @Transactional
     public void saveScript(Long definitionId, String scopeCompId, String script) {
@@ -363,10 +412,14 @@ public class RuleDefinitionService extends ServiceImpl<RuleDefinitionMapper, Rul
         if (content == null) {
             throw new IllegalArgumentException("规则内容不存在，definitionId=" + definitionId + " scope=" + RuleCompIds.normalize(scopeCompId));
         }
+        CompileResult cr = ScriptSyntaxValidator.validate(script);
+        if (!cr.isSuccess()) {
+            throw new IllegalArgumentException("脚本存在错误，无法保存：" + cr.getErrorMessage());
+        }
         content.setCompiledScript(script);
         content.setCompiledType("QLEXPRESS");
         content.setCompileStatus(1);
-        content.setCompileMessage("手动编辑脚本（已跳过编译器）");
+        content.setCompileMessage(null);
         content.setCompileTime(LocalDateTime.now());
         content.setScriptMode("script");
         contentMapper.updateById(content);

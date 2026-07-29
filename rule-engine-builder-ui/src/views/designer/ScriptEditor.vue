@@ -117,29 +117,46 @@
           <span class="se-line-info">{{ lineCount }} 行 / {{ script.length }} 字符</span>
         </div>
 
-        <!-- 编辑器 -->
-        <div class="se-editor-container">
-          <div ref="lineNums" class="se-line-numbers">
-            <div v-for="n in lineCount" :key="n" class="se-line-num">{{ n }}</div>
+        <!-- 查找 / 替换面板：ESC 在面板根节点统一拦截（stop 阻止冒泡），避免触发 el-drawer 的 ESC 关闭整个设计器抽屉 -->
+        <div v-show="searchVisible" class="se-search-panel" @keydown.esc.stop.prevent="closeSearch">
+          <div class="se-search-row">
+            <el-input
+              ref="searchInput"
+              v-model="searchQuery"
+              size="mini"
+              placeholder="查找"
+              prefix-icon="el-icon-search"
+              clearable
+              class="se-search-input"
+              @input="highlightAll"
+              @keydown.enter.native.prevent="findNext(false)"
+            />
+            <el-button size="mini" @click="findNext(false)">下一个</el-button>
+            <el-button size="mini" @click="highlightAll">全部高亮显示</el-button>
+            <span class="se-search-spacer" />
+            <el-checkbox v-model="showReplace" class="se-search-toggle">替换</el-checkbox>
+            <i class="el-icon-close se-search-close" title="关闭 (Esc)" @click="closeSearch" />
           </div>
-          <textarea
-            ref="editorRef"
-            v-model="script"
-            class="se-editor"
-            placeholder="// 在此编写 QLExpress 脚本&#10;// 双击左侧变量可快速插入&#10;&#10;result = 0"
-            spellcheck="false"
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="off"
-            @scroll="syncScroll"
-            @keydown="handleTab"
-          />
+          <div v-show="showReplace" class="se-search-row">
+            <el-input
+              v-model="replaceQuery"
+              size="mini"
+              placeholder="替换为"
+              class="se-search-input"
+              @keydown.enter.native.prevent="replaceCurrent"
+            />
+            <el-button size="mini" @click="replaceCurrent">替换</el-button>
+            <el-button size="mini" @click="replaceAll">全部替换</el-button>
+          </div>
         </div>
+
+        <!-- 编辑器 -->
+        <div ref="cmHost" class="se-editor-cm" />
 
         <!-- 底部提示 -->
         <div class="se-footer">
           <span class="se-footer-tip">
-            <i class="el-icon-edit-outline" /> 直接编写 QLExpress 脚本，保存后即可用于规则执行
+            <i class="el-icon-edit-outline" /> 直接编写 QLExpress 脚本，保存后即可用于规则执行；按 Ctrl+Alt+L 格式化，Ctrl+/ 注释，Ctrl+F 查找/替换，Ctrl+Z 撤销 / Ctrl+Shift+Z 重做
           </span>
         </div>
       </div>
@@ -183,17 +200,18 @@
 </template>
 
 <script>
-import { compileRule, executeRule, getContent, saveContent } from '@/api/definition'
+import { executeRule, getContent, saveContent, validateScript } from '@/api/definition'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import DesignSaveVersionDialog from '@/components/designer/DesignSaveVersionDialog.vue'
 import DesignVersionSwitcher from '@/components/designer/DesignVersionSwitcher.vue'
 import designerDefinitionIdMixin from '@/mixins/designerDefinitionIdMixin'
 import designerScopeMixin from '@/mixins/designerScopeMixin'
+import qlCodeEditorMixin from '@/mixins/qlCodeEditorMixin'
 
 export default {
   name: 'ScriptEditor',
   components: { DesignSaveVersionDialog, DesignVersionSwitcher },
-  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin],
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, qlCodeEditorMixin],
   data() {
     return {
       definitionId: null,
@@ -306,6 +324,10 @@ export default {
         this.expandedCats = cats
         this.expandedGroups = groups
       }
+    },
+    script(val) {
+      // 将外部变更同步到编辑器，首次非空内容自动设为撤销基准点
+      this.setCmValue(val)
     }
   },
   created() {
@@ -318,6 +340,16 @@ export default {
         this.contentLoaded = true
       }
     })()
+  },
+  mounted() {
+    this.initCmEditor()
+    // 若初始内容在编辑器创建前已加载完成，则直接以当前内容为撤销基准点
+    if (this.contentLoaded) {
+      this.resetCmHistoryBaseline()
+    }
+  },
+  beforeDestroy() {
+    this.destroyCmEditor()
   },
   methods: {
     toggleCat(key) {
@@ -366,20 +398,9 @@ export default {
     },
 
     /**
-     * 静默保存脚本模型（不写设计快照）。
-     */
-    async persistModelSilent() {
-      const modelJson = JSON.stringify({ script: this.script })
-      await saveContent({
-        definitionId: this.definitionId,
-        scopeCompId: this.scopeCompId,
-        modelJson,
-        recordHistory: false
-      })
-    },
-
-    /**
      * 带版本说明保存。
+     * 后端对 SCRIPT 类型在同一事务内“校验 + 编译 + 持久化”一步到位：
+     * 校验不通过则抛异常回滚（不落库），前端 catch 后拦截并提示。
      */
     async handleSave() {
       let changeLog = ''
@@ -389,18 +410,34 @@ export default {
         return
       }
       const modelJson = JSON.stringify({ script: this.script })
-      await saveContent({
-        definitionId: this.definitionId,
-        scopeCompId: this.scopeCompId,
-        modelJson,
-        changeLog: changeLog || undefined,
-        recordHistory: true
-      })
-      this.$message.success('保存成功')
+      try {
+        // 响应拦截器对业务错误（code!==200）不会 reject，只会 resolve 返回 res，
+        // 因此必须显式判断返回体的 code，不能仅依赖 await 是否抛异常。
+        const res = await saveContent({
+          definitionId: this.definitionId,
+          scopeCompId: this.scopeCompId,
+          modelJson,
+          changeLog: changeLog || undefined,
+          recordHistory: true
+        })
+        if (res && res.code === 200) {
+          this.compileStatus = 1
+          this.compileMessage = ''
+          this.$message.success('保存成功')
+        } else {
+          // 后端校验失败（如脚本语法错误）已由拦截器弹出错误提示，这里仅同步状态栏
+          this.compileStatus = 2
+          this.compileMessage = (res && (res.message || res.msg)) || '脚本校验失败，请检查脚本'
+        }
+      } catch (e) {
+        this.compileStatus = 2
+        this.compileMessage = (e && e.message) || '脚本校验失败'
+        this.$message.error(this.compileMessage)
+      }
     },
     async handleCompile() {
-      await this.persistModelSilent()
-      const res = await compileRule(this.definitionId, this.scopeCompId)
+      // 无副作用的语法校验（不持久化、不加版本）
+      const res = await validateScript(this.definitionId, this.script)
       const result = res && res.data ? res.data : res
       if (result && result.success) {
         this.compileStatus = 1
@@ -430,28 +467,14 @@ export default {
       })
       this.testResult = res && res.data ? res.data : res
     },
+    /** 编辑器占位提示（覆写 mixin 默认值，保留双击插入提示） */
+    cmPlaceholder() {
+      return '// 在此编写 QLExpress 脚本\n// 双击左侧变量可快速插入\n\nresult = 0'
+    },
     insertVar(code) {
-      const el = this.$refs.editorRef
-      if (!el) return
-      const start = el.selectionStart
-      const end = el.selectionEnd
-      this.script = this.script.substring(0, start) + code + this.script.substring(end)
-      this.$nextTick(() => {
-        el.focus()
-        el.selectionStart = el.selectionEnd = start + code.length
-      })
-    },
-    handleTab(e) {
-      if (e.key === 'Tab') {
-        e.preventDefault()
-        this.insertVar('    ')
-      }
-    },
-    syncScroll(e) {
-      if (this.$refs.lineNums) {
-        this.$refs.lineNums.scrollTop = e.target.scrollTop
-      }
+      this.insertAtCursor(code)
     }
+    // 注释/取消注释、格式化、查找/替换、编辑器初始化等能力均由 qlCodeEditorMixin 提供（与 ScriptPanel 共用）
   }
 }
 </script>
@@ -604,6 +627,35 @@ $editor-border: #313244;
   border-radius: 0 6px 6px 0;
   border: 1px solid #e8e8e8;
   overflow: hidden;
+  position: relative;
+}
+
+/* 查找 / 替换面板 */
+.se-search-panel {
+  position: absolute;
+  top: 34px;
+  right: 14px;
+  z-index: 20;
+  background: #f3f3f3;
+  border: 1px solid #c8c8c8;
+  border-radius: 4px;
+  padding: 6px 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+.se-search-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  & + .se-search-row { margin-top: 6px; }
+}
+.se-search-input { width: 220px; }
+.se-search-spacer { flex: 1; min-width: 8px; }
+.se-search-toggle { margin: 0 4px 0 0; }
+.se-search-close {
+  cursor: pointer;
+  color: #909399;
+  font-size: 14px;
+  &:hover { color: #f56c6c; }
 }
 
 .se-statusbar {
@@ -626,48 +678,46 @@ $editor-border: #313244;
 .se-statusbar-spacer { flex: 1; }
 .se-line-info { font-size: 11px; color: #585b70; font-family: 'Consolas', monospace; }
 
-.se-editor-container {
-  display: flex;
+.se-editor-cm {
   flex: 1;
   min-height: 400px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
-.se-line-numbers {
-  padding: 12px 8px 12px 12px;
-  background: $editor-line-bg;
-  border-right: 1px solid $editor-border;
-  overflow: hidden;
-  flex-shrink: 0;
-  min-width: 42px;
-  text-align: right;
-}
-.se-line-num {
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 13px;
-  line-height: 1.6;
-  color: $editor-line-text;
-  user-select: none;
-}
-.se-editor {
-  flex: 1;
-  padding: 12px 16px;
-  background: $editor-bg;
-  color: $editor-text;
+.se-editor-cm ::v-deep .CodeMirror {
+  height: 100%;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.6;
-  border: none;
-  outline: none;
-  resize: none;
-  width: 100%;
-  overflow-y: auto;
-  tab-size: 4;
-  white-space: pre;
-  overflow-wrap: normal;
-  overflow-x: auto;
-  caret-color: #89dceb;
-  &::placeholder { color: #45475a; font-style: italic; }
-  &:focus { background: #1a1a2e; }
+}
+/* 同名变量高亮：光标点到某变量时，所有同名出现处高亮 */
+.se-editor-cm ::v-deep .cm-matchhighlight {
+  background: rgba(102, 168, 255, 0.30);
+  border-radius: 2px;
+}
+.se-editor-cm ::v-deep .CodeMirror-selection-highlight-scrollbar {
+  background: #66a8ff;
+}
+/* 查找匹配项高亮（全部高亮显示） */
+.se-editor-cm ::v-deep .cm-search-highlight {
+  background: rgba(255, 170, 0, 0.40);
+  border-radius: 2px;
+}
+/* 匹配的花括号/括号对：高亮加粗 + 背景 + 下划线，便于快速识别配对关系 */
+.se-editor-cm ::v-deep .CodeMirror-matchingbracket {
+  color: #ffd166 !important;
+  font-weight: 700;
+  background: rgba(255, 209, 102, 0.28);
+  border-bottom: 2px solid #ffd166;
+  border-radius: 2px;
+}
+/* 未找到匹配的括号：红色告警 */
+.se-editor-cm ::v-deep .CodeMirror-nonmatchingbracket {
+  color: #fff !important;
+  font-weight: 700;
+  background: rgba(255, 107, 107, 0.55);
+  border-radius: 2px;
 }
 
 .se-footer {

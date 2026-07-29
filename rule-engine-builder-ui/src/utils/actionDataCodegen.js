@@ -12,7 +12,7 @@
  *   template-str: 动态字符串    { type:'template-str', target, parts:[{type:'text'|'expr', content}] }
  */
 
-import {buildQlConditionExpr, inferConstVarType} from './conditionExpr'
+import { buildQlConditionExpr, constTypeFromVarType, inferConstVarType } from './conditionExpr'
 
 function wrapValue(val) {
   if (val === null || val === undefined || val === '') return '""'
@@ -30,8 +30,17 @@ function generateBlock(block, indent) {
   if (!block || !block.type) return ''
 
   switch (block.type) {
-    case 'assign':
-      return (!block.target || !block.value) ? '' : pad + block.target + ' = ' + block.value
+    case 'assign': {
+      if (!block.target || !block.value) return ''
+      let code = pad + block.target + ' = ' + block.value
+      // 精度舍入（与后端 ActionDataCompiler.compileAssign 一致）：结果保留 BigDecimal，不转 double
+      if (block.enableRounding && block.decimalPlaces != null && block.decimalPlaces >= 0) {
+        const rm = block.roundingMode || 'HALF_UP'
+        code += '\n' + pad + block.target + ' = (new java.math.BigDecimal("" + ' + block.target +
+          ')).setScale(' + block.decimalPlaces + ', java.math.RoundingMode.' + rm + ')'
+      }
+      return code
+    }
 
     case 'if-block': {
       const branches = block.branches || []
@@ -115,7 +124,9 @@ function generateBlock(block, indent) {
 }
 
 /**
- * if-block / elseif 条件（与后端 ActionDataCompiler.buildCond 一致）。
+ * if-block / elseif 条件（与后端 ActionDataCompiler.buildCond 一致）：
+ * 优先用选择条件变量时记录的 condVarType 决定常量是否加引号，
+ * 避免纯数字形式的字符串（如税号）被误判为数值；缺失时回退启发式推断。
  */
 function buildCondExpr(branch) {
   if (!branch.condVar) return 'true'
@@ -126,7 +137,7 @@ function buildCondExpr(branch) {
     branch.condOp || '==',
     String(raw),
     'value',
-    inferConstVarType(raw)
+    constTypeFromVarType(branch.condVarType) || inferConstVarType(raw)
   )
   return expr || 'true'
 }
@@ -143,7 +154,7 @@ function buildTernaryCond(block) {
     block.condOp || '==',
     String(raw),
     'value',
-    inferConstVarType(raw)
+    constTypeFromVarType(block.condVarType) || inferConstVarType(raw)
   )
   return expr || 'true'
 }
@@ -191,9 +202,9 @@ export function blocksToActionData(blocks) {
 export function newBlock(type) {
   switch (type) {
     case 'assign':
-      return { type: 'assign', target: '', value: '' }
+      return { type: 'assign', target: '', value: '', enableRounding: false, decimalPlaces: 2, roundingMode: 'HALF_UP' }
     case 'if-block':
-      return { type: 'if-block', branches: [{ type: 'if', condVar: '', condOp: '==', condValue: '', actions: [{ type: 'assign', target: '', value: '' }] }] }
+      return { type: 'if-block', branches: [{ type: 'if', condVar: '', condVarType: '', condOp: '==', condValue: '', actions: [{ type: 'assign', target: '', value: '' }] }] }
     case 'switch-block':
       return { type: 'switch-block', matchVar: '', cases: [{ value: '', actions: [{ type: 'assign', target: '', value: '' }] }], defaultActions: [{ type: 'assign', target: '', value: '' }] }
     case 'func-call':
@@ -201,7 +212,7 @@ export function newBlock(type) {
     case 'foreach':
       return { type: 'foreach', itemVar: 'item', listExpr: '', actions: [{ type: 'assign', target: '', value: '' }] }
     case 'ternary':
-      return { type: 'ternary', target: '', condVar: '', condOp: '==', condValue: '', trueValue: '', falseValue: '' }
+      return { type: 'ternary', target: '', condVar: '', condVarType: '', condOp: '==', condValue: '', trueValue: '', falseValue: '' }
     case 'in-check':
       return { type: 'in-check', target: '', checkVar: '', inValues: [], trueValue: 'true', falseValue: 'false' }
     case 'template-str':

@@ -14,20 +14,65 @@
 </template>
 
 <script>
-import LogicFlow from '@logicflow/core'
+import LogicFlow, {
+  BezierEdge,
+  BezierEdgeModel,
+  LineEdge,
+  LineEdgeModel,
+  PolylineEdge,
+  PolylineEdgeModel
+} from '@logicflow/core'
 import '@logicflow/core/dist/style/index.css'
-import {registerCustomNodes} from '@/components/flow/nodes'
+import { registerCustomNodes } from '@/components/flow/nodes'
 import {
   migrateModelJsonForEdgeLineTypes,
   normalizeDefaultEdgeLineType,
   prepareLogicFlowDataForRender
 } from '@/components/flow/edgeLineType'
 
+/**
+ * 按 properties.traceStatus 调整边样式：executed=绿色加粗虚线，skipped=灰色淡化；无状态时保持原样
+ */
+function applyTraceEdgeStyle(style, properties) {
+  var status = properties && properties.traceStatus
+  if (status === 'executed') {
+    style.stroke = '#52c41a'
+    style.strokeWidth = 2.5
+    style.strokeDasharray = '8,5'
+  } else if (status === 'skipped') {
+    style.stroke = '#d9d9d9'
+    style.strokeWidth = 1.5
+    style.opacity = 0.7
+  }
+  return style
+}
+
+/**
+ * 仅在追踪画布实例上覆盖注册三种内置边类型（model 读 traceStatus 改样式），不影响设计器
+ */
+function registerTraceEdges(lf) {
+  var defs = [
+    { type: 'polyline', view: PolylineEdge, base: PolylineEdgeModel },
+    { type: 'line', view: LineEdge, base: LineEdgeModel },
+    { type: 'bezier', view: BezierEdge, base: BezierEdgeModel }
+  ]
+  defs.forEach(function(def) {
+    class TraceEdgeModel extends def.base {
+      getEdgeStyle() {
+        return applyTraceEdgeStyle(super.getEdgeStyle(), this.properties)
+      }
+    }
+    lf.register({ type: def.type, view: def.view, model: TraceEdgeModel })
+  })
+}
+
 export default {
   name: 'FlowTraceLogicFlow',
   props: {
     /** 规则完整 modelJson（需含 logicflow、defaultEdgeLineType） */
-    definitionModel: { type: Object, default: null }
+    definitionModel: { type: Object, default: null },
+    /** 执行轨迹（{ executedNodeIds, executedEdgeIds }），为空时不高亮 */
+    tracePath: { type: Object, default: null }
   },
   data: function() {
     return {
@@ -54,7 +99,8 @@ export default {
     }
   },
   watch: {
-    definitionModel: { deep: true, handler: 'scheduleRedraw' }
+    definitionModel: { deep: true, handler: 'scheduleRedraw' },
+    tracePath: { deep: true, handler: 'scheduleRedraw' }
   },
   mounted: function() {
     this.scheduleRedraw()
@@ -155,14 +201,33 @@ export default {
       this.lf = null
     },
     /**
-     * 克隆并迁移 model 上的边类型字段，避免污染父级引用
+     * 克隆并迁移 model 上的边类型字段，避免污染父级引用；并按 tracePath 注入节点/边的 traceStatus
      */
     prepareGraphData: function() {
       if (!this.definitionModel || !this.definitionModel.logicflow) return { nodes: [], edges: [] }
       var clone = JSON.parse(JSON.stringify(this.definitionModel))
       migrateModelJsonForEdgeLineTypes(clone)
       var g = clone.logicflow || { nodes: [], edges: [] }
-      return prepareLogicFlowDataForRender(g, normalizeDefaultEdgeLineType(clone.defaultEdgeLineType))
+      var data = prepareLogicFlowDataForRender(g, normalizeDefaultEdgeLineType(clone.defaultEdgeLineType))
+      this.applyTraceStatus(data)
+      return data
+    },
+    /**
+     * 画布节点/边与逻辑图同 id：命中 executedNodeIds/executedEdgeIds 标 executed，其余标 skipped；无轨迹时不打标（完全保持现状）
+     */
+    applyTraceStatus: function(data) {
+      var tp = this.tracePath
+      if (!tp || !Array.isArray(tp.executedNodeIds) || tp.executedNodeIds.length === 0) return
+      var nodeSet = {}
+      var edgeSet = {}
+      tp.executedNodeIds.forEach(function(id) { nodeSet[id] = true })
+      ;(tp.executedEdgeIds || []).forEach(function(id) { edgeSet[id] = true })
+      ;(data.nodes || []).forEach(function(n) {
+        n.properties = Object.assign({}, n.properties, { traceStatus: nodeSet[n.id] ? 'executed' : 'skipped' })
+      })
+      ;(data.edges || []).forEach(function(e) {
+        e.properties = Object.assign({}, e.properties, { traceStatus: edgeSet[e.id] ? 'executed' : 'skipped' })
+      })
     },
     /**
      * 初始化只读 LogicFlow（仅调用一次）
@@ -196,6 +261,7 @@ export default {
         }
       })
       registerCustomNodes(this.lf)
+      registerTraceEdges(this.lf)
       this.lf.updateEditConfig({
         isSilentMode: true,
         adjustEdge: false,

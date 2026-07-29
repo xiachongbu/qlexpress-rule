@@ -6,6 +6,7 @@ import com.alibaba.qlexpress4.Express4Runner;
 import com.alibaba.qlexpress4.InitOptions;
 import com.alibaba.qlexpress4.QLOptions;
 import com.alibaba.qlexpress4.QLResult;
+import com.alibaba.qlexpress4.exception.QLRuntimeException;
 import com.alibaba.qlexpress4.security.QLSecurityStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +66,7 @@ public class QLExpressEngine {
         } catch (Exception e) {
             log.error("QLExpress execution error: {}", e.getMessage(), e);
             ruleResult.setSuccess(false);
-            ruleResult.setErrorMessage(e.getMessage());
+            ruleResult.setErrorMessage(extractErrorMessage(e));
         } finally {
             ruleResult.setExecuteTimeMs(System.currentTimeMillis() - start);
         }
@@ -89,11 +90,29 @@ public class QLExpressEngine {
         } catch (Exception e) {
             log.error("QLExpress execution error: {}", e.getMessage(), e);
             ruleResult.setSuccess(false);
-            ruleResult.setErrorMessage(e.getMessage());
+            ruleResult.setErrorMessage(extractErrorMessage(e));
         } finally {
             ruleResult.setExecuteTimeMs(System.currentTimeMillis() - start);
         }
         return ruleResult;
+    }
+
+    /** 脚本主动 throw 语句对应的 QLExpress4 错误码 */
+    private static final String ERR_CODE_QL_THROW = "QL_THROW";
+
+    /**
+     * 提取执行异常的错误信息：仅当脚本主动 {@code throw}（错误码 QL_THROW，如 UNIQUE 策略校验文案）
+     * 时取被抛对象作为错误信息；其余运行时错误（NPE、除零等也会携带 catchObj）
+     * 保留 QLExpress 原始描述，避免丢失 [Near: ...] 与行列定位信息。
+     */
+    private static String extractErrorMessage(Exception e) {
+        if (e instanceof QLRuntimeException && ERR_CODE_QL_THROW.equals(((QLRuntimeException) e).getErrorCode())) {
+            Object catchObj = ((QLRuntimeException) e).getCatchObj();
+            if (catchObj != null) {
+                return String.valueOf(catchObj);
+            }
+        }
+        return e.getMessage();
     }
 
     public Express4Runner getRunner() {

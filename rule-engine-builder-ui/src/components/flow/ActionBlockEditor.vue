@@ -44,7 +44,7 @@
               <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C" @click="removeBranch(block, bri)" />
             </div>
             <div v-if="br.type !== 'else'" class="cond-area">
-              <var-picker :vars="vars" :value="br.condVar" placeholder="条件变量" size="mini" @select="v => { br.condVar = v.varCode; sync() }" />
+              <var-picker :vars="vars" :value="br.condVar" placeholder="条件变量" size="mini" @select="v => onCondVarSelect(br, v)" />
               <el-select v-model="br.condOp" size="mini" style="width:100px" @change="sync">
                 <el-option label="==" value="==" /><el-option label="!=" value="!=" />
                 <el-option label=">" value=">" /><el-option label=">=" value=">=" />
@@ -54,7 +54,7 @@
                 <el-option label="前" value="startsWith" />
                 <el-option label="后" value="endsWith" />
               </el-select>
-              <el-input v-model="br.condValue" size="mini" placeholder="值" style="width:90px" @input="sync" />
+              <el-input v-model="br.condValue" size="mini" placeholder="值" class="cond-value-input" @input="sync" />
             </div>
             <div class="branch-body">
               <div v-for="(a, ai) in br.actions" :key="ai" class="inline-row">
@@ -297,7 +297,21 @@ export default {
       return (block.branches || []).some(b => b.type === 'else')
     },
     addBranch(block, type) {
-      block.branches.push({ type, condVar: '', condOp: '==', condValue: '', actions: [{ type: 'assign', target: '', value: '' }] })
+      block.branches.push({ type, condVar: '', condVarType: '', condOp: '==', condValue: '', actions: [{ type: 'assign', target: '', value: '' }] })
+      this.sync()
+    },
+    /**
+     * 选择条件变量时同步记录其类型（condVarType），供前后端编译时决定比较常量是否加引号；
+     * 手动输入的自定义变量无元数据，置空后回退到启发式推断。
+     */
+    onCondVarSelect(branch, v) {
+      if (!v) {
+        this.$set(branch, 'condVar', '')
+        this.$set(branch, 'condVarType', '')
+      } else {
+        this.$set(branch, 'condVar', v.varCode)
+        this.$set(branch, 'condVarType', (!v._custom && v.varType) || '')
+      }
       this.sync()
     },
     removeBranch(block, bri) {
@@ -414,6 +428,9 @@ export default {
   gap: 3px;
   padding: 4px 6px;
   border-bottom: 1px dashed #e8e8e8;
+  // IF 条件行与赋值行对齐：条件变量与值弹性均分，操作符保持固定宽
+  .var-picker-wrap { flex: 1 1 0; min-width: 0; }
+  .cond-value-input { flex: 1 1 0; min-width: 0; }
 }
 .branch-body { padding: 4px 6px; }
 .branch-add-row { display: flex; gap: 4px; margin-top: 4px; }

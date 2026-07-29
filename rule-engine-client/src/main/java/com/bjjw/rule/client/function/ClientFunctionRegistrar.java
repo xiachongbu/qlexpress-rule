@@ -13,10 +13,11 @@ import org.springframework.context.ApplicationContext;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 客户端函数注册器 —— 根据服务端同步的函数元数据，自动注册到本地 QLExpress 引擎。
@@ -38,9 +39,9 @@ public class ClientFunctionRegistrar {
     private final ApplicationContext applicationContext;
 
     /** 已注册的函数元数据，用于 no-op 替身 / 恢复真实函数 */
-    private final List<JSONObject> registeredFunctions = new ArrayList<>();
-    /** 已注册的函数名集合 */
-    private final Set<String> registeredFuncCodes = new HashSet<>();
+    private final List<JSONObject> registeredFunctions = new CopyOnWriteArrayList<>();
+    /** 已注册的函数名集合（并发安全，主线程 / warmup 线程 / Redis 推送线程均会访问） */
+    private final Set<String> registeredFuncCodes = ConcurrentHashMap.newKeySet();
 
     public ClientFunctionRegistrar(QLExpressEngine engine, ApplicationContext applicationContext) {
         this.engine = engine;

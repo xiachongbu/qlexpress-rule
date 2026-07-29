@@ -41,4 +41,6 @@ public class RulePushMessage {
     private String setCode;
     /** 成员 rule_code 有序 JSON 数组字符串 */
     private String memberRuleCodes;
+    /** 规则集命中策略：ALL/FIRST/UNIQUE */
+    private String hitPolicy;
 }

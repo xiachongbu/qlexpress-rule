@@ -3,14 +3,45 @@
  * 节点类型：开始事件、结束事件、脚本任务、排他网关、聚合节点
  */
 
-import {CircleNode, CircleNodeModel, DiamondNode, DiamondNodeModel, h, RectNode, RectNodeModel} from '@logicflow/core'
-import {wouldCreateCycleFromNewEdge} from '@/utils/flowGraphCycle'
+import { CircleNode, CircleNodeModel, DiamondNode, DiamondNodeModel, h, RectNode, RectNodeModel } from '@logicflow/core'
+import { wouldCreateCycleFromNewEdge } from '@/utils/flowGraphCycle'
 
 // ============================================================
 // 工具函数
 // ============================================================
 function uuid() {
   return 'node_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+}
+
+// ============================================================
+// 执行轨迹高亮（只读追踪画布注入 properties.traceStatus；设计器无该属性，渲染不变）
+// ============================================================
+const TRACE_GREEN = '#52c41a'
+
+/** skipped 节点整体淡化；其余不加属性 */
+function traceGroupAttrs(properties) {
+  return properties && properties.traceStatus === 'skipped' ? { opacity: 0.35 } : {}
+}
+
+/** 是否已执行节点（需叠加绿色描边环与 ✓ 角标） */
+function isTraceExecuted(properties) {
+  return !!(properties && properties.traceStatus === 'executed')
+}
+
+/** 已执行节点右上角 ✓ 角标 */
+function traceBadge(cx, cy) {
+  return [
+    h('circle', { cx, cy, r: 8, fill: TRACE_GREEN, stroke: '#fff', strokeWidth: 1.5 }),
+    h('text', {
+      x: cx,
+      y: cy + 0.5,
+      textAnchor: 'middle',
+      dominantBaseline: 'central',
+      fill: '#fff',
+      fontSize: 10,
+      fontWeight: 'bold'
+    }, '✓')
+  ]
 }
 
 /**
@@ -33,8 +64,8 @@ function createDagSourceRule() {
 function StartEventFactory(CircleNode, CircleNodeModel) {
   class StartEventView extends CircleNode {
     getShape() {
-      const { x, y, r } = this.props.model
-      return h('g', {}, [
+      const { x, y, r, properties } = this.props.model
+      const children = [
         h('circle', {
           cx: x,
           cy: y,
@@ -52,7 +83,12 @@ function StartEventFactory(CircleNode, CircleNodeModel) {
           fontSize: 12,
           fontWeight: 'bold'
         }, '开始')
-      ])
+      ]
+      if (isTraceExecuted(properties)) {
+        children.unshift(h('circle', { cx: x, cy: y, r: r + 5, fill: 'none', stroke: TRACE_GREEN, strokeWidth: 3 }))
+        children.push(...traceBadge(x + r * 0.8, y - r * 0.8))
+      }
+      return h('g', traceGroupAttrs(properties), children)
     }
   }
 
@@ -100,8 +136,8 @@ function StartEventFactory(CircleNode, CircleNodeModel) {
 function EndEventFactory(CircleNode, CircleNodeModel) {
   class EndEventView extends CircleNode {
     getShape() {
-      const { x, y, r } = this.props.model
-      return h('g', {}, [
+      const { x, y, r, properties } = this.props.model
+      const children = [
         h('circle', {
           cx: x,
           cy: y,
@@ -119,7 +155,12 @@ function EndEventFactory(CircleNode, CircleNodeModel) {
           fontSize: 12,
           fontWeight: 'bold'
         }, '结束')
-      ])
+      ]
+      if (isTraceExecuted(properties)) {
+        children.unshift(h('circle', { cx: x, cy: y, r: r + 5, fill: 'none', stroke: TRACE_GREEN, strokeWidth: 3 }))
+        children.push(...traceBadge(x + r * 0.8, y - r * 0.8))
+      }
+      return h('g', traceGroupAttrs(properties), children)
     }
   }
 
@@ -159,7 +200,7 @@ function ScriptTaskFactory(RectNode, RectNodeModel) {
     getShape() {
       const { x, y, width, height, radius, properties } = this.props.model
       const name = properties.nodeName || '脚本任务'
-      return h('g', {}, [
+      const children = [
         h('rect', {
           x: x - width / 2,
           y: y - height / 2,
@@ -180,7 +221,22 @@ function ScriptTaskFactory(RectNode, RectNodeModel) {
           fontSize: 13,
           fontWeight: 'bold'
         }, name.length > 10 ? name.substr(0, 10) + '...' : name)
-      ])
+      ]
+      if (isTraceExecuted(properties)) {
+        children.unshift(h('rect', {
+          x: x - width / 2 - 4,
+          y: y - height / 2 - 4,
+          width: width + 8,
+          height: height + 8,
+          rx: radius + 3,
+          ry: radius + 3,
+          fill: 'none',
+          stroke: TRACE_GREEN,
+          strokeWidth: 3
+        }))
+        children.push(...traceBadge(x + width / 2, y - height / 2))
+      }
+      return h('g', traceGroupAttrs(properties), children)
     }
   }
 
@@ -235,7 +291,7 @@ function ExclusiveGatewayFactory(DiamondNode, DiamondNodeModel) {
         [x - rx, y]
       ].map(p => p.join(',')).join(' ')
       const shortName = nodeName.length > 4 ? nodeName.substr(0, 4) : nodeName
-      return h('g', {}, [
+      const children = [
         h('polygon', {
           points,
           fill: '#fa8c16',
@@ -259,7 +315,18 @@ function ExclusiveGatewayFactory(DiamondNode, DiamondNodeModel) {
           fill: '#666',
           fontSize: 12
         }, nodeName.length > 8 ? nodeName.substr(0, 8) + '…' : nodeName)
-      ])
+      ]
+      if (isTraceExecuted(properties)) {
+        const ringPoints = [
+          [x, y - ry - 5],
+          [x + rx + 5, y],
+          [x, y + ry + 5],
+          [x - rx - 5, y]
+        ].map(p => p.join(',')).join(' ')
+        children.unshift(h('polygon', { points: ringPoints, fill: 'none', stroke: TRACE_GREEN, strokeWidth: 3 }))
+        children.push(...traceBadge(x + rx * 0.85, y - ry * 0.85))
+      }
+      return h('g', traceGroupAttrs(properties), children)
     }
   }
 
@@ -301,14 +368,14 @@ function ExclusiveGatewayFactory(DiamondNode, DiamondNodeModel) {
 function JoinGatewayFactory(DiamondNode, DiamondNodeModel) {
   class JoinGatewayView extends DiamondNode {
     getShape() {
-      const { x, y, rx, ry } = this.props.model
+      const { x, y, rx, ry, properties } = this.props.model
       const points = [
         [x, y - ry],
         [x + rx, y],
         [x, y + ry],
         [x - rx, y]
       ].map(p => p.join(',')).join(' ')
-      return h('g', {}, [
+      const children = [
         h('polygon', {
           points,
           fill: '#8c8c8c',
@@ -324,7 +391,18 @@ function JoinGatewayFactory(DiamondNode, DiamondNodeModel) {
           fontSize: 12,
           fontWeight: 'bold'
         }, '聚合')
-      ])
+      ]
+      if (isTraceExecuted(properties)) {
+        const ringPoints = [
+          [x, y - ry - 5],
+          [x + rx + 5, y],
+          [x, y + ry + 5],
+          [x - rx - 5, y]
+        ].map(p => p.join(',')).join(' ')
+        children.unshift(h('polygon', { points: ringPoints, fill: 'none', stroke: TRACE_GREEN, strokeWidth: 3 }))
+        children.push(...traceBadge(x + rx * 0.85, y - ry * 0.85))
+      }
+      return h('g', traceGroupAttrs(properties), children)
     }
   }
 

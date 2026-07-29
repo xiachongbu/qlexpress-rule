@@ -54,6 +54,7 @@ public final class RulePushMessageConverter {
         s.setCompId(RuleCompIds.normalize(push.getCompId()));
         s.setVersion(push.getVersion() != null ? push.getVersion() : 0);
         s.setMemberRuleCodes(parseMemberCodes(push.getMemberRuleCodes()));
+        s.setHitPolicy(push.getHitPolicy());
         s.setLastUpdateTime(System.currentTimeMillis());
         return s;
     }

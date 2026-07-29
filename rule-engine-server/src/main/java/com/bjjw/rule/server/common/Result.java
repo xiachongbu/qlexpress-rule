@@ -8,6 +8,14 @@ public class Result<T> {
     private String message;
     private T data;
 
+    /**
+     * 兼容前端统一拦截器：其读取错误字段为 msg。
+     * 基于 Jackson getter 序列化，使返回体在保留 message 的同时额外输出 msg。
+     */
+    public String getMsg() {
+        return message;
+    }
+
     public static <T> Result<T> ok(T data) {
         Result<T> r = new Result<>();
         r.setCode(200);

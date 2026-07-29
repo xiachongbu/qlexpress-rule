@@ -408,22 +408,28 @@ export default {
      * 带版本说明的保存并记录快照。
      */
     async handleSave() {
+      if (!this.ensureVisualEditable()) return
       let changeLog = ''
       try {
         changeLog = await this.$refs.designSaveVersionDialog.prompt()
       } catch (e) {
         return
       }
-      await saveContent({
+      // 后端“保存即编译”：校验失败回滚不落库（错误由统一拦截器弹出）；拦截器不 reject，须判返回码
+      const res = await saveContent({
         definitionId: this.definitionId,
         scopeCompId: this.scopeCompId,
         modelJson: JSON.stringify(this.model),
         changeLog: changeLog || undefined,
         recordHistory: true
       })
-      this.$message.success('保存成功')
+      if (res && res.code === 200) {
+        this.$message.success('保存成功，规则已生效，可直接「发布」')
+        if (this.$refs.scriptPanel) this.$refs.scriptPanel.refresh()
+      }
     },
     async handleCompile() {
+      if (!this.ensureVisualEditable()) return
       await this.persistModelSilent()
       const res = await compileRule(this.definitionId, this.scopeCompId)
       if (res && res.data && res.data.success) {
@@ -463,6 +469,7 @@ export default {
   border-radius: 4px;
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  position: relative;
   min-height: 100%;
 }
 

@@ -10,8 +10,15 @@ import java.util.LinkedHashSet;
  * 决策表：将 JSON 模型编译为 QLExpress 脚本。
  * 条件支持每条规则上的 {@code conditionRoot} 树（与/或嵌套）或旧版「条件列 + 行条件数组」。
  * 动作支持每条规则内自带变量定义（varCode/varType/value），或旧版「全局 actions 列 + 行上仅 value」。
+ * <p>命中策略：FIRST 编译为 if/else-if 互斥链；ALL 编译为独立 if 序列；
+ * UNIQUE 在独立 if 序列基础上逐规则累加 {@code _hitCount}，末尾命中数 != 1 时
+ * 直接 {@code throw} 错误信息字符串使执行以失败终止（引擎层经
+ * {@code QLRuntimeException.getCatchObj()} 取回作为 errorMessage）。</p>
  */
 public class DecisionTableCompiler implements RuleCompiler {
+
+    /** UNIQUE 策略命中计数变量（下划线前缀避免与业务变量冲突，不参与结果 Map） */
+    static final String UNIQUE_HIT_COUNT_VAR = "_hitCount";
 
     @Override
     public CompileResult compile(String modelJson) {
@@ -33,6 +40,11 @@ public class DecisionTableCompiler implements RuleCompiler {
 
             StringBuilder script = new StringBuilder();
             boolean isFirst = "FIRST".equals(hitPolicy);
+            boolean isUnique = "UNIQUE".equals(hitPolicy);
+
+            if (isUnique) {
+                script.append(UNIQUE_HIT_COUNT_VAR).append(" = 0;\n");
+            }
 
             for (int i = 0; i < rules.size(); i++) {
                 JSONObject rule = rules.getJSONObject(i);
@@ -51,12 +63,24 @@ public class DecisionTableCompiler implements RuleCompiler {
                 script.append(buildRulePredicate(rule, ruleConditions, legacyColumnDefs));
                 script.append(") {\n");
 
+                if (isUnique) {
+                    script.append("    ").append(UNIQUE_HIT_COUNT_VAR)
+                            .append(" = ").append(UNIQUE_HIT_COUNT_VAR).append(" + 1;\n");
+                }
                 appendRuleAssignments(script, ruleActions, globalActionDefs);
 
                 script.append("}");
                 if (!isFirst) script.append("\n");
             }
             script.append("\n");
+
+            if (isUnique) {
+                script.append("if (").append(UNIQUE_HIT_COUNT_VAR).append(" != 1) {\n")
+                        .append("    throw \"唯一命中(UNIQUE)策略校验失败：实际命中 \" + ")
+                        .append(UNIQUE_HIT_COUNT_VAR)
+                        .append(" + \" 条规则，要求有且仅有 1 条\";\n")
+                        .append("}\n");
+            }
 
             if (!outputVarCodes.isEmpty()) {
                 RuleScriptResultCollector.prependOutputNullInits(script, outputVarCodes);

@@ -13,6 +13,7 @@ import com.bjjw.rule.client.sync.RedisL2RuleCache;
 import com.bjjw.rule.client.sync.RedisL2RuleSetCache;
 import com.bjjw.rule.client.sync.RedisSubscriber;
 import com.bjjw.rule.core.engine.QLExpressEngine;
+import com.bjjw.rule.core.util.RuleSetHitPolicies;
 import com.bjjw.rule.model.constant.RuleCompIds;
 import com.bjjw.rule.model.dto.RuleResult;
 import com.bjjw.rule.model.entity.RuleExecutionLog;
@@ -296,6 +297,14 @@ public class RuleEngineClient {
             return r;
         }
         Map<String, Object> ctx = params != null ? params : new HashMap<>();
+        String hitPolicy = RuleSetHitPolicies.normalize(setSnap.getHitPolicy());
+        if (!RuleSetHitPolicies.ALL.equals(hitPolicy)) {
+            RuleResult r = executeRuleSetCandidates(setSnap, scope, ctx, hitPolicy);
+            if (reportLog) {
+                reportLogSet(setCode, setSnap, ctx, r, System.currentTimeMillis() - start, businessId);
+            }
+            return r;
+        }
         List<Map<String, Object>> traceSteps = new ArrayList<>();
         for (String memberCode : setSnap.getMemberRuleCodes()) {
             CachedRule cached = resolveCachedRule(memberCode, scope);
@@ -314,6 +323,7 @@ public class RuleEngineClient {
             stepInfo.put("ruleCode", memberCode);
             stepInfo.put("success", step.isSuccess());
             stepInfo.put("result", step.getResult());
+            stepInfo.put("executeTimeMs", step.getExecuteTimeMs());
             traceSteps.add(stepInfo);
             if (!step.isSuccess()) {
                 RuleResult r = new RuleResult();
@@ -336,6 +346,70 @@ public class RuleEngineClient {
         if (reportLog) {
             reportLogSet(setCode, setSnap, ctx, ok, System.currentTimeMillis() - start, businessId);
         }
+        return ok;
+    }
+
+    /**
+     * FIRST/UNIQUE：成员为独立候选，均以原始入参副本执行，不做上下文累积
+     *（避免未命中成员的全 null 输出覆盖同名入参污染后续候选）。
+     * FIRST 首个命中即返回；无命中时成功返回 hitRuleCode=null。
+     * UNIQUE 全部执行，命中数 != 1 则失败。
+     */
+    private RuleResult executeRuleSetCandidates(CachedRuleSet setSnap, String scope,
+                                                Map<String, Object> params, String hitPolicy) {
+        boolean isFirst = RuleSetHitPolicies.FIRST.equals(hitPolicy);
+        List<Map<String, Object>> traceSteps = new ArrayList<>();
+        int hitCount = 0;
+        Object hitResult = null;
+        String hitRuleCode = null;
+        for (String memberCode : setSnap.getMemberRuleCodes()) {
+            CachedRule cached = resolveCachedRule(memberCode, scope);
+            if (cached == null) {
+                RuleResult r = new RuleResult();
+                r.setSuccess(false);
+                r.setErrorMessage("规则集成员未找到: " + memberCode);
+                r.setResult(traceSteps);
+                return r;
+            }
+            RuleResult step = engine.execute(cached.getCompiledScript(), new HashMap<>(params), config.isTraceEnabled());
+            Map<String, Object> stepInfo = new HashMap<>();
+            stepInfo.put("ruleCode", memberCode);
+            stepInfo.put("success", step.isSuccess());
+            stepInfo.put("result", step.getResult());
+            stepInfo.put("executeTimeMs", step.getExecuteTimeMs());
+            traceSteps.add(stepInfo);
+            if (!step.isSuccess()) {
+                RuleResult r = new RuleResult();
+                r.setSuccess(false);
+                r.setErrorMessage("规则集成员执行失败: " + memberCode + " — " + step.getErrorMessage());
+                r.setResult(traceSteps);
+                return r;
+            }
+            if (RuleSetHitPolicies.isHit(step.getResult())) {
+                hitCount++;
+                if (hitResult == null) {
+                    hitResult = step.getResult();
+                    hitRuleCode = memberCode;
+                }
+                if (isFirst) {
+                    break;
+                }
+            }
+        }
+        if (!isFirst && hitCount != 1) {
+            RuleResult r = new RuleResult();
+            r.setSuccess(false);
+            r.setErrorMessage("唯一命中(UNIQUE)策略校验失败：实际命中 " + hitCount + " 个成员，要求有且仅有 1 个");
+            r.setResult(traceSteps);
+            return r;
+        }
+        RuleResult ok = new RuleResult();
+        ok.setSuccess(true);
+        Map<String, Object> out = new HashMap<>();
+        out.put("hitRuleCode", hitRuleCode);
+        out.put("result", hitResult);
+        out.put("steps", traceSteps);
+        ok.setResult(out);
         return ok;
     }
 

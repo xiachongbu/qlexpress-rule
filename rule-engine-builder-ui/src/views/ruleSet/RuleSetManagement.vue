@@ -50,6 +50,15 @@
         <el-table-column prop="setName" label="规则集名称" min-width="160" show-overflow-tooltip sortable />
         <el-table-column prop="setCode" label="规则集编码" min-width="140" show-overflow-tooltip sortable />
         <el-table-column prop="memberCount" label="成员数" width="120" align="center" sortable />
+        <el-table-column prop="hitPolicy" label="命中策略" width="110" align="center">
+          <template slot-scope="{ row }">
+            <el-tooltip :content="hitPolicyDesc(row.hitPolicy)" placement="top" effect="light">
+              <el-tag size="mini" :type="{ ALL: 'info', FIRST: 'success', UNIQUE: 'warning' }[row.hitPolicy || 'ALL']">
+                {{ hitPolicyLabel(row.hitPolicy) }}
+              </el-tag>
+            </el-tooltip>
+          </template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" min-width="140" align="center" sortable>
           <template slot-scope="{ row }">
             <el-tag :type="{ 0: 'info', 1: 'success', 2: 'warning' }[row.status]" size="mini">
@@ -61,6 +70,7 @@
         <el-table-column label="操作" min-width="410" align="center">
           <template slot-scope="{ row }">
             <div style="white-space:nowrap">
+              <el-button type="text" size="small" @click="openEdit(row)">编辑</el-button>
               <el-button type="text" size="small" @click="openMembers(row)">成员</el-button>
               <el-button type="text" size="small" @click="openTest(row)">试跑</el-button>
               <el-button type="text" size="small" @click="openPublish(row)">发布</el-button>
@@ -76,10 +86,16 @@
       <pagination v-show="total>0" :total="total" :page.sync="listQuery.pageNum" :limit.sync="listQuery.pageSize" @pagination="load" />
     </template>
 
-    <el-dialog title="新建规则集" :visible.sync="createVis" width="510px" append-to-body custom-class="middleDialog">
+    <el-dialog :title="editRow ? '编辑规则集' : '新建规则集'" :visible.sync="createVis" width="510px" append-to-body custom-class="middleDialog">
       <el-form ref="createForm" :model="createFm" :rules="createRules" label-width="100px" size="small">
         <el-form-item label="集编码" prop="setCode"><el-input v-model="createFm.setCode" placeholder="全局唯一，勿与规则编码重复" /></el-form-item>
         <el-form-item label="集名称" prop="setName"><el-input v-model="createFm.setName" /></el-form-item>
+        <el-form-item label="命中策略">
+          <el-select v-model="createFm.hitPolicy" style="width:100%;">
+            <el-option v-for="o in hitPolicyOptions" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+          <div class="hit-policy-desc">{{ hitPolicyDesc(createFm.hitPolicy) }}</div>
+        </el-form-item>
         <el-form-item label="说明"><el-input v-model="createFm.description" type="textarea" :rows="2" /></el-form-item>
       </el-form>
       <div slot="footer">
@@ -180,6 +196,7 @@ import { listDefinitions } from '@/api/definition'
 import {
   listRuleSets,
   createRuleSet,
+  updateRuleSet,
   deleteRuleSet,
   listRuleSetMembers,
   saveRuleSetMembers,
@@ -204,7 +221,13 @@ export default {
       listQuery: { pageNum: 1, pageSize: 10, keyword: '' },
       createVis: false,
       createSubmitting: false,
-      createFm: { setCode: '', setName: '', description: '' },
+      editRow: null,
+      createFm: { setCode: '', setName: '', description: '', hitPolicy: 'ALL' },
+      hitPolicyOptions: [
+        { value: 'ALL', label: '全部执行' },
+        { value: 'FIRST', label: '首次命中' },
+        { value: 'UNIQUE', label: '唯一命中' }
+      ],
       createRules: {
         setCode: [{ required: true, message: '必填', trigger: 'blur' }],
         setName: [{ required: true, message: '必填', trigger: 'blur' }]
@@ -295,26 +318,67 @@ export default {
       this.handleQuery()
     },
     openCreate() {
-      this.createFm = { setCode: '', setName: '', description: '' }
+      this.editRow = null
+      this.createFm = { setCode: '', setName: '', description: '', hitPolicy: 'ALL' }
       this.createVis = true
       this.$nextTick(() => this.$refs.createForm && this.$refs.createForm.clearValidate())
+    },
+    openEdit(row) {
+      this.editRow = row
+      this.createFm = {
+        setCode: row.setCode,
+        setName: row.setName,
+        description: row.description || '',
+        hitPolicy: row.hitPolicy || 'ALL'
+      }
+      this.createVis = true
+      this.$nextTick(() => this.$refs.createForm && this.$refs.createForm.clearValidate())
+    },
+    hitPolicyLabel(policy) {
+      const found = this.hitPolicyOptions.find(o => o.value === (policy || 'ALL'))
+      return found ? found.label : policy
+    },
+    hitPolicyDesc(policy) {
+      const map = {
+        ALL: '全部执行：按顺序执行全部成员，前一成员输出并入上下文供后续成员使用（流水线）',
+        FIRST: '首次命中：成员为独立候选，均以原始入参执行，第一个产出非空结果的成员即返回',
+        UNIQUE: '唯一命中：成员为独立候选，均以原始入参执行，要求有且仅有一个成员产出非空结果，否则报错'
+      }
+      return map[policy || 'ALL'] || ''
     },
     submitCreate() {
       this.$refs.createForm.validate(async valid => {
         if (!valid) return
         this.createSubmitting = true
+        // 拦截器对业务错误不 reject（错误已由全局弹出），须判返回码才能认定成功
         try {
-          await createRuleSet({
-            projectId: this.selectedProjectId,
-            setCode: this.createFm.setCode.trim(),
-            setName: this.createFm.setName.trim(),
-            description: this.createFm.description || undefined
-          })
-          this.$message.success('创建成功')
-          this.createVis = false
-          this.load()
-        } catch (e) {
-          /* 全局拦截 */
+          let res
+          if (this.editRow) {
+            res = await updateRuleSet({
+              id: this.editRow.id,
+              setCode: this.createFm.setCode.trim(),
+              setName: this.createFm.setName.trim(),
+              description: this.createFm.description || undefined,
+              hitPolicy: this.createFm.hitPolicy
+            })
+          } else {
+            res = await createRuleSet({
+              projectId: this.selectedProjectId,
+              setCode: this.createFm.setCode.trim(),
+              setName: this.createFm.setName.trim(),
+              description: this.createFm.description || undefined,
+              hitPolicy: this.createFm.hitPolicy
+            })
+          }
+          if (res && res.code === 200) {
+            if (this.editRow) {
+              this.$message.success(this.editRow.status === 1 ? '已保存；已发布的规则集需重新「发布」后新策略才对 SDK 生效' : '保存成功')
+            } else {
+              this.$message.success('创建成功')
+            }
+            this.createVis = false
+            this.load()
+          }
         } finally {
           this.createSubmitting = false
         }
@@ -470,6 +534,7 @@ export default {
   border-radius: 4px;
 }
 .rule-set-tip { color: #606266; font-size: 13px; margin-bottom: 8px; }
+.hit-policy-desc { color: #909399; font-size: 12px; line-height: 18px; margin-top: 4px; }
 .rule-set-page >>> .uiue-list-heading,
 .rule-set-page >>> .uiue-search-container,
 .rule-set-page >>> .uiue-btn-bar { flex-shrink: 0; }

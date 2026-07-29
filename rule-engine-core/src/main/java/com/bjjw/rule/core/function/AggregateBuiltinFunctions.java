@@ -160,11 +160,7 @@ public class AggregateBuiltinFunctions {
             return new BigDecimal((BigInteger) o);
         }
         if (o instanceof Number) {
-            Number n = (Number) o;
-            if (o instanceof Byte || o instanceof Short || o instanceof Integer || o instanceof Long) {
-                return BigDecimal.valueOf(n.longValue());
-            }
-            return BigDecimal.valueOf(n.doubleValue());
+            return new BigDecimal(o.toString());
         }
         return null;
     }

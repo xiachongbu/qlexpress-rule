@@ -17,5 +17,7 @@ public class CachedRuleSet {
     private int version;
     /** 成员 rule_code 执行顺序 */
     private List<String> memberRuleCodes = new ArrayList<>();
+    /** 命中策略：ALL/FIRST/UNIQUE，空视为 ALL（兼容旧版快照） */
+    private String hitPolicy;
     private long lastUpdateTime;
 }

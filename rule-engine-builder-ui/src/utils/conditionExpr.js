@@ -17,6 +17,16 @@ export function inferConstVarType(raw) {
 }
 
 /**
+ * 将变量元数据类型映射为常量格式化类型，与后端 QlCompareExpression.formatConstantRhs
+ * 对齐：仅 STRING/ENUM/DATE 加引号，其余（NUMBER/BOOLEAN 等）保持原值。
+ * 未知类型返回空串，由调用方回退到 inferConstVarType 启发式判断。
+ */
+export function constTypeFromVarType(varType) {
+  if (!varType) return ''
+  return ['STRING', 'ENUM', 'DATE'].indexOf(varType) >= 0 ? 'STRING' : 'NUMBER'
+}
+
+/**
  * 双引号字符串内的转义（与 Java 字面量一致）。
  */
 function escapeQlDoubleQuotedSegment(s) {
@@ -81,7 +91,7 @@ export function buildQlConditionExpr(leftVar, operator, rightRaw, rightMode, con
 /**
  * 从表达式反解可视化字段（与 buildQlConditionExpr 可逆的部分）。
  *
- * @returns {{ leftVar: string, leftLabel: string, operator: string, rightValue: string, rightType: 'value'|'var', rightVar: string }|null}
+ * @returns {{ leftVar: string, leftLabel: string, operator: string, rightValue: string, rightType: 'value'|'var', rightVar: string, rightConstType?: string }|null}
  */
 export function parseQlConditionExpr(expr) {
   if (!expr || typeof expr !== 'string') return null
@@ -100,7 +110,7 @@ export function parseQlConditionExpr(expr) {
     const dq = /^"((?:\\.|[^"\\])*)"$/.exec(inner)
     if (dq) {
       const unesc = dq[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\')
-      return { leftVar: left, leftLabel: '', operator: op, rightValue: unesc, rightType: 'value', rightVar: '' }
+      return { leftVar: left, leftLabel: '', operator: op, rightValue: unesc, rightType: 'value', rightVar: '', rightConstType: 'STRING' }
     }
     return null
   }
@@ -128,13 +138,13 @@ export function parseQlConditionExpr(expr) {
 
     if (right.startsWith('"') && right.endsWith('"')) {
       const body = right.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\')
-      return { leftVar: left, leftLabel: '', operator: op, rightValue: body, rightType: 'value', rightVar: '' }
+      return { leftVar: left, leftLabel: '', operator: op, rightValue: body, rightType: 'value', rightVar: '', rightConstType: 'STRING' }
     }
     if (/^[\w.$]+$/.test(right)) {
       return { leftVar: left, leftLabel: '', operator: op, rightValue: right, rightType: 'var', rightVar: right }
     }
     if (!isNaN(Number(right)) && right !== '') {
-      return { leftVar: left, leftLabel: '', operator: op, rightValue: right, rightType: 'value', rightVar: '' }
+      return { leftVar: left, leftLabel: '', operator: op, rightValue: right, rightType: 'value', rightVar: '', rightConstType: 'NUMBER' }
     }
     return { leftVar: left, leftLabel: '', operator: op, rightValue: right, rightType: 'value', rightVar: '' }
   }

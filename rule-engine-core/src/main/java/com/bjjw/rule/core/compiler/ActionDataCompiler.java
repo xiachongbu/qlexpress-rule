@@ -52,10 +52,13 @@ public class ActionDataCompiler {
             if (dp != null && dp >= 0) {
                 String rm = b.getString("roundingMode");
                 if (empty(rm)) rm = "HALF_UP";
+                // 舍入结果保留 BigDecimal，不转 double，避免重新引入二进制浮点误差。
+                // 后续比较无 equals/scale 陷阱：QLExpress4 的 ==/!=/in/switch-case 对 Number
+                // 均为数值语义（实测 0.10 == 0.1、1.00 in [1] 皆为 true）。
                 sb.append("\n").append(pad(indent))
                   .append(target).append(" = (new java.math.BigDecimal(\"\" + ")
                   .append(target).append(")).setScale(").append(dp)
-                  .append(", java.math.RoundingMode.").append(rm).append(").doubleValue()");
+                  .append(", java.math.RoundingMode.").append(rm).append(")");
             }
         }
         return sb.toString();
@@ -136,7 +139,7 @@ public class ActionDataCompiler {
         if (empty(target) || empty(condVar)) return "";
         String op = b.getString("condOp");
         if (empty(op)) op = "==";
-        String cond = QlCompareExpression.emitStructuredCondition(condVar, op, b.getString("condValue"));
+        String cond = QlCompareExpression.emitStructuredCondition(condVar, op, b.getString("condValue"), b.getString("condVarType"));
         String tv = b.getString("trueValue");
         String fv = b.getString("falseValue");
         return pad(indent) + target + " = " + cond + " ? " + (empty(tv) ? "\"\"" : tv) + " : " + (empty(fv) ? "\"\"" : fv);
@@ -189,13 +192,14 @@ public class ActionDataCompiler {
 
     /**
      * 条件分支上的可视化条件 → QL 布尔表达式。
+     * condVarType 为前端选择条件变量时记录的变量类型，用于决定常量是否加引号。
      */
     private static String buildCond(JSONObject branch) {
         String v = branch.getString("condVar");
         if (empty(v)) return "true";
         String op = branch.getString("condOp");
         if (empty(op)) op = "==";
-        return QlCompareExpression.emitStructuredCondition(v, op, branch.getString("condValue"));
+        return QlCompareExpression.emitStructuredCondition(v, op, branch.getString("condValue"), branch.getString("condVarType"));
     }
 
     private static String wrapValue(String val) {

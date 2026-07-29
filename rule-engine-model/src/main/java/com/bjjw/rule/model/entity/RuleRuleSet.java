@@ -22,6 +22,8 @@ public class RuleRuleSet {
     private String description;
     /** 归属省份编码，0 表示通用/全国 */
     private String compId;
+    /** 命中策略：ALL-全部执行，FIRST-首个命中即返回，UNIQUE-唯一命中 */
+    private String hitPolicy;
     /** 状态：0-草稿，1-已发布，2-已下线 */
     private Integer status;
     /** 已发布版本号 */
@@ -33,9 +35,11 @@ public class RuleRuleSet {
     @TableField(exist = false)
     private Integer memberCount;
 
+    @TableField(fill = FieldFill.INSERT)
     private String createBy;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private String updateBy;
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;

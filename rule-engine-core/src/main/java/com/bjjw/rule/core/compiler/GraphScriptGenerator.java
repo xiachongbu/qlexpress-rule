@@ -45,10 +45,7 @@ public class GraphScriptGenerator {
         String name = node.getString("name");
 
         if ("start".equals(type) || "join".equals(type)) {
-            List<JSONObject> out = outEdgeMap.getOrDefault(nodeId, Collections.emptyList());
-            if (!out.isEmpty()) {
-                generateScript(out.get(0).getString("target"), stopAt, nodeMap, outEdgeMap, script, visited, indent);
-            }
+            followOutgoing(nodeId, stopAt, nodeMap, outEdgeMap, script, visited, indent);
         } else if ("task".equals(type)) {
             JSONArray actionData = node.getJSONArray("actionData");
             String qlScript;
@@ -66,10 +63,7 @@ public class GraphScriptGenerator {
                 }
                 script.append("\n");
             }
-            List<JSONObject> out = outEdgeMap.getOrDefault(nodeId, Collections.emptyList());
-            if (!out.isEmpty()) {
-                generateScript(out.get(0).getString("target"), stopAt, nodeMap, outEdgeMap, script, visited, indent);
-            }
+            followOutgoing(nodeId, stopAt, nodeMap, outEdgeMap, script, visited, indent);
         } else if ("decision".equals(type)) {
             List<JSONObject> out = outEdgeMap.getOrDefault(nodeId, Collections.emptyList());
             if (out.isEmpty()) return;
@@ -119,7 +113,32 @@ public class GraphScriptGenerator {
     }
 
     /**
-     * 找到决策节点的汇合点（后续所有分支的第一个公共节点，优先选择 join 类型）
+     * 沿出边继续生成后续脚本。
+     * 单出边直接递归；多出边为并行分叉（如开始节点分出多个执行动作），
+     * 各分支按连线顺序依次展开至汇合点，再从汇合点继续，确保所有并行节点都被编译。
+     */
+    private static void followOutgoing(String nodeId, String stopAt,
+                                       Map<String, JSONObject> nodeMap,
+                                       Map<String, List<JSONObject>> outEdgeMap,
+                                       StringBuilder script, Set<String> visited, int indent) {
+        List<JSONObject> out = outEdgeMap.getOrDefault(nodeId, Collections.emptyList());
+        if (out.isEmpty()) return;
+        if (out.size() == 1) {
+            generateScript(out.get(0).getString("target"), stopAt, nodeMap, outEdgeMap, script, visited, indent);
+            return;
+        }
+        String mergeNode = findMergeNode(nodeId, outEdgeMap, nodeMap);
+        String branchStop = mergeNode != null ? mergeNode : stopAt;
+        for (JSONObject edge : out) {
+            generateScript(edge.getString("target"), branchStop, nodeMap, outEdgeMap, script, visited, indent);
+        }
+        if (mergeNode != null) {
+            generateScript(mergeNode, stopAt, nodeMap, outEdgeMap, script, visited, indent);
+        }
+    }
+
+    /**
+     * 找到分叉节点的汇合点（后续所有分支的第一个公共节点，优先选择 join 类型）
      */
     static String findMergeNode(String decisionNodeId,
                                 Map<String, List<JSONObject>> outEdgeMap,

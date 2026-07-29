@@ -1,5 +1,6 @@
 package com.bjjw.rule.server.service;
 
+import com.bjjw.rule.core.util.RuleSetHitPolicies;
 import com.bjjw.rule.model.constant.RuleCompIds;
 import com.bjjw.rule.model.dto.RuleResult;
 import com.bjjw.rule.model.dto.RuleRuleSetExecuteSummary;
@@ -86,6 +87,10 @@ public class RuleRuleSetService extends ServiceImpl<RuleRuleSetMapper, RuleRuleS
         if (err != null) {
             return err;
         }
+        if (!RuleSetHitPolicies.isValid(set.getHitPolicy())) {
+            return "非法命中策略: " + set.getHitPolicy();
+        }
+        set.setHitPolicy(RuleSetHitPolicies.normalize(set.getHitPolicy()));
         if (set.getStatus() == null) {
             set.setStatus(0);
         }
@@ -113,6 +118,12 @@ public class RuleRuleSetService extends ServiceImpl<RuleRuleSetMapper, RuleRuleS
         }
         if (incoming.getDescription() != null) {
             db.setDescription(incoming.getDescription());
+        }
+        if (incoming.getHitPolicy() != null) {
+            if (!RuleSetHitPolicies.isValid(incoming.getHitPolicy())) {
+                return "非法命中策略: " + incoming.getHitPolicy();
+            }
+            db.setHitPolicy(RuleSetHitPolicies.normalize(incoming.getHitPolicy()));
         }
         updateById(db);
         return null;
@@ -190,7 +201,9 @@ public class RuleRuleSetService extends ServiceImpl<RuleRuleSetMapper, RuleRuleS
     }
 
     /**
-     * 按设计态成员顺序试跑（使用各成员已编译设计内容）
+     * 按设计态成员顺序试跑（使用各成员已编译设计内容）。
+     * <p>按规则集命中策略分派：ALL-管道式全部执行；FIRST/UNIQUE-成员为独立候选，
+     * 均以原始入参执行，不做上下文累积（避免未命中成员的全 null 输出污染后续候选入参）。</p>
      */
     public RuleRuleSetExecuteSummary executeChain(Long setId, String scopeCompId, Map<String, Object> params, String businessId) {
         RuleRuleSetExecuteSummary summary = new RuleRuleSetExecuteSummary();
@@ -207,16 +220,14 @@ public class RuleRuleSetService extends ServiceImpl<RuleRuleSetMapper, RuleRuleS
             return summary;
         }
         String scope = RuleCompIds.normalize(scopeCompId);
+        String hitPolicy = RuleSetHitPolicies.normalize(set.getHitPolicy());
+        if (!RuleSetHitPolicies.ALL.equals(hitPolicy)) {
+            return executeCandidates(members, scope, params, businessId, hitPolicy, summary);
+        }
         Map<String, Object> ctx = params != null ? new HashMap<>(params) : new HashMap<>();
         for (RuleDefinition def : members) {
             RuleResult step = ruleExecuteService.testExecute(def.getId(), scope, ctx, businessId);
-            RuleRuleSetExecuteSummary.RuleRuleSetStepResult sr = new RuleRuleSetExecuteSummary.RuleRuleSetStepResult();
-            sr.setRuleCode(def.getRuleCode());
-            sr.setSuccess(step.isSuccess());
-            sr.setResult(step.getResult());
-            sr.setErrorMessage(step.getErrorMessage());
-            sr.setExecuteTimeMs(step.getExecuteTimeMs());
-            summary.getSteps().add(sr);
+            appendStep(summary, def, step);
             if (!step.isSuccess()) {
                 summary.setSuccess(false);
                 summary.setErrorMessage("成员执行失败: " + def.getRuleCode() + " — " + step.getErrorMessage());
@@ -227,6 +238,61 @@ public class RuleRuleSetService extends ServiceImpl<RuleRuleSetMapper, RuleRuleS
         summary.setSuccess(true);
         summary.setFinalResult(ctx.get("result") != null ? ctx.get("result") : ctx);
         return summary;
+    }
+
+    /**
+     * FIRST/UNIQUE：成员作为独立候选逐个以原始入参执行。
+     * FIRST 首个命中即返回（后续成员不执行）；无命中时成功返回 null。
+     * UNIQUE 全部执行完毕，命中数 != 1 则失败。
+     */
+    private RuleRuleSetExecuteSummary executeCandidates(List<RuleDefinition> members, String scope,
+                                                        Map<String, Object> params, String businessId,
+                                                        String hitPolicy, RuleRuleSetExecuteSummary summary) {
+        boolean isFirst = RuleSetHitPolicies.FIRST.equals(hitPolicy);
+        int hitCount = 0;
+        Object hitResult = null;
+        String hitRuleCode = null;
+        for (RuleDefinition def : members) {
+            RuleResult step = ruleExecuteService.testExecute(def.getId(), scope,
+                    params != null ? new HashMap<>(params) : new HashMap<>(), businessId);
+            appendStep(summary, def, step);
+            if (!step.isSuccess()) {
+                summary.setSuccess(false);
+                summary.setErrorMessage("成员执行失败: " + def.getRuleCode() + " — " + step.getErrorMessage());
+                return summary;
+            }
+            if (RuleSetHitPolicies.isHit(step.getResult())) {
+                hitCount++;
+                if (hitResult == null) {
+                    hitResult = step.getResult();
+                    hitRuleCode = def.getRuleCode();
+                }
+                if (isFirst) {
+                    break;
+                }
+            }
+        }
+        if (!isFirst && hitCount != 1) {
+            summary.setSuccess(false);
+            summary.setErrorMessage("唯一命中(UNIQUE)策略校验失败：实际命中 " + hitCount + " 个成员，要求有且仅有 1 个");
+            return summary;
+        }
+        summary.setSuccess(true);
+        Map<String, Object> finalOut = new HashMap<>();
+        finalOut.put("hitRuleCode", hitRuleCode);
+        finalOut.put("result", hitResult);
+        summary.setFinalResult(finalOut);
+        return summary;
+    }
+
+    private static void appendStep(RuleRuleSetExecuteSummary summary, RuleDefinition def, RuleResult step) {
+        RuleRuleSetExecuteSummary.RuleRuleSetStepResult sr = new RuleRuleSetExecuteSummary.RuleRuleSetStepResult();
+        sr.setRuleCode(def.getRuleCode());
+        sr.setSuccess(step.isSuccess());
+        sr.setResult(step.getResult());
+        sr.setErrorMessage(step.getErrorMessage());
+        sr.setExecuteTimeMs(step.getExecuteTimeMs());
+        summary.getSteps().add(sr);
     }
 
     /**

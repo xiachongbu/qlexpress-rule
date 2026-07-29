@@ -15,7 +15,7 @@ USE `rule_engine`;
 -- 1. 创建示例项目
 -- ============================================================
 INSERT INTO `rule_project` (`id`, `project_code`, `project_name`, `description`, `status`, `access_token`)
-VALUES (1, 'RISK_DEMO', '综合风控示例项目', '演示决策表/树/流/交叉表/评分卡及扩展模型在授信准入、定价与交易监控中的典型用法', 1, 'demo-token-change-me')
+VALUES (1, 'RISK_DEMO', '综合风控示例项目', '演示决策表/树/流/交叉表/评分卡及扩展模型在授信准入、定价与交易监控中的典型用法', 1, '88f2ad5ac48544b8bc990d3164f76066')
 ON DUPLICATE KEY UPDATE `project_name` = VALUES(`project_name`);
 
 -- ============================================================

@@ -66,6 +66,15 @@ public final class QlCompareExpression {
      * 结构化条件（如复杂评分卡）中单条比较：右侧为字符串原值，数值型无引号。
      */
     public static String emitStructuredCondition(String varCode, String operator, String value) {
+        return emitStructuredCondition(varCode, operator, value, null);
+    }
+
+    /**
+     * 结构化条件（带变量类型）：优先按 varType 格式化右侧常量，
+     * 避免纯数字形式的字符串（如税号）被启发式判断误当作数值丢失引号；
+     * varType 缺失时回退到数值字面量启发式判断（兼容存量模型）。
+     */
+    public static String emitStructuredCondition(String varCode, String operator, String value, String varType) {
         if (varCode == null || varCode.trim().isEmpty()) {
             return "true";
         }
@@ -73,7 +82,12 @@ public final class QlCompareExpression {
         if (value == null || value.isEmpty()) {
             return "true";
         }
-        String rhs = isNumericValue(value) ? value : formatConstantRhs("STRING", value);
+        String rhs;
+        if (varType != null && !varType.trim().isEmpty()) {
+            rhs = formatConstantRhs(varType.trim(), value);
+        } else {
+            rhs = isNumericValue(value) ? value : formatConstantRhs("STRING", value);
+        }
         return emitWithRhs(varCode, op, rhs, false);
     }
 

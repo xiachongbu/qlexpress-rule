@@ -1,5 +1,5 @@
 <template>
-  <div class="script-panel" :class="{ 'is-script-mode': isScriptMode, 'is-collapsed': !expanded }">
+  <div class="script-panel" :class="{ 'is-script-mode': isScriptMode, 'is-collapsed': !expanded, 'sp-fullscreen': isScriptMode && expanded }">
 
     <!-- ── 标题栏（始终可见） ── -->
     <div class="sp-header" @click="toggleExpand">
@@ -47,6 +47,11 @@
           </span>
           <div class="sp-statusbar-spacer" />
           <el-button-group>
+            <el-button size="mini" icon="el-icon-magic-stick" title="格式化 (Ctrl+Alt+L)" @click="formatScript">格式化</el-button>
+            <el-button size="mini" icon="el-icon-chat-line-square" title="注释/取消注释 (Ctrl+/)" @click="toggleComment">注释</el-button>
+            <el-button size="mini" icon="el-icon-search" title="查找/替换 (Ctrl+F)" @click="openSearch">查找</el-button>
+          </el-button-group>
+          <el-button-group>
             <el-button size="mini" icon="el-icon-refresh" :loading="compiling" @click="handleCompile">
               {{ isScriptMode ? '验证脚本' : '编译并刷新' }}
             </el-button>
@@ -62,29 +67,41 @@
           >保存脚本</el-button>
         </div>
 
-        <!-- 脚本编辑器 -->
-        <div class="sp-editor-container">
-          <!-- 行号 -->
-          <div class="sp-line-numbers" aria-hidden="true">
-            <div v-for="n in lineCount" :key="n" class="sp-line-num">{{ n }}</div>
+        <!-- 查找 / 替换面板：ESC 在面板根节点统一拦截（stop 阻止冒泡），避免触发 el-drawer 的 ESC 关闭整个设计器抽屉 -->
+        <div v-show="searchVisible" class="sp-search-panel" @keydown.esc.stop.prevent="closeSearch">
+          <div class="sp-search-row">
+            <el-input
+              ref="searchInput"
+              v-model="searchQuery"
+              size="mini"
+              placeholder="查找"
+              prefix-icon="el-icon-search"
+              clearable
+              class="sp-search-input"
+              @input="highlightAll"
+              @keydown.enter.native.prevent="findNext(false)"
+            />
+            <el-button size="mini" @click="findNext(false)">下一个</el-button>
+            <el-button size="mini" @click="highlightAll">全部高亮</el-button>
+            <span class="sp-search-spacer" />
+            <el-checkbox v-model="showReplace" class="sp-search-toggle">替换</el-checkbox>
+            <i class="el-icon-close sp-search-close" title="关闭 (Esc)" @click="closeSearch" />
           </div>
-          <!-- 编辑区 -->
-          <textarea
-            ref="editorRef"
-            v-model="editScript"
-            class="sp-editor"
-            :class="{ readonly: !isScriptMode }"
-            :readonly="!isScriptMode"
-            :placeholder="isScriptMode
-              ? '// 在此直接编写 QLExpress 脚本\n// 变量赋值示例：\ntaxRate = 0.09;\nresult = &quot;低税率&quot;;'
-              : '请先点击「编译并刷新」生成脚本'"
-            spellcheck="false"
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="off"
-            @scroll="syncScroll"
-          />
+          <div v-show="showReplace" class="sp-search-row">
+            <el-input
+              v-model="replaceQuery"
+              size="mini"
+              placeholder="替换为"
+              class="sp-search-input"
+              @keydown.enter.native.prevent="replaceCurrent"
+            />
+            <el-button size="mini" @click="replaceCurrent">替换</el-button>
+            <el-button size="mini" @click="replaceAll">全部替换</el-button>
+          </div>
         </div>
+
+        <!-- 脚本编辑器（CodeMirror） -->
+        <div ref="cmHost" class="sp-editor-cm" />
 
         <!-- 底部提示 -->
         <div class="sp-footer">
@@ -102,10 +119,12 @@
 </template>
 
 <script>
-import {compileRule, getContent, saveScript, updateScriptMode, validateScript} from '@/api/definition'
+import { compileRule, getContent, saveScript, updateScriptMode, validateScript } from '@/api/definition'
+import qlCodeEditorMixin from '@/mixins/qlCodeEditorMixin'
 
 export default {
   name: 'ScriptPanel',
+  mixins: [qlCodeEditorMixin],
   props: {
     definitionId: { type: [String, Number], required: true },
     /** 与后端 scope_comp_id 一致，默认 0 通用 */
@@ -137,19 +156,77 @@ export default {
       return { type: 'info', text: '未编译' }
     }
   },
+  watch: {
+    // 展开面板时初始化/刷新编辑器（CodeMirror 在隐藏容器中创建会尺寸异常，需展开后 refresh）
+    expanded(val) {
+      if (val) {
+        this.$nextTick(() => this.ensureEditor())
+      }
+    },
+    // 切换可视化/脚本模式时同步只读态并刷新布局
+    isScriptMode(val) {
+      if (this.cm) {
+        this.cm.setOption('readOnly', !val)
+        this.$nextTick(() => this.cm && this.cm.refresh())
+      }
+    },
+    // 外部变更（加载/编译结果）同步到编辑器；setCmValue 内部已防循环/防光标跳动
+    editScript(val) {
+      this.setCmValue(val)
+    }
+  },
   created() {
     this.initMode()
   },
+  mounted() {
+    if (this.expanded) {
+      this.$nextTick(() => this.ensureEditor())
+    }
+  },
   methods: {
+    // ── qlCodeEditorMixin 钩子覆写：使编辑器绑定到 editScript ──
+    cmInitialValue() {
+      return this.editScript || ''
+    },
+    cmOnChange(val) {
+      if (val !== this.editScript) this.editScript = val
+    },
+    cmReadOnly() {
+      return !this.isScriptMode
+    },
+    cmPlaceholder() {
+      return this.isScriptMode
+        ? '// 在此直接编写 QLExpress 脚本\n// 变量赋值示例：\ntaxRate = 0.09;\nresult = "低税率";'
+        : '请先点击「编译并刷新」生成脚本'
+    },
+    /** 延迟创建编辑器（首次展开时）并同步当前脚本与尺寸 */
+    ensureEditor() {
+      if (!this.$refs.cmHost) return
+      if (!this.cm) {
+        this.initCmEditor()
+      }
+      if (this.cm) {
+        this.setCmValue(this.editScript)
+        this.$nextTick(() => this.cm && this.cm.refresh())
+      }
+    },
     /** 初始化：从后端加载编辑模式 */
     /**
-     * 切换作用域后重置脚本面板状态并重新拉取
+     * 切换作用域后重置脚本面板状态并重新拉取。
+     * 撤销基准点必须在内容加载完成后再重置：
+     * 若在清空（editScript=''）时就设基准，随后异步加载出的脚本会成为一步可撤销操作，
+     * 导致 Ctrl+Z 把已加载脚本撤销回空白。
      */
-    reloadForScope() {
+    async reloadForScope() {
       this.mode = 'visual'
-      this.editScript = ''
       this.content = {}
-      this.initMode()
+      this.historyBaselineSet = false
+      this.editScript = ''
+      await this.initMode()
+      if (this.cm) {
+        this.setCmValue(this.editScript)
+        this.resetCmHistoryBaseline()
+      }
     },
 
     async initMode() {
@@ -177,11 +254,15 @@ export default {
       }
     },
 
-    async loadContent() {
+    /**
+     * 拉取最新内容。force 仅在预览（可视化）模式下强制用最新编译脚本覆盖显示，
+     * 脚本覆盖模式下始终不覆盖用户手写内容。
+     */
+    async loadContent(force = false) {
       try {
         const res = await getContent(this.definitionId, this.scopeCompId)
         this.content = (res && res.data ? res.data : res) || {}
-        if (!this.editScript) {
+        if ((force && !this.isScriptMode) || !this.editScript) {
           this.editScript = this.content.compiledScript || ''
         }
       } catch (e) {
@@ -212,7 +293,7 @@ export default {
       }
     },
 
-    /** 脚本模式下验证脚本：保存并语法检查，不会覆盖用户脚本 */
+    /** 脚本模式下验证脚本：纯语法校验（不持久化），与脚本设计器行为一致 */
     async handleValidateScript() {
       if (!this.editScript.trim()) {
         this.$message.warning('脚本内容不能为空')
@@ -220,15 +301,13 @@ export default {
       }
       this.compiling = true
       try {
-        await saveScript(this.definitionId, this.editScript, this.scopeCompId)
         const res = await validateScript(this.definitionId, this.editScript)
         const result = res && res.data ? res.data : res
         if (result && result.success) {
-          this.$message.success('脚本语法验证通过，已保存')
+          this.$message.success('脚本验证通过')
         } else {
-          this.$message.warning('脚本已保存，但语法检查发现问题: ' + (result && result.errorMessage ? result.errorMessage : '未知错误'))
+          this.$message.error('脚本验证失败: ' + (result && result.errorMessage ? result.errorMessage : '未知错误'))
         }
-        await this.loadContent()
       } catch (e) {
         this.$message.error('验证失败: ' + (e.message || '未知错误'))
       } finally {
@@ -236,6 +315,11 @@ export default {
       }
     },
 
+    /**
+     * 保存脚本。后端在同一事务内“校验 + 持久化”，校验失败回滚不落库；
+     * 统一拦截器对业务错误（code!==200）不 reject，须显式判断返回码。
+     * 保存成功即已编译（compileStatus=1），可直接发布，无需再编译。
+     */
     async handleSaveScript() {
       if (!this.editScript.trim()) {
         this.$message.warning('脚本内容不能为空')
@@ -243,10 +327,13 @@ export default {
       }
       this.saving = true
       try {
-        await saveScript(this.definitionId, this.editScript, this.scopeCompId)
-        this.$message.success('脚本已保存，请点击「发布」后才会同步到客户端')
-        await this.loadContent()
-        this.$emit('script-saved', this.editScript)
+        const res = await saveScript(this.definitionId, this.editScript, this.scopeCompId)
+        if (res && res.code === 200) {
+          this.$message.success('保存成功，脚本已生效，可直接「发布」')
+          await this.loadContent()
+          this.$emit('script-saved', this.editScript)
+        }
+        // 校验失败时后端已回滚不落库，错误信息由统一拦截器弹出；不刷新内容以保留用户当前编辑
       } finally {
         this.saving = false
       }
@@ -286,16 +373,14 @@ export default {
           this.$message.success('脚本已复制到剪贴板')
         })
       } else {
-        const el = this.$refs.editorRef
-        el.select()
+        const ta = document.createElement('textarea')
+        ta.value = this.editScript
+        document.body.appendChild(ta)
+        ta.select()
         document.execCommand('copy')
+        document.body.removeChild(ta)
         this.$message.success('脚本已复制')
       }
-    },
-
-    syncScroll(e) {
-      const lineNums = this.$el.querySelector('.sp-line-numbers')
-      if (lineNums) lineNums.scrollTop = e.target.scrollTop
     },
 
     formatTime(dt) {
@@ -304,9 +389,9 @@ export default {
       return d.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
     },
 
-    /** 供父组件主动刷新脚本（如编译后）*/
+    /** 供父组件主动刷新脚本（如编译后）：预览模式强制同步最新编译产物 */
     refresh() {
-      this.loadContent()
+      this.loadContent(true)
     }
   }
 }
@@ -392,6 +477,7 @@ $warning-bg: #fffbe6;
 /* ── 展开体 ── */
 .sp-body {
   background: $editor-bg;
+  position: relative;
 }
 
 /* 脚本模式警告 */
@@ -431,65 +517,66 @@ $warning-bg: #fffbe6;
 }
 .sp-statusbar-spacer { flex: 1; }
 
-/* 编辑器容器 */
-.sp-editor-container {
+/* 查找 / 替换面板 */
+.sp-search-panel {
+  position: absolute;
+  top: 6px;
+  right: 14px;
+  z-index: 40;
+  background: #f3f3f3;
+  border: 1px solid #c8c8c8;
+  border-radius: 4px;
+  padding: 6px 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+.sp-search-row {
   display: flex;
-  min-height: 200px;
-  max-height: 420px;
-  overflow: hidden;
+  align-items: center;
+  gap: 6px;
+  & + .sp-search-row { margin-top: 6px; }
+}
+.sp-search-input { width: 200px; }
+.sp-search-spacer { flex: 1; min-width: 8px; }
+.sp-search-toggle { margin: 0 4px 0 0; }
+.sp-search-close {
+  cursor: pointer;
+  color: #909399;
+  font-size: 14px;
+  &:hover { color: #f56c6c; }
 }
 
-/* 行号 */
-.sp-line-numbers {
-  padding: 12px 8px 12px 12px;
-  background: $editor-line-bg;
-  border-right: 1px solid $editor-border;
+/* 脚本编辑器（CodeMirror） */
+.sp-editor-cm {
+  position: relative;
+  min-height: 220px;
   overflow: hidden;
-  flex-shrink: 0;
-  min-width: 42px;
-  text-align: right;
 }
-.sp-line-num {
+.sp-editor-cm ::v-deep .CodeMirror {
+  height: 320px;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.6;
-  color: $editor-line-text;
-  user-select: none;
 }
-
-/* 脚本文本域 */
-.sp-editor {
-  flex: 1;
-  padding: 12px 16px;
-  background: $editor-bg;
-  color: $editor-text;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.6;
-  border: none;
-  outline: none;
-  resize: none;
-  width: 100%;
-  min-height: 200px;
-  max-height: 420px;
-  overflow-y: auto;
-  tab-size: 2;
-  white-space: pre;
-  overflow-wrap: normal;
-  overflow-x: auto;
-
-  &::placeholder {
-    color: #45475a;
-    font-style: italic;
-  }
-  &.readonly {
-    cursor: default;
-    color: #a6adc8;
-  }
-  &:not(.readonly) {
-    caret-color: #89dceb;
-    &:focus { background: #1a1a2e; }
-  }
+.sp-editor-cm ::v-deep .cm-matchhighlight {
+  background: rgba(102, 168, 255, 0.30);
+  border-radius: 2px;
+}
+.sp-editor-cm ::v-deep .cm-search-highlight {
+  background: rgba(255, 170, 0, 0.40);
+  border-radius: 2px;
+}
+.sp-editor-cm ::v-deep .CodeMirror-matchingbracket {
+  color: #ffd166 !important;
+  font-weight: 700;
+  background: rgba(255, 209, 102, 0.28);
+  border-bottom: 2px solid #ffd166;
+  border-radius: 2px;
+}
+.sp-editor-cm ::v-deep .CodeMirror-nonmatchingbracket {
+  color: #fff !important;
+  font-weight: 700;
+  background: rgba(255, 107, 107, 0.55);
+  border-radius: 2px;
 }
 
 /* 底部信息栏 */
@@ -514,6 +601,34 @@ $warning-bg: #fffbe6;
   font-size: 11px;
   color: #585b70;
   font-family: 'Consolas', monospace;
+}
+
+/* ── 脚本模式全屏覆盖：填满设计器根容器（需父容器 position:relative），编辑区 flex 撑满并内部滚动 ── */
+.script-panel.sp-fullscreen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  margin-top: 0;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+}
+.script-panel.sp-fullscreen .sp-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none !important;
+  display: flex;
+  flex-direction: column;
+}
+.script-panel.sp-fullscreen .sp-editor-cm {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.script-panel.sp-fullscreen .sp-editor-cm ::v-deep .CodeMirror {
+  height: 100%;
 }
 
 /* 收起/展开动画 */

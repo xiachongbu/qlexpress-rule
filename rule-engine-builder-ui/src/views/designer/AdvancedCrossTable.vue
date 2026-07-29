@@ -502,6 +502,7 @@ export default {
      * 带版本说明保存并记快照。
      */
     async handleSave() {
+      if (!this.ensureVisualEditable()) return
       let changeLog = ''
       try {
         changeLog = await this.$refs.designSaveVersionDialog.prompt()
@@ -509,16 +510,21 @@ export default {
         return
       }
       const saveModel = this.buildSaveModel()
-      await saveContent({
+      // 后端“保存即编译”：校验失败回滚不落库（错误由统一拦截器弹出）；拦截器不 reject，须判返回码
+      const res = await saveContent({
         definitionId: this.definitionId,
         scopeCompId: this.scopeCompId,
         modelJson: JSON.stringify(saveModel),
         changeLog: changeLog || undefined,
         recordHistory: true
       })
-      this.$message.success('保存成功')
+      if (res && res.code === 200) {
+        this.$message.success('保存成功，规则已生效，可直接「发布」')
+        if (this.$refs.scriptPanel) this.$refs.scriptPanel.refresh()
+      }
     },
     async handleCompile() {
+      if (!this.ensureVisualEditable()) return
       await this.persistModelSilent()
       const res = await compileRule(this.definitionId, this.scopeCompId)
       if (res && res.data && res.data.success) {
@@ -555,6 +561,7 @@ export default {
   background: #f3f3f3;
   padding: 20px;
   min-height: 100%;
+  position: relative;
 }
 .act-header {
   display: flex; align-items: center; justify-content: space-between;
