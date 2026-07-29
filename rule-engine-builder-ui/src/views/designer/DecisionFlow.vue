@@ -99,7 +99,7 @@
               </el-form>
             </div>
 
-            <div class="prop-section">
+            <div v-if="edgeSourceIsDecision" class="prop-section">
               <div class="section-title">
                 <span>条件表达式</span>
                 <el-radio-group v-model="edgeCondMode" size="mini">
@@ -177,6 +177,25 @@
               <div class="hint-box" style="margin-top:6px;">
                 <i class="el-icon-info" /> 条件为空表示默认分支（else）
               </div>
+            </div>
+
+            <!-- 非条件判断节点出边：不开放条件配置，存量失效条件提供清除入口 -->
+            <div v-else class="prop-section">
+              <div class="section-title"><span>条件表达式</span></div>
+              <div class="hint-box">
+                <i class="el-icon-info" /> 仅“条件判断”节点的出边支持配置条件表达式，如需按条件分流，请在该连线前插入条件判断节点
+              </div>
+              <template v-if="edgeProps.conditionExpr">
+                <div class="generated-expr">
+                  <code>{{ edgeProps.conditionExpr }}</code>
+                </div>
+                <div class="hint-box" style="margin-top:6px;">
+                  <i class="el-icon-warning-outline" /> 该连线已配置的条件不会生效，且会导致编译失败，请清除
+                </div>
+                <el-button type="warning" size="mini" icon="el-icon-delete" style="width:100%;margin-top:8px;" @click="clearInvalidEdgeCond">
+                  清除条件
+                </el-button>
+              </template>
             </div>
           </template>
 
@@ -327,11 +346,11 @@
 
 <script>
 import LogicFlow from '@logicflow/core'
-import { Menu, SelectionSelect, Snapshot } from '@logicflow/extension'
+import {Menu, SelectionSelect, Snapshot} from '@logicflow/extension'
 import '@logicflow/core/dist/style/index.css'
 import '@logicflow/extension/lib/style/index.css'
 
-import { getDefaultFlowData, registerCustomNodes } from '@/components/flow/nodes'
+import {getDefaultFlowData, registerCustomNodes} from '@/components/flow/nodes'
 import {
   applyGlobalEdgeTypeToInheritedEdges,
   mergeEdgePropertiesFromForm,
@@ -339,10 +358,15 @@ import {
   normalizeDefaultEdgeLineType,
   prepareLogicFlowDataForRender
 } from '@/components/flow/edgeLineType'
-import { compileRule, executeRule, getContent, saveContent } from '@/api/definition'
-import { generateScript } from '@/utils/actionDataCodegen'
-import { buildQlConditionExpr, constTypeFromVarType, inferConstVarType, parseQlConditionExpr } from '@/utils/conditionExpr'
-import { graphContainsDirectedCycle } from '@/utils/flowGraphCycle'
+import {compileRule, executeRule, getContent, saveContent} from '@/api/definition'
+import {generateScript} from '@/utils/actionDataCodegen'
+import {
+  buildQlConditionExpr,
+  constTypeFromVarType,
+  inferConstVarType,
+  parseQlConditionExpr
+} from '@/utils/conditionExpr'
+import {graphContainsDirectedCycle} from '@/utils/flowGraphCycle'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
@@ -382,6 +406,16 @@ export default {
   computed: {
     isEdge() {
       return this.activeElement && this.activeElement.baseType === 'edge'
+    },
+    /** 当前选中连线的起点是否为条件判断节点（仅其出边允许配置条件表达式） */
+    edgeSourceIsDecision() {
+      if (!this.isEdge || !this.lf || !this.activeElement) return false
+      try {
+        const src = this.lf.getNodeModelById(this.activeElement.sourceNodeId)
+        return !!src && src.type === 'exclusive-gateway'
+      } catch (e) {
+        return false
+      }
     },
     propIcon() {
       if (this.isEdge) return 'el-icon-connection'
@@ -1019,6 +1053,13 @@ export default {
       }
       this.onEdgeChange()
       this.$message.success('已生成: ' + expr)
+    },
+    /** 清除非条件判断节点出边上的存量失效条件，避免编译报错 */
+    clearInvalidEdgeCond() {
+      this.edgeProps.conditionExpr = ''
+      this.edgeCondVisual = this.syncCondVisualFromExpr('')
+      this.onEdgeChange()
+      this.$message.success('已清除该连线的条件表达式')
     },
 
     /**

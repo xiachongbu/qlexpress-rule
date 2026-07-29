@@ -86,6 +86,12 @@ public class DecisionFlowCompiler implements RuleCompiler {
                 outEdgeMap.computeIfAbsent(src, k -> new ArrayList<>()).add(e);
             }
 
+            // 条件表达式只允许配置在条件判断节点出边，其他边带条件直接报错，避免静默丢弃
+            String condErr = GraphScriptGenerator.validateConditionOnlyOnDecisionEdges(nodeMap, edges);
+            if (condErr != null) {
+                return CompileResult.fail(condErr);
+            }
+
             String script = GraphScriptGenerator.generate(nodeMap, outEdgeMap, startId);
 
             LinkedHashSet<String> outputVars = new LinkedHashSet<>();

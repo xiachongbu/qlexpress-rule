@@ -70,7 +70,7 @@
               </el-form>
             </div>
 
-            <div class="prop-section">
+            <div v-if="edgeSourceIsDecision" class="prop-section">
               <div class="section-title">
                 <span>条件表达式</span>
                 <el-radio-group v-model="edgeCondMode" size="mini">
@@ -146,6 +146,25 @@
               <div class="hint-box" style="margin-top:6px;">
                 <i class="el-icon-info" /> 条件为空表示默认分支（else）
               </div>
+            </div>
+
+            <!-- 非条件判断节点出边：不开放条件配置，存量失效条件提供清除入口 -->
+            <div v-else class="prop-section">
+              <div class="section-title"><span>条件表达式</span></div>
+              <div class="hint-box">
+                <i class="el-icon-info" /> 仅“条件判断”节点的出边支持配置条件表达式，如需按条件分流，请在该连线前插入条件判断节点
+              </div>
+              <template v-if="edgeProps.conditionExpr">
+                <div class="generated-expr">
+                  <code>{{ edgeProps.conditionExpr }}</code>
+                </div>
+                <div class="hint-box" style="margin-top:6px;">
+                  <i class="el-icon-warning-outline" /> 该连线已配置的条件不会生效，且会导致编译失败，请清除
+                </div>
+                <el-button type="warning" size="mini" icon="el-icon-delete" style="width:100%;margin-top:8px;" @click="clearInvalidEdgeCond">
+                  清除条件
+                </el-button>
+              </template>
             </div>
           </template>
 
@@ -285,9 +304,9 @@
 </template>
 
 <script>
-import { compileRule, executeRule, getContent, saveContent } from '@/api/definition'
-import { generateScript } from '@/utils/actionDataCodegen'
-import { buildQlConditionExpr, inferConstVarType, parseQlConditionExpr } from '@/utils/conditionExpr'
+import {compileRule, executeRule, getContent, saveContent} from '@/api/definition'
+import {generateScript} from '@/utils/actionDataCodegen'
+import {buildQlConditionExpr, inferConstVarType, parseQlConditionExpr} from '@/utils/conditionExpr'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
@@ -365,6 +384,12 @@ export default {
     },
     isEdge() {
       return this.activeElement && this.activeElement.kind === 'edge'
+    },
+    /** 当前选中连线的起点是否为条件判断节点（仅其出边允许配置条件表达式） */
+    edgeSourceIsDecision() {
+      if (!this.isEdge || !this.activeElement) return false
+      const src = nodeById(this.treeNodes, this.activeElement.sourceNodeId)
+      return !!src && src.type === 'decision'
     },
     propIcon() {
       if (this.isEdge) return 'el-icon-connection'
@@ -820,6 +845,13 @@ export default {
         name: this.edgeProps.conditionName || '',
         conditionExpression: this.edgeProps.conditionExpr || ''
       })
+    },
+    /** 清除非条件判断节点出边上的存量失效条件，避免编译报错 */
+    clearInvalidEdgeCond() {
+      this.edgeProps.conditionExpr = ''
+      this.edgeCondVisual = this.syncCondVisualFromExpr('')
+      this.onEdgeChange()
+      this.$message.success('已清除该连线的条件表达式')
     },
     deleteSelected() {
       if (!this.activeElement) return

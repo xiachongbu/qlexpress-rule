@@ -79,6 +79,12 @@ public class DecisionTreeCompiler implements RuleCompiler {
                 return CompileResult.fail("缺少开始节点");
             }
 
+            // 条件表达式只允许配置在条件判断节点出边，与决策流编译器保持一致
+            String condErr = GraphScriptGenerator.validateConditionOnlyOnDecisionEdges(nodeMap, edges);
+            if (condErr != null) {
+                return CompileResult.fail(condErr);
+            }
+
             String script = GraphScriptGenerator.generate(nodeMap, outEdgeMap, startId);
 
             LinkedHashSet<String> outputVars = new LinkedHashSet<>();

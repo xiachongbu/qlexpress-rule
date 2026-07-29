@@ -15,6 +15,50 @@ import java.util.*;
 public class GraphScriptGenerator {
 
     /**
+     * 校验条件表达式只允许配置在条件判断（decision）节点的出边上。
+     * 其他节点（start/task/join）出边的条件不会被编译，静默丢弃会造成"配置了不生效"的隐患，
+     * 因此在编译前显式报错，引导用户插入条件判断节点或清除失效条件。
+     *
+     * @param nodeMap 节点 id → 节点 JSON
+     * @param edges   边列表
+     * @return 校验失败的错误信息；全部合法返回 null
+     */
+    public static String validateConditionOnlyOnDecisionEdges(Map<String, JSONObject> nodeMap, JSONArray edges) {
+        if (edges == null) return null;
+        for (int i = 0; i < edges.size(); i++) {
+            JSONObject edge = edges.getJSONObject(i);
+            String condExpr = edge.getString("conditionExpression");
+            if (condExpr == null || condExpr.trim().isEmpty()) continue;
+
+            JSONObject sourceNode = nodeMap.get(edge.getString("source"));
+            if (sourceNode != null && "decision".equals(sourceNode.getString("type"))) continue;
+
+            String edgeLabel = edge.getString("name");
+            String location;
+            if (edgeLabel != null && !edgeLabel.trim().isEmpty()) {
+                location = "[" + edgeLabel + "]";
+            } else {
+                String sourceName = displayName(sourceNode, edge.getString("source"));
+                String targetName = displayName(nodeMap.get(edge.getString("target")), edge.getString("target"));
+                location = "[" + sourceName + " → " + targetName + "]";
+            }
+            return "连线 " + location + " 的起点不是条件判断节点，不支持配置条件表达式，"
+                    + "请在该连线前插入条件判断节点，或清除该连线的条件表达式";
+        }
+        return null;
+    }
+
+    private static String displayName(JSONObject node, String fallbackId) {
+        if (node != null) {
+            String name = node.getString("name");
+            if (name != null && !name.trim().isEmpty()) return name;
+            String id = node.getString("id");
+            if (id != null && !id.isEmpty()) return id;
+        }
+        return fallbackId != null ? fallbackId : "未知节点";
+    }
+
+    /**
      * 根据图结构生成 QLExpress 脚本
      *
      * @param nodeMap    节点 id → 节点 JSON
