@@ -1,13 +1,12 @@
 package com.bjjw.rule.server.service;
 
-import com.bjjw.rule.core.compiler.CompileResult;
-import com.bjjw.rule.core.compiler.RuleCompiler;
-import com.bjjw.rule.core.compiler.RuleModelCompilers;
-import com.bjjw.rule.core.compiler.ScriptSyntaxValidator;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.bjjw.rule.core.compiler.*;
 import com.bjjw.rule.model.constant.RuleCompIds;
-import com.bjjw.rule.model.constant.RuleDictTypes;
 import com.bjjw.rule.model.dto.RuleDefinitionDesignSnapshotListVO;
-import com.bjjw.rule.model.dto.RuleSysDictItemDTO;
 import com.bjjw.rule.model.entity.RuleDefinition;
 import com.bjjw.rule.model.entity.RuleDefinitionContent;
 import com.bjjw.rule.model.entity.RuleDefinitionDesignSnapshot;
@@ -16,17 +15,15 @@ import com.bjjw.rule.server.mapper.RuleDefinitionContentMapper;
 import com.bjjw.rule.server.mapper.RuleDefinitionDesignSnapshotMapper;
 import com.bjjw.rule.server.mapper.RuleDefinitionMapper;
 import com.bjjw.rule.server.publish.RulePublishedL2Service;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,6 +43,9 @@ public class RuleDefinitionService extends ServiceImpl<RuleDefinitionMapper, Rul
 
     @Resource
     private RuleProjectService projectService;
+
+    @Resource
+    private RuleVariableService variableService;
 
     private static final int CHANGE_LOG_MAX = 512;
 
@@ -240,13 +240,13 @@ public class RuleDefinitionService extends ServiceImpl<RuleDefinitionMapper, Rul
             int newVer = (content.getCurrentVersion() != null ? content.getCurrentVersion() : 0) + 1;
             content.setCurrentVersion(newVer);
             if ("SCRIPT".equals(content.getModelType())) {
-                // SCRIPT 类型：直接对脚本正文做语法校验
-                String script = extractScript(modelJson);
+                // SCRIPT 类型：剥离编辑回流的序言块后校验脚本正文，再按最新常量重建序言固化进产物
+                String script = ConstantPrefixBuilder.stripMarkedPrefix(extractScript(modelJson));
                 CompileResult cr = ScriptSyntaxValidator.validate(script);
                 if (!cr.isSuccess()) {
                     throw new IllegalArgumentException("脚本存在错误，无法保存：" + cr.getErrorMessage());
                 }
-                content.setCompiledScript(script);
+                content.setCompiledScript(prependConstantPrologue(definitionId, script));
                 content.setCompiledType("QLEXPRESS");
                 content.setScriptMode("script");
             } else {
@@ -255,7 +255,15 @@ public class RuleDefinitionService extends ServiceImpl<RuleDefinitionMapper, Rul
                 if (compiler == null) {
                     throw new IllegalArgumentException("暂不支持的模型类型: " + content.getModelType());
                 }
-                CompileResult cr = compiler.compile(modelJson);
+                // 注入项目常量：排除常量出输出集并前置常量序言，与显式编译链路保持一致
+                RuleDefinition def = getById(definitionId);
+                java.util.List<com.bjjw.rule.model.entity.RuleVariable> vars =
+                        (def != null && def.getProjectId() != null)
+                                ? variableService.listByProject(def.getProjectId())
+                                : null;
+                java.util.LinkedHashSet<String> constantNames = ConstantPrefixBuilder.constantNames(vars);
+                String constantPrefix = ConstantPrefixBuilder.build(vars);
+                CompileResult cr = compiler.compile(modelJson, constantNames, constantPrefix);
                 if (!cr.isSuccess()) {
                     throw new IllegalArgumentException("规则校验未通过，无法保存：" + cr.getErrorMessage());
                 }
@@ -405,6 +413,8 @@ public class RuleDefinitionService extends ServiceImpl<RuleDefinitionMapper, Rul
      * 技术人员手动编辑脚本，直接写入 compiledScript，跳过可视化编译器。
      * 与 SCRIPT 类型的 saveContent 一致：同一事务内“校验 + 持久化”，
      * 语法校验失败抛异常回滚（不落库），避免无效脚本以已编译状态被直接发布。
+     * <p>产物开头以带界定注释的常量序言固化项目常量：先剥离编辑回流的旧序言块，
+     * 校验脚本正文后按最新常量重建，保证重复保存幂等且常量值以配置管理为准。</p>
      */
     @Transactional
     public void saveScript(Long definitionId, String scopeCompId, String script) {
@@ -412,17 +422,31 @@ public class RuleDefinitionService extends ServiceImpl<RuleDefinitionMapper, Rul
         if (content == null) {
             throw new IllegalArgumentException("规则内容不存在，definitionId=" + definitionId + " scope=" + RuleCompIds.normalize(scopeCompId));
         }
-        CompileResult cr = ScriptSyntaxValidator.validate(script);
+        String body = ConstantPrefixBuilder.stripMarkedPrefix(script);
+        CompileResult cr = ScriptSyntaxValidator.validate(body);
         if (!cr.isSuccess()) {
             throw new IllegalArgumentException("脚本存在错误，无法保存：" + cr.getErrorMessage());
         }
-        content.setCompiledScript(script);
+        content.setCompiledScript(prependConstantPrologue(definitionId, body));
         content.setCompiledType("QLEXPRESS");
         content.setCompileStatus(1);
         content.setCompileMessage(null);
         content.setCompileTime(LocalDateTime.now());
         content.setScriptMode("script");
         contentMapper.updateById(content);
+    }
+
+    /**
+     * 为 SCRIPT 类型脚本正文前置带界定注释的常量序言（无常量时原样返回）。
+     */
+    private String prependConstantPrologue(Long definitionId, String script) {
+        RuleDefinition definition = getById(definitionId);
+        java.util.List<com.bjjw.rule.model.entity.RuleVariable> vars =
+                (definition != null && definition.getProjectId() != null)
+                        ? variableService.listByProject(definition.getProjectId())
+                        : null;
+        String wrapped = ConstantPrefixBuilder.wrapWithMarkers(ConstantPrefixBuilder.build(vars));
+        return wrapped.isEmpty() ? script : wrapped + script;
     }
 
     /**

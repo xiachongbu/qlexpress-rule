@@ -38,6 +38,7 @@
               :value="model.resultVar.varCode"
               placeholder="选择结果变量..."
               width="200px"
+              :exclude-constants="true"
               @select="onResultVarSelect"
             />
             <template v-else>
@@ -101,6 +102,7 @@
                 :value="dim.varCode"
                 placeholder="主变量..."
                 width="180px"
+                :exclude-constants="true"
                 @select="v => onDimVarSelect(gi, di, v)"
               />
               <el-input v-else v-model="dim.varCode" size="small" placeholder="变量编码" style="width:140px;" />
@@ -147,6 +149,7 @@
                         placeholder="变量"
                         width="100%"
                         class="cond-var"
+                        :exclude-constants="true"
                         @select="v => { cond.varCode = v.varCode }"
                       />
                       <el-input v-else v-model="cond.varCode" size="mini" placeholder="变量" class="cond-var" />
@@ -337,7 +340,7 @@
 </template>
 
 <script>
-import { compileRule, executeRule, getContent, saveContent } from '@/api/definition'
+import {compileRule, executeRule, getContent, saveContent} from '@/api/definition'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'

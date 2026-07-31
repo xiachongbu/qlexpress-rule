@@ -4,16 +4,24 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
+import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * 复杂评分卡编译器：支持分组维度 + 结构化条件。
- * 同一维度内的规则互斥（if/else if），维度间得分累加。
+ * 同一维度内的规则互斥（if/else if），维度间得分按「组权重 × 维度权重」加权累加，
+ * 与设计器「计算公式预览」展示的 结果 = 初始分 + Σ 组权重 × (Σ 维度得分 × 维度权重) 保持一致。
  */
 public class AdvancedScorecardCompiler implements RuleCompiler {
 
     @Override
     public CompileResult compile(String modelJson) {
+        return compile(modelJson, Collections.emptySet(), null);
+    }
+
+    @Override
+    public CompileResult compile(String modelJson, Set<String> constantNames, String constantPrefix) {
         try {
             JSONObject model = JSON.parseObject(modelJson);
             double initialScore = model.getDoubleValue("initialScore");
@@ -22,6 +30,11 @@ public class AdvancedScorecardCompiler implements RuleCompiler {
             JSONArray thresholds = model.getJSONArray("thresholds");
 
             String resCode = resultVar != null ? resultVar.getString("varCode") : "totalScore";
+
+            // 结果变量是赋值目标，常量不允许被赋值（会覆盖常量序言的固化值）
+            if (ConstantPrefixBuilder.isConstantName(constantNames, resCode)) {
+                return CompileResult.fail("结果变量「" + resCode + "」是常量，常量不允许被赋值，请改选普通变量");
+            }
 
             StringBuilder script = new StringBuilder();
             script.append(resCode).append(" = ").append(initialScore).append("\n");
@@ -33,6 +46,9 @@ public class AdvancedScorecardCompiler implements RuleCompiler {
                     JSONArray dimensions = group.getJSONArray("dimensions");
                     if (dimensions == null) continue;
 
+                    // 组权重缺省视为 1.0，与前端权重汇总的兜底口径一致
+                    double groupWeight = group.containsKey("weight") ? group.getDoubleValue("weight") : 1.0;
+
                     script.append("\n// ---- ").append(groupLabel != null ? groupLabel : "维度组" + (g + 1)).append(" ----\n");
 
                     for (int d = 0; d < dimensions.size(); d++) {
@@ -40,6 +56,11 @@ public class AdvancedScorecardCompiler implements RuleCompiler {
                         String dimLabel = dim.getString("varLabel");
                         JSONArray rules = dim.getJSONArray("rules");
                         if (rules == null || rules.isEmpty()) continue;
+
+                        double dimWeight = dim.containsKey("weight") ? dim.getDoubleValue("weight") : 1.0;
+                        // BigDecimal 相乘避免 double 浮点尾数（如 1.2×1.05）污染脚本字面量
+                        java.math.BigDecimal effectiveWeight = java.math.BigDecimal.valueOf(groupWeight)
+                                .multiply(java.math.BigDecimal.valueOf(dimWeight)).stripTrailingZeros();
 
                         String dimScoreVar = "_dim_" + g + "_" + d;
                         script.append(dimScoreVar).append(" = 0\n");
@@ -57,10 +78,16 @@ public class AdvancedScorecardCompiler implements RuleCompiler {
                         }
                         script.append("\n");
 
+                        // 得分按组权重×维度权重加权后累加；权重为 1 时省略乘法保持脚本简洁
                         script.append("// ").append(dimLabel != null ? dimLabel : "维度" + (d + 1))
-                              .append(" 得分累加\n");
+                              .append(" 得分加权累加（组权重 ").append(groupWeight)
+                              .append(" × 维度权重 ").append(dimWeight).append("）\n");
                         script.append(resCode).append(" = ").append(resCode)
-                              .append(" + ").append(dimScoreVar).append("\n");
+                              .append(" + ").append(dimScoreVar);
+                        if (effectiveWeight.compareTo(java.math.BigDecimal.ONE) != 0) {
+                            script.append(" * ").append(effectiveWeight.toPlainString());
+                        }
+                        script.append("\n");
                     }
                 }
             }
@@ -72,6 +99,11 @@ public class AdvancedScorecardCompiler implements RuleCompiler {
                 JSONObject firstThreshold = thresholds.getJSONObject(0);
                 if (firstThreshold.containsKey("resultVar")) {
                     levelVar = firstThreshold.getString("resultVar");
+                }
+
+                // 等级变量同样是赋值目标，禁止与常量重名
+                if (ConstantPrefixBuilder.isConstantName(constantNames, levelVar)) {
+                    return CompileResult.fail("等级变量「" + levelVar + "」是常量，常量不允许被赋值，请改用普通变量名");
                 }
 
                 script.append(levelVar).append(" = \"未知\"\n");
@@ -104,6 +136,11 @@ public class AdvancedScorecardCompiler implements RuleCompiler {
                 outVars.add(levelVarForResult);
             }
             RuleScriptResultCollector.appendResultMapReturn(script, outVars);
+
+            // 常量赋值序言前置到脚本最前，使脚本内引用的常量解析为固化值
+            if (constantPrefix != null && !constantPrefix.isEmpty()) {
+                script.insert(0, constantPrefix);
+            }
 
             return CompileResult.ok(script.toString(), "QLEXPRESS");
         } catch (Exception e) {

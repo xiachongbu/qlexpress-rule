@@ -15,9 +15,29 @@
         <!-- ===== 赋值 ===== -->
         <template v-if="block.type === 'assign'">
           <div class="inline-row">
-            <var-picker :vars="vars" :value="block.target" placeholder="目标变量" size="mini" @select="v => { block.target = v.varCode; sync() }" />
+            <var-picker :vars="vars" :value="block.target" placeholder="目标变量" size="mini" @select="v => onAssignTargetSelect(block, v)" />
             <span class="eq">=</span>
-            <el-input v-model="block.value" size="mini" placeholder="值/表达式" @input="sync" />
+            <!-- 常量场景：置灰禁用，悬停提示不可编辑 -->
+            <el-tooltip
+              v-if="isConstTarget(block.target)"
+              content="常量不允许修改，请在常量配置管理中修改后重新发布"
+              placement="top"
+            >
+              <el-input
+                v-model="block.value"
+                size="mini"
+                disabled
+                placeholder="常量默认值（只读）"
+              />
+            </el-tooltip>
+            <!-- 非常量场景：可编辑的空输入框 -->
+            <el-input
+              v-else
+              :value="block.value || ''"
+              size="mini"
+              placeholder="值/表达式"
+              @input="$set(block, 'value', $event)"
+            />
           </div>
           <div class="rounding-row">
             <el-switch v-model="block.enableRounding" size="mini" active-text="精度" @change="sync" />
@@ -44,7 +64,7 @@
               <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C" @click="removeBranch(block, bri)" />
             </div>
             <div v-if="br.type !== 'else'" class="cond-area">
-              <var-picker :vars="vars" :value="br.condVar" placeholder="条件变量" size="mini" @select="v => onCondVarSelect(br, v)" />
+              <var-picker :vars="vars" :value="br.condVar" placeholder="条件变量" size="mini" :exclude-constants="true" @select="v => onCondVarSelect(br, v)" />
               <el-select v-model="br.condOp" size="mini" style="width:100px" @change="sync">
                 <el-option label="==" value="==" /><el-option label="!=" value="!=" />
                 <el-option label=">" value=">" /><el-option label=">=" value=">=" />
@@ -54,13 +74,42 @@
                 <el-option label="前" value="startsWith" />
                 <el-option label="后" value="endsWith" />
               </el-select>
-              <el-input v-model="br.condValue" size="mini" placeholder="值" class="cond-value-input" @input="sync" />
+              <!-- 条件值输入框 -->
+              <el-input
+                v-model="br.condValue"
+                size="mini"
+                placeholder="值"
+                class="cond-value-input"
+                @input="sync"
+              />
             </div>
             <div class="branch-body">
               <div v-for="(a, ai) in br.actions" :key="ai" class="inline-row">
-                <var-picker :vars="vars" :value="a.target" placeholder="变量" size="mini" @select="v => { a.target = v.varCode; sync() }" />
+                <var-picker :vars="vars" :value="a.target" placeholder="变量" size="mini" @select="v => onAssignTargetSelect(a, v)" />
                 <span class="eq">=</span>
-                <el-input v-model="a.value" size="mini" placeholder="值" @input="sync" />
+                <!-- 常量场景：置灰禁用，悬停提示不可编辑 -->
+                <el-tooltip
+                  v-if="isConstTarget(a.target)"
+                  content="常量不允许修改，请在常量配置管理中修改后重新发布"
+                  placement="top"
+                >
+                  <el-input
+                    v-model="a.value"
+                    size="mini"
+                    class="dt-act-value-ctl"
+                    disabled
+                    placeholder="常量默认值（只读）"
+                  />
+                </el-tooltip>
+                <!-- 非常量场景：可编辑的空输入框 -->
+                <el-input
+                  v-else
+                  :value="a.value || ''"
+                  size="mini"
+                  class="dt-act-value-ctl"
+                  placeholder="值"
+                  @input="$set(a, 'value', $event)"
+                />
                 <el-button v-if="br.actions.length > 1" type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C" @click="br.actions.splice(ai,1); sync()" />
               </div>
               <el-button size="mini" icon="el-icon-plus" style="width:100%;margin-top:2px" @click="br.actions.push({type:'assign',target:'',value:''})">添加赋值</el-button>
@@ -76,7 +125,7 @@
         <template v-if="block.type === 'switch-block'">
           <div class="inline-row" style="margin-bottom:6px">
             <span class="mini-label">匹配变量</span>
-            <var-picker :vars="vars" :value="block.matchVar" placeholder="变量" size="mini" @select="v => { block.matchVar = v.varCode; sync() }" />
+            <var-picker :vars="vars" :value="block.matchVar" placeholder="变量" size="mini" :exclude-constants="true" @select="v => { block.matchVar = v.varCode; sync() }" />
           </div>
           <div v-for="(c, ci) in block.cases" :key="ci" class="case-card">
             <div class="case-head">
@@ -148,7 +197,7 @@
         <template v-if="block.type === 'ternary'">
           <div class="inline-row" style="margin-bottom:4px">
             <span class="mini-label">结果</span>
-            <var-picker :vars="vars" :value="block.target" placeholder="变量" size="mini" @select="v => { block.target = v.varCode; sync() }" />
+            <var-picker :vars="vars" :value="block.target" placeholder="变量" size="mini" @select="v => onAssignTargetSelect(block, v)" />
           </div>
           <div class="cond-area" style="margin-bottom:4px">
             <el-input v-model="block.condVar" size="mini" placeholder="条件变量" style="width:80px" @input="sync" />
@@ -165,9 +214,45 @@
           </div>
           <div class="inline-row">
             <span class="mini-label" style="color:#52c41a">真</span>
-            <el-input v-model="block.trueValue" size="mini" placeholder="真值" @input="sync" />
+            <el-tooltip
+              v-if="isConstTarget(block.target)"
+              content="常量不允许修改，请在常量配置管理中修改后重新发布"
+              placement="top"
+            >
+              <el-input
+                v-model="block.trueValue"
+                size="mini"
+                placeholder="常量默认值（只读）"
+                disabled
+              />
+            </el-tooltip>
+            <el-input
+              v-else
+              :value="block.trueValue || ''"
+              size="mini"
+              placeholder="真值"
+              @input="$set(block, 'trueValue', $event)"
+            />
             <span class="mini-label" style="color:#F56C6C">假</span>
-            <el-input v-model="block.falseValue" size="mini" placeholder="假值" @input="sync" />
+            <el-tooltip
+              v-if="isConstTarget(block.target)"
+              content="常量不允许修改，请在常量配置管理中修改后重新发布"
+              placement="top"
+            >
+              <el-input
+                v-model="block.falseValue"
+                size="mini"
+                placeholder="常量默认值（只读）"
+                disabled
+              />
+            </el-tooltip>
+            <el-input
+              v-else
+              :value="block.falseValue || ''"
+              size="mini"
+              placeholder="假值"
+              @input="$set(block, 'falseValue', $event)"
+            />
           </div>
         </template>
 
@@ -177,7 +262,7 @@
             <span class="mini-label">结果</span>
             <el-input v-model="block.target" size="mini" placeholder="变量" @input="sync" />
             <span class="mini-label">检测</span>
-            <var-picker :vars="vars" :value="block.checkVar" placeholder="变量" size="mini" @select="v => { block.checkVar = v.varCode; sync() }" />
+            <var-picker :vars="vars" :value="block.checkVar" placeholder="变量" size="mini" :exclude-constants="true" @select="v => { block.checkVar = v.varCode; sync() }" />
           </div>
           <div class="inline-row" style="flex-wrap:wrap;gap:4px;margin-bottom:4px">
             <span class="mini-label">值列表</span>
@@ -224,13 +309,7 @@
 </template>
 
 <script>
-import {
-  actionDataToBlocks,
-  BLOCK_TYPES,
-  blocksToActionData,
-  generateScript,
-  newBlock
-} from '@/utils/actionDataCodegen'
+import {actionDataToBlocks, BLOCK_TYPES, blocksToActionData, generateScript, newBlock} from '@/utils/actionDataCodegen'
 import VarPicker from '@/components/common/VarPicker.vue'
 
 export default {
@@ -350,6 +429,39 @@ export default {
     typeColor(type) {
       const t = BLOCK_TYPES.find(b => b.type === type)
       return t ? t.color : '#999'
+    },
+    /**
+     * 判断 select 事件传出的引用对象是否为常量。
+     */
+    isConstRef(v) {
+      return !!(v && ((v._ref && v._ref.category === 'constant') ||
+        v.varSource === 'CONSTANT' ||
+        (v.varObj && v.varObj.varSource === 'CONSTANT')))
+    },
+    /**
+     * 回显时按赋值目标 varCode 在 vars 中回查是否为常量；常量不可作为赋值目标，其「值」输入置灰。
+     */
+    isConstTarget(target) {
+      if (!target) return false
+      return this.isConstRef((this.vars || []).find(v => v.varCode === target))
+    },
+    /**
+     * 选择赋值目标：常量不允许被赋值（值只能在常量配置管理中修改），
+     * 选中常量时自动填入该常量的最新默认值并提示，仅用于参考。
+     */
+    onAssignTargetSelect(holder, v) {
+      holder.target = v ? v.varCode : ''
+      if (this.isConstRef(v)) {
+        // 回填常量最新默认值（defaultValue 在选项的 varObj 上，非顶层字段）
+        const raw = v.varObj && v.varObj.defaultValue != null ? v.varObj.defaultValue : v.defaultValue
+        const dv = raw != null ? String(raw) : ''
+        if (Object.prototype.hasOwnProperty.call(holder, 'value')) holder.value = dv
+        this.$message.warning('「' + (v.varLabel || v.varCode) + '」是常量，已自动填入其默认值；如需修改常量值请到常量配置管理中修改后重新发布')
+      } else {
+        // 非常量清空值（因为新选的是普通变量，不是之前的常量）
+        if (Object.prototype.hasOwnProperty.call(holder, 'value')) holder.value = ''
+      }
+      this.sync()
     }
   }
 }
@@ -465,5 +577,11 @@ export default {
   border: 1px dashed #d9d9d9;
   border-radius: 3px;
   background: #fff;
+}
+.const-hint-input {
+  background-color: #f5f7fa;
+  border-color: #e4e7ed;
+  color: #606266;
+  cursor: not-allowed;
 }
 </style>

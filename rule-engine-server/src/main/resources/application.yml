@@ -17,7 +17,7 @@ spring:
     host: ${REDIS_HOST:localhost}
     port: ${REDIS_PORT:6379}
     # 无密码时留空或删除本行
-    password: ${REDIS_PASSWORD:}
+    password: ${REDIS_PASSWORD:123456}
     connect-timeout: 2000
     timeout: 3000
     lettuce:

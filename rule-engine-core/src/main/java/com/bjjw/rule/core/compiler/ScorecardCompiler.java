@@ -4,7 +4,9 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
+import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class ScorecardCompiler implements RuleCompiler {
 
@@ -20,6 +22,11 @@ public class ScorecardCompiler implements RuleCompiler {
 
     @Override
     public CompileResult compile(String modelJson) {
+        return compile(modelJson, Collections.emptySet(), null);
+    }
+
+    @Override
+    public CompileResult compile(String modelJson, Set<String> constantNames, String constantPrefix) {
         try {
             JSONObject model = JSON.parseObject(modelJson);
             double initialScore = model.getDoubleValue("initialScore");
@@ -28,6 +35,11 @@ public class ScorecardCompiler implements RuleCompiler {
             JSONArray thresholds = model.getJSONArray("thresholds");
 
             String resCode = resultVar != null ? resultVar.getString("varCode") : "totalScore";
+
+            // 结果变量是赋值目标，常量不允许被赋值（会覆盖常量序言的固化值）
+            if (ConstantPrefixBuilder.isConstantName(constantNames, resCode)) {
+                return CompileResult.fail("结果变量「" + resCode + "」是常量，常量不允许被赋值，请改选普通变量");
+            }
 
             StringBuilder script = new StringBuilder();
             script.append(resCode).append(" = ").append(initialScore).append("\n\n");
@@ -55,6 +67,10 @@ public class ScorecardCompiler implements RuleCompiler {
                         levelVar = rv;
                     }
                 }
+                // 等级变量同样是赋值目标，禁止与常量重名
+                if (ConstantPrefixBuilder.isConstantName(constantNames, levelVar)) {
+                    return CompileResult.fail("等级变量「" + levelVar + "」是常量，常量不允许被赋值，请改用普通变量名");
+                }
                 script.append(levelVar).append(" = \"未知\"\n");
                 for (int i = 0; i < thresholds.size(); i++) {
                     JSONObject th = thresholds.getJSONObject(i);
@@ -79,6 +95,11 @@ public class ScorecardCompiler implements RuleCompiler {
                 RuleScriptResultCollector.appendResultMapReturn(script, outVars);
             } else {
                 script.append(resCode).append("\n");
+            }
+
+            // 常量赋值序言前置到脚本最前，使脚本内引用的常量解析为固化值
+            if (constantPrefix != null && !constantPrefix.isEmpty()) {
+                script.insert(0, constantPrefix);
             }
 
             return CompileResult.ok(script.toString(), "QLEXPRESS");

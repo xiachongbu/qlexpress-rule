@@ -15,11 +15,11 @@
  *   - getVarOptions(refCode)       — ENUM 选项
  */
 
-import { getDefinition } from '@/api/definition'
-import { getVariableOptions, listVariablesByProject } from '@/api/variable'
-import { getDataObjectFieldOptions, getVariableTree } from '@/api/dataObject'
-import { listAllFunctionsByProject } from '@/api/function'
-import { varTypeLabel as varTypeLabelFn, varTypeTagColor } from '@/constants/varTypes'
+import {getDefinition} from '@/api/definition'
+import {getVariableOptions, listVariablesByProject} from '@/api/variable'
+import {getDataObjectFieldOptions, getVariableTree} from '@/api/dataObject'
+import {listAllFunctionsByProject} from '@/api/function'
+import {varTypeLabel as varTypeLabelFn, varTypeTagColor} from '@/constants/varTypes'
 
 export default {
   data() {
@@ -110,7 +110,7 @@ export default {
           })
         })
 
-        // 2. 常量：单段 scriptName（或 varCode）
+        // 2. 常量：单段 scriptName（或 varCode），标签与普通变量一致只显示名称与编码
         allVars.filter(v => v.varSource === 'CONSTANT').forEach(c => {
           const constScriptName = c.scriptName || c.varCode
           refs.push({

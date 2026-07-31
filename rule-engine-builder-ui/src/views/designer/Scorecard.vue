@@ -37,10 +37,11 @@
               v-if="varPickerOptions.length"
               :vars="varPickerOptions"
               :value="model.resultVar.varCode"
-              placeholder="选择变量、常量或对象字段..."
+              placeholder="选择变量或对象字段..."
               width="200px"
               type-filter="NUMBER"
               :show-all-when-filter-empty="true"
+              :exclude-constants="true"
               @select="onResultVarSelect"
             />
             <template v-else>
@@ -102,6 +103,7 @@
                     placeholder="选择变量"
                     width="100%"
                     class="cond-var"
+                    :exclude-constants="true"
                     @select="v => { item.condVar = v.varCode; item.condVarType = v.varType }"
                   />
                   <el-input v-else v-model="item.condVar" size="small" placeholder="变量编码" class="cond-var" />
@@ -305,8 +307,8 @@
 </template>
 
 <script>
-import { compileRule, executeRule, getContent, saveContent } from '@/api/definition'
-import { buildQlConditionExpr, inferConstVarType, parseQlConditionExpr } from '@/utils/conditionExpr'
+import {compileRule, executeRule, getContent, saveContent} from '@/api/definition'
+import {buildQlConditionExpr, inferConstVarType, parseQlConditionExpr} from '@/utils/conditionExpr'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'

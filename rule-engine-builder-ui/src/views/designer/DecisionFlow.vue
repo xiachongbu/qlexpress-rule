@@ -117,6 +117,7 @@
                     :value="edgeCondVisual.leftVar"
                     placeholder="选择或输入变量..."
                     size="mini"
+                    :exclude-constants="true"
                     @select="v => onEdgeCondVarSelect(v, 'left')"
                   />
                 </div>

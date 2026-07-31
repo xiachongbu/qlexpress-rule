@@ -4,7 +4,9 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
+import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * 决策表：将 JSON 模型编译为 QLExpress 脚本。
@@ -22,6 +24,11 @@ public class DecisionTableCompiler implements RuleCompiler {
 
     @Override
     public CompileResult compile(String modelJson) {
+        return compile(modelJson, Collections.emptySet(), null);
+    }
+
+    @Override
+    public CompileResult compile(String modelJson, Set<String> constantNames, String constantPrefix) {
         try {
             JSONObject model = JSON.parseObject(modelJson);
             String hitPolicy = model.getString("hitPolicy");
@@ -36,7 +43,9 @@ public class DecisionTableCompiler implements RuleCompiler {
                 return CompileResult.fail("决策表模型缺少必要字段: rules");
             }
 
+            // 常量不作为输出变量：既不预声明为 null（否则覆盖常量序言），也不写入结果 Map
             LinkedHashSet<String> outputVarCodes = collectOutputVarCodes(rules, globalActionDefs);
+            outputVarCodes.removeIf(vc -> ConstantPrefixBuilder.isConstantName(constantNames, vc));
 
             StringBuilder script = new StringBuilder();
             boolean isFirst = "FIRST".equals(hitPolicy);
@@ -67,7 +76,7 @@ public class DecisionTableCompiler implements RuleCompiler {
                     script.append("    ").append(UNIQUE_HIT_COUNT_VAR)
                             .append(" = ").append(UNIQUE_HIT_COUNT_VAR).append(" + 1;\n");
                 }
-                appendRuleAssignments(script, ruleActions, globalActionDefs);
+                appendRuleAssignments(script, ruleActions, globalActionDefs, constantNames);
 
                 script.append("}");
                 if (!isFirst) script.append("\n");
@@ -85,6 +94,11 @@ public class DecisionTableCompiler implements RuleCompiler {
             if (!outputVarCodes.isEmpty()) {
                 RuleScriptResultCollector.prependOutputNullInits(script, outputVarCodes);
                 RuleScriptResultCollector.appendResultMapReturn(script, outputVarCodes);
+            }
+
+            // 常量赋值序言前置到脚本最前，使脚本内引用的常量解析为固化值
+            if (constantPrefix != null && !constantPrefix.isEmpty()) {
+                script.insert(0, constantPrefix);
             }
 
             return CompileResult.ok(script.toString(), "QLEXPRESS");
@@ -121,9 +135,9 @@ public class DecisionTableCompiler implements RuleCompiler {
     }
 
     /**
-     * 输出单条规则 then 体内的赋值语句。
+     * 输出单条规则 then 体内的赋值语句；常量不作为赋值目标（跳过），保持常量只读语义。
      */
-    static void appendRuleAssignments(StringBuilder script, JSONArray ruleActions, JSONArray globalActionDefs) {
+    static void appendRuleAssignments(StringBuilder script, JSONArray ruleActions, JSONArray globalActionDefs, Set<String> constantNames) {
         for (int k = 0; k < ruleActions.size(); k++) {
             JSONObject act = ruleActions.getJSONObject(k);
             JSONObject actDef = k < globalActionDefs.size() ? globalActionDefs.getJSONObject(k) : null;
@@ -147,6 +161,10 @@ public class DecisionTableCompiler implements RuleCompiler {
                 continue;
             }
             if (value == null) {
+                continue;
+            }
+            // 常量为只读，不生成对其的赋值语句
+            if (ConstantPrefixBuilder.isConstantName(constantNames, varCode)) {
                 continue;
             }
 

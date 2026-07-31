@@ -5,7 +5,9 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 复杂交叉表编译器：支持多维行/列交叉 + 区间匹配。
@@ -15,6 +17,11 @@ public class AdvancedCrossTableCompiler implements RuleCompiler {
 
     @Override
     public CompileResult compile(String modelJson) {
+        return compile(modelJson, Collections.emptySet(), null);
+    }
+
+    @Override
+    public CompileResult compile(String modelJson, Set<String> constantNames, String constantPrefix) {
         try {
             JSONObject model = JSON.parseObject(modelJson);
             JSONArray rowDims = model.getJSONArray("rowDimensions");
@@ -37,6 +44,11 @@ public class AdvancedCrossTableCompiler implements RuleCompiler {
 
             String resCode = resultVar.getString("varCode");
             String resType = resultVar.getString("varType");
+
+            // 结果变量是赋值目标，常量不允许被赋值（会覆盖常量序言的固化值）
+            if (ConstantPrefixBuilder.isConstantName(constantNames, resCode)) {
+                return CompileResult.fail("结果变量「" + resCode + "」是常量，常量不允许被赋值，请改选普通变量");
+            }
 
             List<List<SegmentInfo>> rowProduct = cartesianProduct(rowDims);
             List<List<SegmentInfo>> colProduct = cartesianProduct(colDims);
@@ -76,6 +88,11 @@ public class AdvancedCrossTableCompiler implements RuleCompiler {
             }
             if (!first) {
                 script.append("\n");
+            }
+
+            // 常量赋值序言前置到脚本最前，使脚本内引用的常量解析为固化值
+            if (constantPrefix != null && !constantPrefix.isEmpty()) {
+                script.insert(0, constantPrefix);
             }
 
             return CompileResult.ok(script.toString(), "QLEXPRESS");

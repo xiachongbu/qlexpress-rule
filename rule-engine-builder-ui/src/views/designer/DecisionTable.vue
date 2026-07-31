@@ -89,6 +89,7 @@
                     <el-select
                       v-if="act.varType === 'ENUM' && getEnumOptions(act).length"
                       v-model="act.value"
+                      :disabled="isConstAction(act)"
                       size="mini"
                       class="dt-act-value-ctl"
                       clearable
@@ -98,13 +99,38 @@
                     <el-select
                       v-else-if="act.varType === 'BOOLEAN'"
                       v-model="act.value"
+                      :disabled="isConstAction(act)"
                       size="mini"
                       class="dt-act-value-ctl"
                     >
                       <el-option label="true" value="true" />
                       <el-option label="false" value="false" />
                     </el-select>
-                    <el-input v-else v-model="act.value" size="mini" class="dt-act-value-ctl" placeholder="赋值" />
+                    <template v-else>
+                      <!-- 常量场景：置灰禁用，悬停提示不可编辑 -->
+                      <el-tooltip
+                        v-if="isConstAction(act)"
+                        content="常量不允许修改，请在常量配置管理中修改后重新发布"
+                        placement="top"
+                      >
+                        <el-input
+                          v-model="act.value"
+                          size="mini"
+                          class="dt-act-value-ctl"
+                          disabled
+                          placeholder="常量默认值（只读）"
+                        />
+                      </el-tooltip>
+                      <!-- 非常量场景：可编辑的空输入框 -->
+                      <el-input
+                        v-else
+                        :value="act.value || ''"
+                        size="mini"
+                        class="dt-act-value-ctl"
+                        placeholder="赋值"
+                        @input="$set(act, 'value', $event)"
+                      />
+                    </template>
                   </div>
                 </div>
               </div>
@@ -146,14 +172,15 @@
           <span v-else style="color:#999;font-size:12px;">暂无变量库数据</span>
         </el-form-item>
         <el-form-item label="中文名称">
-          <el-input v-model="activeColDef.varLabel" placeholder="如：业务类型" />
+          <el-input v-model="activeColDef.varLabel" :placeholder="isCurrentActionFromLibrary ? '来自变量库（只读）' : '如：业务类型'" :disabled="isCurrentActionFromLibrary" />
         </el-form-item>
         <el-form-item label="变量编码">
-          <el-input v-model="activeColDef.varCode" placeholder="如：bizType" />
+          <el-input v-model="activeColDef.varCode" :placeholder="isCurrentActionFromLibrary ? '来自变量库（只读）' : '如：bizType'" :disabled="isCurrentActionFromLibrary" />
         </el-form-item>
         <el-form-item label="数据类型">
           <el-select
             v-model="activeColDef.varType"
+            :disabled="isCurrentActionFromLibrary"
             style="width:100%"
             popper-append-to-body
             @change="onColDefVarTypeChange"
@@ -162,7 +189,7 @@
           </el-select>
         </el-form-item>
         <el-form-item v-if="activeColDef.varType === 'ENUM'" label="枚举值">
-          <el-input v-model="activeColDef.enumOptions" placeholder="逗号分隔，如：普通,免税,优惠" />
+          <el-input v-model="activeColDef.enumOptions" placeholder="逗号分隔，如：普通，免税，优惠" />
         </el-form-item>
       </el-form>
       <template slot="footer">
@@ -247,8 +274,8 @@
 </template>
 
 <script>
-import { compileRule, executeRule, getContent, saveContent } from '@/api/definition'
-import { VAR_TYPE_FORM_OPTIONS } from '@/constants/varTypes'
+import {compileRule, executeRule, getContent, saveContent} from '@/api/definition'
+import {VAR_TYPE_FORM_OPTIONS} from '@/constants/varTypes'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
@@ -314,6 +341,16 @@ export default {
         collectVarCodesFromConditionTree(r.conditionRoot, s)
       })
       return Array.from(s)
+    },
+
+    /**
+     * 判断当前选中的变量是否为常量；常量的值输入框应置灰不可写。
+     */
+    isCurrentActionConstant() {
+      if (!this.activeColDef) return false
+      const act = this.activeColDef
+      if (!act || !act.varCode) return false
+      return this.isConstRef((this.projectRefs || []).find(v => v.refCode === act.varCode))
     }
   },
   created() {
@@ -322,9 +359,10 @@ export default {
       try {
         await this.bootstrapDesignerWithScope()
       } catch (e) {
-        this.$message.error('加载失败: ' + (e.message || '未知错误'))
-        this.contentLoaded = true
+        this.$message.error('加载失败：' + (e.message || '未知错误'))
       }
+      this.contentLoaded = true
+      this._trySyncModelVarRefs()
     })()
   },
   methods: {
@@ -337,10 +375,9 @@ export default {
           this.normalizeModel()
         }
       } catch (e) {
-        this.$message.error('加载内容失败: ' + (e.message || '未知错误'))
+        this.$message.error('加载内容失败：' + (e.message || '未知错误'))
       } finally {
-        this.contentLoaded = true
-        this._trySyncModelVarRefs()
+        // contentLoaded 已在 created() 中设置，这里不需要重复
       }
     },
 
@@ -369,8 +406,24 @@ export default {
           }
         })
       })
+      // 对每个规则的动作行进行同步 + 常量回填
       ;(this.model.rules || []).forEach(rule => {
-        (rule.actions || []).forEach(item => { if (item && item.varCode && this.syncVarItem(item)) changed = true })
+        rule.actions.forEach(item => {
+          if (!item.varCode) return
+          if (this.syncVarItem(item)) changed = true
+        })
+      })
+      // 常量为动作回填 defaultValue（主列表场景）
+      ;(this.model.rules || []).forEach(rule => {
+        const act = rule.actions && rule.actions[0]
+        if (!act || !act.varCode) return
+        const ref = this.projectRefs.find(r => r.refCode === act.varCode)
+        if (ref && ref.category === 'constant' && ref.varObj && ref.varObj.defaultValue != null) {
+          const dv = String(ref.varObj.defaultValue).trim()
+          if (dv && act.value !== dv) {
+            this.$set(act, 'value', dv)
+          }
+        }
       })
       if (changed) this.$forceUpdate()
     },
@@ -487,9 +540,59 @@ export default {
     openActionConfig(ruleIndex, actionIndex) {
       this.colConfigRuleIndex = ruleIndex
       this.colConfigActionIndex = actionIndex
+      // 弹窗打开时，检查是否为常量并回填 defaultValue
+      const act = this.activeColDef
+      if (act && act.varCode) {
+        const ref = this.projectRefs.find(r => r.refCode === act.varCode)
+        if (ref && ref.category === 'constant' && ref.varObj && ref.varObj.defaultValue != null) {
+          const dv = String(ref.varObj.defaultValue).trim()
+          if (dv && act.value !== dv) {
+            this.$set(act, 'value', dv)
+          }
+        }
+      } else if (act && !act.varCode) {
+        // 如果当前没有选中的变量，且是常量引用（通过 _varId 判断），也回填
+        if (act._varId) {
+          const ref = this.findRefByVarId(act._varId)
+          if (ref && ref.category === 'constant' && ref.varObj && ref.varObj.defaultValue != null) {
+            const dv = String(ref.varObj.defaultValue).trim()
+            this.$set(act, 'value', dv)
+          }
+        }
+      }
       this.colConfigVisible = true
     },
 
+    /**
+     * 判断 select 事件传出的引用对象是否为常量。
+     */
+    isConstRef(v) {
+      return !!(v && ((v._ref && v._ref.category === 'constant') ||
+        v.varSource === 'CONSTANT' ||
+        (v.varObj && v.varObj.varSource === 'CONSTANT')))
+    },
+
+    /**
+     * 按动作行的 varCode 判断是否为常量引用；主列表须逐行判断，避免一行常量置灰全部行。
+     */
+    isConstAction(act) {
+      if (!act || !act.varCode) return false
+      return this.isConstRef((this.projectRefs || []).find(r => r.refCode === act.varCode))
+    },
+
+    /**
+     * 弹窗中当前动作是否引自变量库（含变量/常量/对象字段）；
+     * 库中引用的名称/编码/类型需到变量管理中修改，仅手动输入的自定义变量可在此编辑。
+     */
+    isCurrentActionFromLibrary() {
+      if (!this.activeColDef || !this.activeColDef.varCode) return false
+      return (this.projectRefs || []).some(r => r.refCode === this.activeColDef.varCode)
+    },
+
+    /**
+     * 选择变量时：常量不允许被赋值（值只能在常量配置管理中修改），
+     * 选中常量时自动填入该常量的最新默认值并提示，仅用于参考。
+     */
     onColConfigVarSelect(variable) {
       if (!variable) return
       const act = this.activeColDef
@@ -503,6 +606,18 @@ export default {
       this.$set(act, 'enumOptions', variable.varType === 'ENUM'
         ? this.getVarOptions(variable.varCode).map(o => o.value || o.optionValue).join(',')
         : '')
+      // 常量回填最新默认值（defaultValue 在选项的 varObj 上，非顶层字段）
+      if (this.isConstRef(variable)) {
+        const raw = variable.varObj && variable.varObj.defaultValue != null
+          ? variable.varObj.defaultValue
+          : variable.defaultValue
+        const dv = raw != null ? String(raw) : ''
+        this.$set(act, 'value', dv)
+        this.$message.warning('「' + varLabel + '」是常量，已自动填入其默认值；如需修改常量值请到常量配置管理中修改后重新发布')
+      } else {
+        // 非常量清空值（因为新选的是普通变量，不是之前的常量）
+        this.$set(act, 'value', '')
+      }
     },
 
     /**
@@ -601,7 +716,7 @@ export default {
         recordHistory: true
       })
       if (res && res.code === 200) {
-        this.$message.success('保存成功，规则已生效，可直接「发布」')
+        this.$message.success('保存成功，规则已生效，可直接「发布』')
         if (this.$refs.scriptPanel) this.$refs.scriptPanel.refresh()
       }
     },
@@ -617,7 +732,7 @@ export default {
           this.$refs.scriptPanel.refresh()
         }
       } else {
-        this.$message.error('编译失败: ' + (res && res.data ? res.data.errorMessage : '未知错误'))
+        this.$message.error('编译失败：' + (res && res.data ? res.data.errorMessage : '未知错误'))
       }
     },
 
@@ -842,6 +957,12 @@ export default {
 .dt-act-value-ctl {
   width: 100%;
   max-width: 100%;
+}
+.const-hint-input {
+  background-color: #f5f7fa;
+  border-color: #e4e7ed;
+  color: #606266;
+  cursor: not-allowed;
 }
 @media (min-width: 1100px) {
   .dt-rule-grid {

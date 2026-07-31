@@ -16,6 +16,11 @@ public class DecisionTreeCompiler implements RuleCompiler {
 
     @Override
     public CompileResult compile(String modelJson) {
+        return compile(modelJson, java.util.Collections.emptySet(), null);
+    }
+
+    @Override
+    public CompileResult compile(String modelJson, java.util.Set<String> constantNames, String constantPrefix) {
         try {
             JSONObject model = JSON.parseObject(modelJson);
             JSONArray nodes = model.getJSONArray("nodes");
@@ -89,10 +94,17 @@ public class DecisionTreeCompiler implements RuleCompiler {
 
             LinkedHashSet<String> outputVars = new LinkedHashSet<>();
             ActionDataOutputVarCollector.collectFromGraphTaskNodes(nodes, outputVars);
+            // 常量不作为输出变量：不预声明为 null、不进结果 Map，避免覆盖常量序言
+            outputVars.removeIf(vc -> ConstantPrefixBuilder.isConstantName(constantNames, vc));
             StringBuilder sb = new StringBuilder(script);
             if (!outputVars.isEmpty()) {
                 RuleScriptResultCollector.prependOutputNullInits(sb, outputVars);
                 RuleScriptResultCollector.appendResultMapReturn(sb, outputVars);
+            }
+
+            // 常量赋值序言前置到脚本最前，使脚本内引用的常量解析为固化值
+            if (constantPrefix != null && !constantPrefix.isEmpty()) {
+                sb.insert(0, constantPrefix);
             }
 
             return CompileResult.ok(sb.toString(), "QLEXPRESS");

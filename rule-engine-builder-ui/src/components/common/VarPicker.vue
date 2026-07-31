@@ -94,7 +94,9 @@ export default {
     groupedByCategory: { type: Boolean, default: true },
     loading: { type: Boolean, default: false },
     /** 是否允许手动输入自定义变量（不在变量管理中的） */
-    allowCustom: { type: Boolean, default: true }
+    allowCustom: { type: Boolean, default: true },
+    /** 是否排除常量（条件左侧不应选常量，避免“常量 op 字面值”的死条件） */
+    excludeConstants: { type: Boolean, default: false }
   },
   data() {
     return {
@@ -111,6 +113,7 @@ export default {
     },
     filteredVars() {
       let list = this.vars
+      if (this.excludeConstants) list = list.filter(v => !this.isConstItem(v))
       if (this.typeFilter) list = list.filter(v => v.varType === this.typeFilter)
       return list
     },
@@ -141,7 +144,8 @@ export default {
       const refs = this.vars.filter(v => v._ref)
       if (!refs.length) return []
       let standalone = refs.filter(v => v._ref.category === 'standalone')
-      const constantRefs = refs.filter(v => v._ref.category === 'constant')
+      // 排除常量时，条件左侧不提供「常量」分类
+      const constantRefs = this.excludeConstants ? [] : refs.filter(v => v._ref.category === 'constant')
       const objectRefs = refs.filter(v => v._ref.category === 'object')
       let useTypeFilter = !!this.typeFilter
       if (useTypeFilter && this.showAllWhenFilterEmpty) {
@@ -160,26 +164,13 @@ export default {
           children: standalone.map(v => ({ value: v.varCode, label: v.varLabel }))
         })
       }
-      const byConstGroup = {}
-      constantRefs.forEach(v => {
-        const gc = v._ref.groupCode || ''
-        const gl = v._ref.groupLabel || gc
-        const key = gc || 'unknown'
-        if (!byConstGroup[key]) byConstGroup[key] = { groupCode: gc, groupLabel: gl, vars: [] }
-        byConstGroup[key].vars.push(v)
-      })
-      const constChildren = Object.keys(byConstGroup).filter(k => k !== 'unknown').map(key => {
-        const g = byConstGroup[key]
-        const items = useTypeFilter ? g.vars.filter(v => v.varType === this.typeFilter) : g.vars
-        if (!items.length) return null
-        return {
-          value: g.groupCode,
-          label: g.groupLabel || g.groupCode,
-          children: items.map(v => ({ value: v.varCode, label: v.varLabel }))
-        }
-      }).filter(Boolean)
-      if (constChildren.length) {
-        options.push({ value: '__constant__', label: '常量', children: constChildren })
+      // 常量已无分组概念（rule_variable 表不存分组），直接作为「常量」一级下的叶子项
+      const constItems = (useTypeFilter
+        ? constantRefs.filter(v => v.varType === this.typeFilter)
+        : constantRefs
+      ).map(v => ({ value: v.varCode, label: v.varLabel }))
+      if (constItems.length) {
+        options.push({ value: '__constant__', label: '常量', children: constItems })
       }
       const byObject = {}
       objectRefs.forEach(v => {
@@ -213,6 +204,7 @@ export default {
       ]
       const known = new Set(['INPUT', 'COMPUTED', 'CONSTANT'])
       this.vars.forEach(v => {
+        if (this.excludeConstants && this.isConstItem(v)) return
         const g = groups.find(g => g.source === (v.varSource || '')) || groups[3]
         if (!known.has(v.varSource || '')) groups[3].vars.push(v)
         else g.vars.push(v)
@@ -240,6 +232,12 @@ export default {
     this._autoSwitchIfUnmatched()
   },
   methods: {
+    /** 判断选项是否为常量（兼容 _ref.category / varSource / varObj.varSource） */
+    isConstItem(v) {
+      return !!(v && ((v._ref && v._ref.category === 'constant') ||
+        v.varSource === 'CONSTANT' ||
+        (v.varObj && v.varObj.varSource === 'CONSTANT')))
+    },
     onCascaderChange(path) {
       if (!path || !path.length) {
         this.$emit('input', '')

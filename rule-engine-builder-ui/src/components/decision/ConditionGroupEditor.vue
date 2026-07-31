@@ -49,6 +49,7 @@
                 placeholder="选择字段..."
                 size="mini"
                 width="100%"
+                :exclude-constants="true"
                 @select="v => onLeafLeftSelect(child, v)"
               />
             </div>
@@ -75,32 +76,49 @@
                 />
               </div>
               <div v-else class="cg-field cg-field--value">
-                <el-select
-                  v-if="child.varType === 'ENUM' && enumOpts(child).length"
-                  v-model="child.value"
-                  size="mini"
-                  class="cg-sel-full"
-                  clearable
+                <!-- 左侧为常量：值输入框置灰禁用，悬停提示不可编辑 -->
+                <el-tooltip
+                  v-if="isConstLeaf(child)"
+                  content="常量不允许修改，请在常量配置管理中修改后重新发布"
+                  placement="top"
                 >
-                  <el-option v-for="opt in enumOpts(child)" :key="opt" :label="opt" :value="opt" />
-                </el-select>
-                <el-select
-                  v-else-if="child.varType === 'BOOLEAN'"
-                  v-model="child.value"
-                  size="mini"
-                  class="cg-sel-full"
-                >
-                  <el-option label="true" value="true" />
-                  <el-option label="false" value="false" />
-                </el-select>
-                <el-input
-                  v-else-if="child.varType === 'NUMBER'"
-                  v-model="child.value"
-                  size="mini"
-                  class="cg-input-full"
-                  placeholder="数值"
-                />
-                <el-input v-else v-model="child.value" size="mini" class="cg-input-full" placeholder="值" />
+                  <el-input
+                    v-model="child.value"
+                    size="mini"
+                    class="cg-input-full"
+                    disabled
+                    placeholder="常量默认值（只读）"
+                  />
+                </el-tooltip>
+                <!-- 非常量：按类型渲染可编辑控件 -->
+                <template v-else>
+                  <el-select
+                    v-if="child.varType === 'ENUM' && enumOpts(child).length"
+                    v-model="child.value"
+                    size="mini"
+                    class="cg-sel-full"
+                    clearable
+                  >
+                    <el-option v-for="opt in enumOpts(child)" :key="opt" :label="opt" :value="opt" />
+                  </el-select>
+                  <el-select
+                    v-else-if="child.varType === 'BOOLEAN'"
+                    v-model="child.value"
+                    size="mini"
+                    class="cg-sel-full"
+                  >
+                    <el-option label="true" value="true" />
+                    <el-option label="false" value="false" />
+                  </el-select>
+                  <el-input
+                    v-else-if="child.varType === 'NUMBER'"
+                    v-model="child.value"
+                    size="mini"
+                    class="cg-input-full"
+                    placeholder="数值"
+                  />
+                  <el-input v-else v-model="child.value" size="mini" class="cg-input-full" placeholder="值" />
+                </template>
               </div>
             </template>
             <span v-else class="cg-field cg-field--any">任意</span>
@@ -186,6 +204,19 @@ export default {
       this.$set(leaf, 'rightVarType', '')
       this.$set(leaf, 'rightVarLabel', '')
       this.$set(leaf, '_rightVarId', undefined)
+      // 如果切换到常量类型且左侧是已知的常量，则回填默认值
+      if (leaf.valueKind === 'CONST' && leaf.varCode) {
+        const ref = (this.vars || []).find(v => v.varCode === leaf.varCode)
+        if (ref && this.isConstRef(ref)) {
+          const raw = ref.varObj && ref.varObj.defaultValue != null ? ref.varObj.defaultValue : ref.defaultValue
+          const dv = raw != null ? String(raw) : ''
+          this.$set(leaf, 'value', dv)
+          if (dv) {
+            const varLabel = ref.varObj && ref.varObj.varLabel || ref.varLabel || ref.varCode
+            this.$message.warning('「' + varLabel + '」是常量，已自动填入其默认值用于比较')
+          }
+        }
+      }
     },
 
     /**
@@ -206,12 +237,38 @@ export default {
       this.$set(leaf, 'varLabel', varLabel)
       this.$set(leaf, 'varType', variable.varType || 'STRING')
       this.$set(leaf, '_varId', _varId)
+      // 判断是否为常量
+      const isConstant = this.isConstRef(variable)
       if (variable.varType === 'ENUM' && this.getVarOptionsFn) {
         const opts = this.getVarOptionsFn(variable.varCode) || []
         this.$set(leaf, 'enumOptions', opts.map(o => o.value || o.optionValue).filter(Boolean).join(','))
       } else {
         this.$set(leaf, 'enumOptions', '')
       }
+      // 如果是常量且当前值为空或右侧类型为常量，则自动回填默认值
+      if (isConstant && leaf.valueKind === 'CONST' && leaf.value === '') {
+        const raw = variable.varObj && variable.varObj.defaultValue != null ? variable.varObj.defaultValue : variable.defaultValue
+        const dv = raw != null ? String(raw) : ''
+        this.$set(leaf, 'value', dv)
+        this.$message.warning('「' + varLabel + '」是常量，已自动填入其默认值用于比较；如需修改请在常量配置管理中修改后重新发布')
+      }
+    },
+
+    /**
+     * 判断引用对象是否为常量。
+     */
+    isConstRef(v) {
+      return !!(v && ((v._ref && v._ref.category === 'constant') ||
+        v.varSource === 'CONSTANT' ||
+        (v.varObj && v.varObj.varSource === 'CONSTANT')))
+    },
+
+    /**
+     * 叶子条件的左侧字段是否为常量（常量参与比较时右侧值只读回填）。
+     */
+    isConstLeaf(leaf) {
+      if (!leaf || !leaf.varCode || leaf.valueKind !== 'CONST') return false
+      return this.isConstRef((this.vars || []).find(v => v.varCode === leaf.varCode))
     },
 
     /**

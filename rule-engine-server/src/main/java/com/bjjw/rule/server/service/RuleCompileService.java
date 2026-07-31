@@ -4,11 +4,14 @@ import com.bjjw.rule.core.compiler.*;
 import com.bjjw.rule.model.constant.RuleCompIds;
 import com.bjjw.rule.model.entity.RuleDefinition;
 import com.bjjw.rule.model.entity.RuleDefinitionContent;
+import com.bjjw.rule.model.entity.RuleVariable;
 import com.bjjw.rule.server.mapper.RuleDefinitionContentMapper;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 @Service
 public class RuleCompileService {
@@ -18,6 +21,9 @@ public class RuleCompileService {
 
     @Resource
     private RuleDefinitionContentMapper contentMapper;
+
+    @Resource
+    private RuleVariableService variableService;
 
     /**
      * 编译指定定义下全国默认（0）作用域
@@ -48,7 +54,14 @@ public class RuleCompileService {
             return CompileResult.fail("暂不支持的模型类型: " + content.getModelType());
         }
 
-        CompileResult result = compiler.compile(content.getModelJson());
+        // 注入项目常量：编译器排除常量出输出集，并前置常量赋值序言，使常量在脚本中固化为其值
+        List<RuleVariable> vars = definition.getProjectId() != null
+                ? variableService.listByProject(definition.getProjectId())
+                : null;
+        LinkedHashSet<String> constantNames = ConstantPrefixBuilder.constantNames(vars);
+        String constantPrefix = ConstantPrefixBuilder.build(vars);
+
+        CompileResult result = compiler.compile(content.getModelJson(), constantNames, constantPrefix);
 
         // 脚本类型：直通编译不含深层语法解析，追加 QLExpress check() 解析校验（括号预检已在直通编译器内完成）
         if (result.isSuccess() && "SCRIPT".equals(content.getModelType())) {
