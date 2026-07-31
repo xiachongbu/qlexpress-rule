@@ -1,5 +1,7 @@
 package com.bjjw.rule.client;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.bjjw.rule.client.cache.CachedRule;
 import com.bjjw.rule.client.cache.CachedRuleSet;
@@ -17,20 +19,16 @@ import com.bjjw.rule.core.util.RuleSetHitPolicies;
 import com.bjjw.rule.model.constant.RuleCompIds;
 import com.bjjw.rule.model.dto.RuleResult;
 import com.bjjw.rule.model.entity.RuleExecutionLog;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.*;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 规则引擎客户端：无参 {@link #execute(String, Map)} 使用默认（通用）作用域；带 scopeCompId 的重载按作用域优先解析。
@@ -117,7 +115,7 @@ public class RuleEngineClient {
     public RuleResult execute(String ruleCode, Map<String, Object> params, String businessId) {
         return doExecute(ruleCode, params, RuleCompIds.NATIONAL, businessId, true);
     }
-    
+
     /**
      * 按全国(通用)作用域执行规则,可选择是否上报日志。
      *
@@ -129,7 +127,7 @@ public class RuleEngineClient {
     public RuleResult execute(String ruleCode, Map<String, Object> params, String businessId, boolean reportLog) {
         return doExecute(ruleCode, params, RuleCompIds.NATIONAL, businessId, reportLog);
     }
-    
+
     /**
      * 按指定 compId 解析并执行(服务端省优先、无则回落全国);compId 为 null 或空串时视为全国。
      *
@@ -141,7 +139,7 @@ public class RuleEngineClient {
     public RuleResult execute(String ruleCode, Map<String, Object> params, String compId, String businessId) {
         return doExecute(ruleCode, params, RuleCompIds.normalize(compId), businessId, true);
     }
-    
+
     /**
      * 按指定 compId 解析并执行(服务端省优先、无则回落全国);compId 为 null 或空串时视为全国,可选择是否上报日志。
      *
@@ -154,7 +152,7 @@ public class RuleEngineClient {
     public RuleResult execute(String ruleCode, Map<String, Object> params, String compId, String businessId, boolean reportLog) {
         return doExecute(ruleCode, params, RuleCompIds.normalize(compId), businessId, reportLog);
     }
-    
+
     /**
      * 按全国(通用)作用域执行规则;支持 Map 或 DTO/POJO(字段名即变量名)。
      *
@@ -172,7 +170,7 @@ public class RuleEngineClient {
         }
         return doExecute(ruleCode, paramObj, RuleCompIds.NATIONAL, businessId, true);
     }
-    
+
     /**
      * 按全国(通用)作用域执行规则;支持 Map 或 DTO/POJO(字段名即变量名),可选择是否上报日志。
      *
@@ -191,7 +189,7 @@ public class RuleEngineClient {
         }
         return doExecute(ruleCode, paramObj, RuleCompIds.NATIONAL, businessId, reportLog);
     }
-    
+
     /**
      * 按指定 compId 解析并执行;支持 Map 或 DTO/POJO(字段名即变量名)。
      *
@@ -211,7 +209,7 @@ public class RuleEngineClient {
         }
         return doExecute(ruleCode, paramObj, scope, businessId, true);
     }
-    
+
     /**
      * 按指定 compId 解析并执行;支持 Map 或 DTO/POJO(字段名即变量名),可选择是否上报日志。
      *
@@ -243,7 +241,7 @@ public class RuleEngineClient {
     public RuleResult executeRuleSet(String setCode, Map<String, Object> params, String businessId) {
         return executeRuleSet(setCode, params, RuleCompIds.NATIONAL, businessId, true);
     }
-    
+
     /**
      * 按全国作用域执行规则集(成员规则顺序执行,上下文合并策略与文档一致),可选择是否上报日志。
      *
@@ -255,7 +253,7 @@ public class RuleEngineClient {
     public RuleResult executeRuleSet(String setCode, Map<String, Object> params, String businessId, boolean reportLog) {
         return executeRuleSet(setCode, params, RuleCompIds.NATIONAL, businessId, reportLog);
     }
-    
+
     /**
      * 按指定 compId 解析规则集并链式执行成员规则。
      *
@@ -267,7 +265,7 @@ public class RuleEngineClient {
     public RuleResult executeRuleSet(String setCode, Map<String, Object> params, String compId, String businessId) {
         return executeRuleSet(setCode, params, RuleCompIds.normalize(compId), businessId, true);
     }
-    
+
     /**
      * 按指定 compId 解析规则集并链式执行成员规则,可选择是否上报日志。
      *
@@ -318,7 +316,7 @@ public class RuleEngineClient {
                 }
                 return r;
             }
-            RuleResult step = engine.execute(cached.getCompiledScript(), ctx, config.isTraceEnabled());
+            RuleResult step = engine.execute(cached.getCompiledScript(), ctx, config.isTraceEnabled(), cached.isPrecise());
             Map<String, Object> stepInfo = new HashMap<>();
             stepInfo.put("ruleCode", memberCode);
             stepInfo.put("success", step.isSuccess());
@@ -371,7 +369,7 @@ public class RuleEngineClient {
                 r.setResult(traceSteps);
                 return r;
             }
-            RuleResult step = engine.execute(cached.getCompiledScript(), new HashMap<>(params), config.isTraceEnabled());
+            RuleResult step = engine.execute(cached.getCompiledScript(), new HashMap<>(params), config.isTraceEnabled(), cached.isPrecise());
             Map<String, Object> stepInfo = new HashMap<>();
             stepInfo.put("ruleCode", memberCode);
             stepInfo.put("success", step.isSuccess());
@@ -481,7 +479,7 @@ public class RuleEngineClient {
             return r;
         }
 
-        RuleResult result = engine.execute(cached.getCompiledScript(), params, config.isTraceEnabled());
+        RuleResult result = engine.execute(cached.getCompiledScript(), params, config.isTraceEnabled(), cached.isPrecise());
 
         if (reportLog) {
             reportLog(ruleCode, cached, params, result, System.currentTimeMillis() - start, businessId);
@@ -504,7 +502,7 @@ public class RuleEngineClient {
             return r;
         }
 
-        RuleResult result = engine.execute(cached.getCompiledScript(), params, config.isTraceEnabled());
+        RuleResult result = engine.execute(cached.getCompiledScript(), params, config.isTraceEnabled(), cached.isPrecise());
 
         if (reportLog) {
             reportLog(ruleCode, cached, params, result, System.currentTimeMillis() - start, businessId);

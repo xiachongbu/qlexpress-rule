@@ -73,6 +73,10 @@
             <el-option v-for="o in compScopeOptions" :key="o.value" :label="o.label" :value="o.value" />
           </el-select>
         </el-form-item>
+        <el-form-item label="高精度计算">
+          <el-switch v-model="fm.preciseMode" :active-value="1" :inactive-value="0" />
+          <span style="margin-left:8px;color:#909399;font-size:12px;">开启后数值运算使用 BigDecimal，消除浮点误差</span>
+        </el-form-item>
         <el-form-item label="描述"><el-input v-model="fm.description" type="textarea" :rows="2" /></el-form-item>
       </el-form>
       <div slot="footer"><el-button size="small" @click="dlgVis=false">取消</el-button><el-button size="small" type="primary" @click="submit">确定</el-button></div>
@@ -137,12 +141,19 @@
   </div>
 </template>
 <script>
-import { mapState } from 'vuex'
-import { copyDefinitionToScope, createDefinition, deleteDefinitionScope, listDefinitions, unpublishRule, updateContentMeta } from '@/api/definition'
-import { getProject } from '@/api/project'
+import {mapState} from 'vuex'
+import {
+  copyDefinitionToScope,
+  createDefinition,
+  deleteDefinitionScope,
+  listDefinitions,
+  unpublishRule,
+  updateContentMeta
+} from '@/api/definition'
+import {getProject} from '@/api/project'
 import PublishScopeDialog from '@/components/common/PublishScopeDialog.vue'
-import { COMP_SCOPE_OPTIONS } from '@/constants/compScopeOptions'
-import { DICT_TYPE_COMP_SCOPE } from '@/constants/dictTypes'
+import {COMP_SCOPE_OPTIONS} from '@/constants/compScopeOptions'
+import {DICT_TYPE_COMP_SCOPE} from '@/constants/dictTypes'
 
 export default {
   name: 'ProjectDetail',
@@ -167,7 +178,7 @@ export default {
       total: 0,
       qp: { pageNum: 1, pageSize: 10, keyword: '', modelType: '' },
       dlgVis: false,
-      fm: { ruleCode: '', ruleName: '', modelType: '', description: '', initialScopeCompId: '0' }
+      fm: { ruleCode: '', ruleName: '', modelType: '', description: '', initialScopeCompId: '0', preciseMode: 0 }
     }
   },
   computed: {
@@ -301,7 +312,7 @@ export default {
      * 打开新建弹窗并重置表单（含作用域默认通用）
      */
     openCreateDlg() {
-      this.fm = { ruleCode: '', ruleName: '', modelType: '', description: '', initialScopeCompId: '0' }
+      this.fm = { ruleCode: '', ruleName: '', modelType: '', description: '', initialScopeCompId: '0', preciseMode: 0 }
       this.dlgVis = true
       this.$nextTick(() => {
         if (this.$refs.f) this.$refs.f.clearValidate()

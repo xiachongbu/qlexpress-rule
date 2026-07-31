@@ -1,7 +1,10 @@
 package com.bjjw.rule.model.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+
 import java.time.LocalDateTime;
 
 @Data
@@ -20,6 +23,8 @@ public class RulePublished {
     private String compiledScript;
     private String compiledType;
     private String modelJson;
+    /** 高精度计算：0-关闭，1-开启（BigDecimal），发布时取自 rule_definition.precise_mode */
+    private Integer preciseMode;
     private Integer status;
     private String publishBy;
     private LocalDateTime publishTime;

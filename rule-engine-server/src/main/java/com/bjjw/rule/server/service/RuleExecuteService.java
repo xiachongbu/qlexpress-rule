@@ -1,15 +1,11 @@
 package com.bjjw.rule.server.service;
 
-import com.bjjw.rule.model.constant.RuleCompIds;
-import com.bjjw.rule.core.function.AggregateBuiltinFunctionRegistry;
-import com.bjjw.rule.core.engine.QLExpressEngine;
-import com.bjjw.rule.model.dto.RuleResult;
-import com.bjjw.rule.model.entity.RuleDefinition;
-import com.bjjw.rule.model.entity.RuleDefinitionContent;
-import com.bjjw.rule.model.entity.RuleExecutionLog;
-import com.bjjw.rule.model.entity.RuleFunction;
-import com.bjjw.rule.model.entity.RuleProject;
 import com.alibaba.fastjson.JSON;
+import com.bjjw.rule.core.engine.QLExpressEngine;
+import com.bjjw.rule.core.function.AggregateBuiltinFunctionRegistry;
+import com.bjjw.rule.model.constant.RuleCompIds;
+import com.bjjw.rule.model.dto.RuleResult;
+import com.bjjw.rule.model.entity.*;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -80,7 +76,9 @@ public class RuleExecuteService {
         String fullScript = funcPrefix.isEmpty()
                 ? content.getCompiledScript()
                 : funcPrefix + "\n" + content.getCompiledScript();
-        RuleResult result = qlExpressEngine.execute(fullScript, params, true);
+        // 试跑精度与生产一致：取规则定义的高精度配置
+        boolean precise = definition.getPreciseMode() != null && definition.getPreciseMode() == 1;
+        RuleResult result = qlExpressEngine.execute(fullScript, params, true, precise);
 
         RuleExecutionLog log = new RuleExecutionLog();
         log.setRuleCode(definition.getRuleCode());

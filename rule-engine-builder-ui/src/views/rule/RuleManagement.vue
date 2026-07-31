@@ -59,7 +59,12 @@
         </div>
       </div>
       <el-table v-loading="loading" :height="tableHeight" :max-height="tableHeight" :data="expandedList" border size="small" row-class-name="uiueTable" header-row-class-name="uiueTableHeader" :span-method="objectSpanMethod">
-        <el-table-column prop="ruleName" label="规则名称" min-width="180" show-overflow-tooltip sortable />
+        <el-table-column prop="ruleName" label="规则名称" min-width="180" show-overflow-tooltip sortable>
+          <template slot-scope="{ row }">
+            {{ row.ruleName }}
+            <el-tag v-if="row.preciseMode === 1" size="mini" type="warning" style="margin-left:4px;">高精度</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="ruleCode" label="规则编码" min-width="150" show-overflow-tooltip sortable />
         <el-table-column label="省份" min-width="120" show-overflow-tooltip sortable>
           <template slot-scope="{ row }">{{ row._province }}</template>
@@ -126,6 +131,10 @@
             <el-option label="QL脚本" value="SCRIPT" />
           </el-select>
         </el-form-item>
+        <el-form-item label="高精度计算">
+          <el-switch v-model="fm.preciseMode" :active-value="1" :inactive-value="0" />
+          <span style="margin-left:8px;color:#909399;font-size:12px;">开启后数值运算使用 BigDecimal，消除浮点误差</span>
+        </el-form-item>
         <el-form-item label="描述"><el-input v-model="fm.description" type="textarea" :rows="2" /></el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -153,6 +162,10 @@
               :value="o.value"
             />
           </el-select>
+        </el-form-item>
+        <el-form-item label="高精度计算">
+          <el-switch v-model="editForm.preciseMode" :active-value="1" :inactive-value="0" />
+          <span style="margin-left:8px;color:#909399;font-size:12px;">开启后数值运算使用 BigDecimal，消除浮点误差</span>
         </el-form-item>
         <el-form-item label="说明">
           <el-input v-model="editForm.description" type="textarea" :rows="3" />
@@ -210,13 +223,21 @@
 </template>
 
 <script>
-import { mapState } from 'vuex'
-import { asyncPageHeightNew } from '@/mixins/asyncPageHeightNew'
-import { copyDefinitionToScope, createDefinition, deleteDefinitionScope, listDefinitions, unpublishRule, updateContentMeta } from '@/api/definition'
-import { listProjects } from '@/api/project'
+import {mapState} from 'vuex'
+import {asyncPageHeightNew} from '@/mixins/asyncPageHeightNew'
+import {
+  copyDefinitionToScope,
+  createDefinition,
+  deleteDefinitionScope,
+  listDefinitions,
+  unpublishRule,
+  updateContentMeta,
+  updateDefinition
+} from '@/api/definition'
+import {listProjects} from '@/api/project'
 import PublishScopeDialog from '@/components/common/PublishScopeDialog.vue'
-import { COMP_SCOPE_OPTIONS } from '@/constants/compScopeOptions'
-import { DICT_TYPE_COMP_SCOPE } from '@/constants/dictTypes'
+import {COMP_SCOPE_OPTIONS} from '@/constants/compScopeOptions'
+import {DICT_TYPE_COMP_SCOPE} from '@/constants/dictTypes'
 import Pagination from '@/components/Pagination/index.vue'
 
 export default {
@@ -235,7 +256,7 @@ export default {
       copyLoading: false,
       editDlgVis: false,
       editLoading: false,
-      editForm: { definitionId: null, scopeCompId: null, compId: '', description: '' },
+      editForm: { definitionId: null, scopeCompId: null, compId: '', description: '', preciseMode: 0, _origPreciseMode: 0, _published: false },
       projectOptions: [],
       selectedProjectId: null,
       loading: false,
@@ -243,7 +264,7 @@ export default {
       total: 0,
       listQuery: { pageNum: 1, pageSize: 10, keyword: '', modelType: '' },
       dlgVis: false,
-      fm: { ruleCode: '', ruleName: '', modelType: '', description: '' },
+      fm: { ruleCode: '', ruleName: '', modelType: '', description: '', preciseMode: 0 },
       createRules: {
         ruleCode: [{ required: true, message: '必填', trigger: 'blur' }],
         ruleName: [{ required: true, message: '必填', trigger: 'blur' }],
@@ -481,7 +502,7 @@ export default {
         this.$message.warning('请先选择项目')
         return
       }
-      this.fm = { ruleCode: '', ruleName: '', modelType: '', description: '' }
+      this.fm = { ruleCode: '', ruleName: '', modelType: '', description: '', preciseMode: 0 }
       this.dlgVis = true
       this.$nextTick(() => {
         if (this.$refs.createForm) this.$refs.createForm.clearValidate()
@@ -545,11 +566,15 @@ export default {
      * 打开修改弹窗。
      */
     openEditDlg(row) {
+      const precise = row.preciseMode === 1 ? 1 : 0
       this.editForm = {
         definitionId: this.definitionIdFromRow(row),
         scopeCompId: row._scopeCompId,
         compId: row.compId || row._scopeCompId || '',
-        description: row.description || ''
+        description: row.description || '',
+        preciseMode: precise,
+        _origPreciseMode: precise,
+        _published: row.status === 1
       }
       this.editDlgVis = true
     },
@@ -560,7 +585,16 @@ export default {
       this.editLoading = true
       try {
         await updateContentMeta(this.editForm)
-        this.$message.success('修改成功')
+        const preciseChanged = this.editForm.preciseMode !== this.editForm._origPreciseMode
+        if (preciseChanged) {
+          // 精度模式是规则定义级字段，单独走 definition 更新接口
+          await updateDefinition({ id: this.editForm.definitionId, preciseMode: this.editForm.preciseMode })
+        }
+        if (preciseChanged && this.editForm._published) {
+          this.$message.warning('精度模式已修改，需重新发布后对业务方生效')
+        } else {
+          this.$message.success('修改成功')
+        }
         this.editDlgVis = false
         this.loadRules()
       } catch (e) {

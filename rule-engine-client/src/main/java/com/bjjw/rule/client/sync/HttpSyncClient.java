@@ -1,11 +1,11 @@
 package com.bjjw.rule.client.sync;
 
-import com.bjjw.rule.client.cache.CachedRule;
-import com.bjjw.rule.client.cache.CachedRuleSet;
-import com.bjjw.rule.model.constant.RuleCompIds;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.bjjw.rule.client.cache.CachedRule;
+import com.bjjw.rule.client.cache.CachedRuleSet;
+import com.bjjw.rule.model.constant.RuleCompIds;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -229,6 +229,8 @@ public class HttpSyncClient {
         rule.setCompiledScript(obj.getString("compiledScript"));
         rule.setCompiledType(obj.getString("compiledType"));
         rule.setModelJson(obj.getString("modelJson"));
+        // HTTP 返回的是 RulePublished JSON，字段名 preciseMode；旧服务端无此字段时为 0 → false
+        rule.setPrecise(obj.getIntValue("preciseMode") == 1);
         rule.setLastUpdateTime(System.currentTimeMillis());
         return rule;
     }

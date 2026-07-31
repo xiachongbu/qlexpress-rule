@@ -10,6 +10,8 @@ public class RulePushMessage {
     private String compiledScript;
     private String compiledType;
     private String modelJson;
+    /** 高精度计算开关；旧快照无此字段时为 null，客户端按 false 处理 */
+    private Boolean precise;
     private Long publishTime;
     /** 动作类型：PUBLISH / UNPUBLISH / DELETE / FUNC_UPDATE / FUNC_DELETE / SET_PUBLISH / SET_UNPUBLISH */
     private String action;

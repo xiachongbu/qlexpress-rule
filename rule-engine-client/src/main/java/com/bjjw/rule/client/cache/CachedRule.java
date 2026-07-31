@@ -14,5 +14,7 @@ public class CachedRule {
     private String compiledScript;
     private String compiledType;
     private String modelJson;
+    /** 高精度计算开关，来自规则发布快照（rule_definition.precise_mode）；旧快照缺字段时为 false */
+    private boolean precise;
     private long lastUpdateTime;
 }

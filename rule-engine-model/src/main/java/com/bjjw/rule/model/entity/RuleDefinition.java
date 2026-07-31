@@ -2,6 +2,7 @@ package com.bjjw.rule.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -14,6 +15,11 @@ public class RuleDefinition {
     private String ruleCode;
     private String ruleName;
     private String description;
+
+    /**
+     * 高精度计算：0-关闭，1-开启（BigDecimal）；发布时随快照下发客户端。
+     */
+    private Integer preciseMode;
 
     /**
      * 创建规则时的模型类型（仅请求体使用，非表字段）。

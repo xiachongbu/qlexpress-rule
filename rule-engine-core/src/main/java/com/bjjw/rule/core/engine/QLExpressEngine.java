@@ -1,13 +1,13 @@
 package com.bjjw.rule.core.engine;
 
-import com.bjjw.rule.core.function.AggregateBuiltinFunctionRegistry;
-import com.bjjw.rule.model.dto.RuleResult;
 import com.alibaba.qlexpress4.Express4Runner;
 import com.alibaba.qlexpress4.InitOptions;
 import com.alibaba.qlexpress4.QLOptions;
 import com.alibaba.qlexpress4.QLResult;
 import com.alibaba.qlexpress4.exception.QLRuntimeException;
 import com.alibaba.qlexpress4.security.QLSecurityStrategy;
+import com.bjjw.rule.core.function.AggregateBuiltinFunctionRegistry;
+import com.bjjw.rule.model.dto.RuleResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,13 +50,17 @@ public class QLExpressEngine {
     }
 
     public RuleResult execute(String script, Map<String, Object> context, boolean trace) {
+        return execute(script, context, trace, false);
+    }
+
+    /**
+     * @param precise 是否启用高精度计算（BigDecimal）；由规则配置（CachedRule.precise / rule_definition.precise_mode）透传，非业务方传参入口
+     */
+    public RuleResult execute(String script, Map<String, Object> context, boolean trace, boolean precise) {
         RuleResult ruleResult = new RuleResult();
         long start = System.currentTimeMillis();
         try {
-            QLOptions options = QLOptions.builder()
-                    .cache(true)
-                    .traceExpression(trace)
-                    .build();
+            QLOptions options = buildOptions(trace, precise);
             QLResult result = runner.execute(script, context != null ? context : Collections.emptyMap(), options);
             ruleResult.setResult(result.getResult());
             ruleResult.setSuccess(true);
@@ -74,13 +78,17 @@ public class QLExpressEngine {
     }
 
     public RuleResult execute(String script, Object context, boolean trace) {
+        return execute(script, context, trace, false);
+    }
+
+    /**
+     * @param precise 是否启用高精度计算（BigDecimal）；由规则配置透传
+     */
+    public RuleResult execute(String script, Object context, boolean trace, boolean precise) {
         RuleResult ruleResult = new RuleResult();
         long start = System.currentTimeMillis();
         try {
-            QLOptions options = QLOptions.builder()
-                    .cache(true)
-                    .traceExpression(trace)
-                    .build();
+            QLOptions options = buildOptions(trace, precise);
             QLResult result = runner.execute(script, context != null ? context : Collections.emptyMap(), options);
             ruleResult.setResult(result.getResult());
             ruleResult.setSuccess(true);
@@ -95,6 +103,15 @@ public class QLExpressEngine {
             ruleResult.setExecuteTimeMs(System.currentTimeMillis() - start);
         }
         return ruleResult;
+    }
+
+    /** 统一构建执行选项：cache 恒开，precise 由规则配置决定 */
+    private static QLOptions buildOptions(boolean trace, boolean precise) {
+        return QLOptions.builder()
+                .cache(true)
+                .traceExpression(trace)
+                .precise(precise)
+                .build();
     }
 
     /** 脚本主动 throw 语句对应的 QLExpress4 错误码 */

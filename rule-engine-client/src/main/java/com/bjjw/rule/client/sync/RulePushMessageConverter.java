@@ -37,6 +37,8 @@ public final class RulePushMessageConverter {
         cached.setCompiledScript(push.getCompiledScript());
         cached.setCompiledType(push.getCompiledType());
         cached.setModelJson(push.getModelJson());
+        // L2/推送载荷字段名 precise；旧快照缺字段时为 null → false，天然兼容
+        cached.setPrecise(Boolean.TRUE.equals(push.getPrecise()));
         cached.setLastUpdateTime(System.currentTimeMillis());
         return cached;
     }

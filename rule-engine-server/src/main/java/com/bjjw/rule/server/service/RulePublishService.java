@@ -1,19 +1,14 @@
 package com.bjjw.rule.server.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.bjjw.rule.core.compiler.CompileResult;
 import com.bjjw.rule.model.constant.RuleCompIds;
 import com.bjjw.rule.model.dto.RulePushMessage;
-import com.bjjw.rule.model.entity.RuleDefinition;
-import com.bjjw.rule.model.entity.RuleDefinitionContent;
-import com.bjjw.rule.model.entity.RuleDefinitionVersion;
-import com.bjjw.rule.model.entity.RuleFunction;
-import com.bjjw.rule.model.entity.RuleProject;
-import com.bjjw.rule.model.entity.RulePublished;
+import com.bjjw.rule.model.entity.*;
 import com.bjjw.rule.server.mapper.RuleDefinitionVersionMapper;
 import com.bjjw.rule.server.mapper.RulePublishedMapper;
 import com.bjjw.rule.server.publish.RulePublishedL2Service;
 import com.bjjw.rule.server.publish.RulePushService;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -147,6 +142,9 @@ public class RulePublishService {
         version.setChangeLog(changeLog);
         versionMapper.insert(version);
 
+        // 规则级高精度配置，发布时固化进快照随快照下发
+        int preciseMode = definition.getPreciseMode() != null ? definition.getPreciseMode() : 0;
+
         for (RuleDefinitionContent content : compiled) {
             String compId = RuleCompIds.normalize(content.getScopeCompId());
             String fullScript = buildFullScript(content.getCompiledScript(), definition.getProjectId());
@@ -165,6 +163,7 @@ public class RulePublishService {
                 existing.setCompiledScript(fullScript);
                 existing.setCompiledType(content.getCompiledType());
                 existing.setModelJson(content.getModelJson());
+                existing.setPreciseMode(preciseMode);
                 existing.setProjectCode(projectCode);
                 existing.setStatus(1);
                 existing.setPublishTime(LocalDateTime.now());
@@ -181,6 +180,7 @@ public class RulePublishService {
                 published.setCompiledScript(fullScript);
                 published.setCompiledType(content.getCompiledType());
                 published.setModelJson(content.getModelJson());
+                published.setPreciseMode(preciseMode);
                 published.setStatus(1);
                 publishedMapper.insert(published);
             }
@@ -193,6 +193,7 @@ public class RulePublishService {
             pushMessage.setCompiledScript(fullScript);
             pushMessage.setCompiledType(content.getCompiledType());
             pushMessage.setModelJson(content.getModelJson());
+            pushMessage.setPrecise(preciseMode == 1);
             pushMessage.setProjectCode(projectCode);
             pushMessage.setPublishTime(System.currentTimeMillis());
             pushMessage.setAction("PUBLISH");
