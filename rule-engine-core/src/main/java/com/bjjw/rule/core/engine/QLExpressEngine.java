@@ -53,14 +53,19 @@ public class QLExpressEngine {
         return execute(script, context, trace, false);
     }
 
-    /**
-     * @param precise 是否启用高精度计算（BigDecimal）；由规则配置（CachedRule.precise / rule_definition.precise_mode）透传，非业务方传参入口
-     */
     public RuleResult execute(String script, Map<String, Object> context, boolean trace, boolean precise) {
+        return execute(script, context, trace, precise, 0L);
+    }
+
+    /**
+     * @param precise       是否启用高精度计算（BigDecimal）；由规则配置（CachedRule.precise / rule_definition.precise_mode）透传，非业务方传参入口
+     * @param timeoutMillis 单次执行超时（毫秒），&lt;=0 表示不限制；由规则配置（CachedRule.timeoutMillis / rule_definition.timeout_millis）透传
+     */
+    public RuleResult execute(String script, Map<String, Object> context, boolean trace, boolean precise, long timeoutMillis) {
         RuleResult ruleResult = new RuleResult();
         long start = System.currentTimeMillis();
         try {
-            QLOptions options = buildOptions(trace, precise);
+            QLOptions options = buildOptions(trace, precise, timeoutMillis);
             QLResult result = runner.execute(script, context != null ? context : Collections.emptyMap(), options);
             ruleResult.setResult(result.getResult());
             ruleResult.setSuccess(true);
@@ -81,14 +86,19 @@ public class QLExpressEngine {
         return execute(script, context, trace, false);
     }
 
-    /**
-     * @param precise 是否启用高精度计算（BigDecimal）；由规则配置透传
-     */
     public RuleResult execute(String script, Object context, boolean trace, boolean precise) {
+        return execute(script, context, trace, precise, 0L);
+    }
+
+    /**
+     * @param precise       是否启用高精度计算（BigDecimal）；由规则配置透传
+     * @param timeoutMillis 单次执行超时（毫秒），&lt;=0 表示不限制；由规则配置透传
+     */
+    public RuleResult execute(String script, Object context, boolean trace, boolean precise, long timeoutMillis) {
         RuleResult ruleResult = new RuleResult();
         long start = System.currentTimeMillis();
         try {
-            QLOptions options = buildOptions(trace, precise);
+            QLOptions options = buildOptions(trace, precise, timeoutMillis);
             QLResult result = runner.execute(script, context != null ? context : Collections.emptyMap(), options);
             ruleResult.setResult(result.getResult());
             ruleResult.setSuccess(true);
@@ -105,13 +115,16 @@ public class QLExpressEngine {
         return ruleResult;
     }
 
-    /** 统一构建执行选项：cache 恒开，precise 由规则配置决定 */
-    private static QLOptions buildOptions(boolean trace, boolean precise) {
-        return QLOptions.builder()
+    /** 统一构建执行选项：cache 恒开，precise 与 timeoutMillis 由规则配置决定（timeoutMillis&lt;=0 不设超时） */
+    private static QLOptions buildOptions(boolean trace, boolean precise, long timeoutMillis) {
+        QLOptions.Builder builder = QLOptions.builder()
                 .cache(true)
                 .traceExpression(trace)
-                .precise(precise)
-                .build();
+                .precise(precise);
+        if (timeoutMillis > 0) {
+            builder.timeoutMillis(timeoutMillis);
+        }
+        return builder.build();
     }
 
     /** 脚本主动 throw 语句对应的 QLExpress4 错误码 */

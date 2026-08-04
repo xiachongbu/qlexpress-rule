@@ -16,5 +16,9 @@ public class CachedRule {
     private String modelJson;
     /** 高精度计算开关，来自规则发布快照（rule_definition.precise_mode）；旧快照缺字段时为 false */
     private boolean precise;
+    /** 单次执行超时（毫秒），来自规则发布快照（rule_definition.timeout_millis）；旧快照缺字段时为 0（不限制） */
+    private long timeoutMillis;
+    /** 日志上报：0-关，1-开，来自规则发布快照（rule_definition.report_log） */
+    private int reportLog;
     private long lastUpdateTime;
 }

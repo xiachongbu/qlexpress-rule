@@ -113,19 +113,15 @@ public class RuleEngineClient {
      * @param businessId 业务主键ID,用于关联具体业务记录
      */
     public RuleResult execute(String ruleCode, Map<String, Object> params, String businessId) {
-        return doExecute(ruleCode, params, RuleCompIds.NATIONAL, businessId, true);
+        return doExecute(ruleCode, params, RuleCompIds.NATIONAL, businessId);
     }
 
     /**
-     * 按全国(通用)作用域执行规则,可选择是否上报日志。
-     *
-     * @param ruleCode    规则编码
-     * @param params      入参
-     * @param businessId  业务主键ID,用于关联具体业务记录
-     * @param reportLog   是否执行日志上报
+     * @deprecated 日志上报由规则配置决定，业务方传参已废弃
      */
+    @Deprecated
     public RuleResult execute(String ruleCode, Map<String, Object> params, String businessId, boolean reportLog) {
-        return doExecute(ruleCode, params, RuleCompIds.NATIONAL, businessId, reportLog);
+        return doExecute(ruleCode, params, RuleCompIds.NATIONAL, businessId);
     }
 
     /**
@@ -137,20 +133,15 @@ public class RuleEngineClient {
      * @param businessId 业务主键ID,用于关联具体业务记录
      */
     public RuleResult execute(String ruleCode, Map<String, Object> params, String compId, String businessId) {
-        return doExecute(ruleCode, params, RuleCompIds.normalize(compId), businessId, true);
+        return doExecute(ruleCode, params, RuleCompIds.normalize(compId), businessId);
     }
 
     /**
-     * 按指定 compId 解析并执行(服务端省优先、无则回落全国);compId 为 null 或空串时视为全国,可选择是否上报日志。
-     *
-     * @param ruleCode    规则编码
-     * @param params      入参
-     * @param compId      省份编码,null 或空串视为全国
-     * @param businessId  业务主键ID,用于关联具体业务记录
-     * @param reportLog   是否执行日志上报
+     * @deprecated 日志上报由规则配置决定，业务方传参已废弃
      */
+    @Deprecated
     public RuleResult execute(String ruleCode, Map<String, Object> params, String compId, String businessId, boolean reportLog) {
-        return doExecute(ruleCode, params, RuleCompIds.normalize(compId), businessId, reportLog);
+        return doExecute(ruleCode, params, RuleCompIds.normalize(compId), businessId);
     }
 
     /**
@@ -163,31 +154,27 @@ public class RuleEngineClient {
     @SuppressWarnings("unchecked")
     public RuleResult execute(String ruleCode, Object paramObj, String businessId) {
         if (paramObj == null) {
-            return doExecute(ruleCode, Collections.emptyMap(), RuleCompIds.NATIONAL, businessId, true);
+            return doExecute(ruleCode, Collections.emptyMap(), RuleCompIds.NATIONAL, businessId);
         }
         if (paramObj instanceof Map) {
-            return doExecute(ruleCode, (Map<String, Object>) paramObj, RuleCompIds.NATIONAL, businessId, true);
+            return doExecute(ruleCode, (Map<String, Object>) paramObj, RuleCompIds.NATIONAL, businessId);
         }
-        return doExecute(ruleCode, paramObj, RuleCompIds.NATIONAL, businessId, true);
+        return doExecute(ruleCode, paramObj, RuleCompIds.NATIONAL, businessId);
     }
 
     /**
-     * 按全国(通用)作用域执行规则;支持 Map 或 DTO/POJO(字段名即变量名),可选择是否上报日志。
-     *
-     * @param ruleCode    规则编码
-     * @param paramObj    入参(Map 或 DTO/POJO)
-     * @param businessId  业务主键ID,用于关联具体业务记录
-     * @param reportLog   是否执行日志上报
+     * @deprecated 日志上报由规则配置决定，业务方传参已废弃
      */
+    @Deprecated
     @SuppressWarnings("unchecked")
     public RuleResult execute(String ruleCode, Object paramObj, String businessId, boolean reportLog) {
         if (paramObj == null) {
-            return doExecute(ruleCode, Collections.emptyMap(), RuleCompIds.NATIONAL, businessId, reportLog);
+            return doExecute(ruleCode, Collections.emptyMap(), RuleCompIds.NATIONAL, businessId);
         }
         if (paramObj instanceof Map) {
-            return doExecute(ruleCode, (Map<String, Object>) paramObj, RuleCompIds.NATIONAL, businessId, reportLog);
+            return doExecute(ruleCode, (Map<String, Object>) paramObj, RuleCompIds.NATIONAL, businessId);
         }
-        return doExecute(ruleCode, paramObj, RuleCompIds.NATIONAL, businessId, reportLog);
+        return doExecute(ruleCode, paramObj, RuleCompIds.NATIONAL, businessId);
     }
 
     /**
@@ -202,33 +189,28 @@ public class RuleEngineClient {
     public RuleResult execute(String ruleCode, Object paramObj, String compId, String businessId) {
         String scope = RuleCompIds.normalize(compId);
         if (paramObj == null) {
-            return doExecute(ruleCode, Collections.emptyMap(), scope, businessId, true);
+            return doExecute(ruleCode, Collections.emptyMap(), scope, businessId);
         }
         if (paramObj instanceof Map) {
-            return doExecute(ruleCode, (Map<String, Object>) paramObj, scope, businessId, true);
+            return doExecute(ruleCode, (Map<String, Object>) paramObj, scope, businessId);
         }
-        return doExecute(ruleCode, paramObj, scope, businessId, true);
+        return doExecute(ruleCode, paramObj, scope, businessId);
     }
 
     /**
-     * 按指定 compId 解析并执行;支持 Map 或 DTO/POJO(字段名即变量名),可选择是否上报日志。
-     *
-     * @param ruleCode    规则编码
-     * @param paramObj    入参(Map 或 DTO/POJO)
-     * @param compId      省份编码,null 或空串视为全国
-     * @param businessId  业务主键ID,用于关联具体业务记录
-     * @param reportLog   是否执行日志上报
+     * @deprecated 日志上报由规则配置决定，业务方传参已废弃
      */
+    @Deprecated
     @SuppressWarnings("unchecked")
     public RuleResult execute(String ruleCode, Object paramObj, String compId, String businessId, boolean reportLog) {
         String scope = RuleCompIds.normalize(compId);
         if (paramObj == null) {
-            return doExecute(ruleCode, Collections.emptyMap(), scope, businessId, reportLog);
+            return doExecute(ruleCode, Collections.emptyMap(), scope, businessId);
         }
         if (paramObj instanceof Map) {
-            return doExecute(ruleCode, (Map<String, Object>) paramObj, scope, businessId, reportLog);
+            return doExecute(ruleCode, (Map<String, Object>) paramObj, scope, businessId);
         }
-        return doExecute(ruleCode, paramObj, scope, businessId, reportLog);
+        return doExecute(ruleCode, paramObj, scope, businessId);
     }
 
     /**
@@ -239,23 +221,27 @@ public class RuleEngineClient {
      * @param businessId 业务主键ID,用于关联具体业务记录
      */
     public RuleResult executeRuleSet(String setCode, Map<String, Object> params, String businessId) {
-        return executeRuleSet(setCode, params, RuleCompIds.NATIONAL, businessId, true);
+        return executeRuleSet(setCode, params, RuleCompIds.NATIONAL, businessId);
     }
 
     /**
-     * 按全国作用域执行规则集(成员规则顺序执行,上下文合并策略与文档一致),可选择是否上报日志。
-     *
-     * @param setCode     规则集编码
-     * @param params      入参
-     * @param businessId  业务主键ID,用于关联具体业务记录
-     * @param reportLog   是否执行日志上报
+     * @deprecated 日志上报由规则集配置决定，业务方传参已废弃
      */
+    @Deprecated
     public RuleResult executeRuleSet(String setCode, Map<String, Object> params, String businessId, boolean reportLog) {
-        return executeRuleSet(setCode, params, RuleCompIds.NATIONAL, businessId, reportLog);
+        return executeRuleSet(setCode, params, RuleCompIds.NATIONAL, businessId);
     }
 
     /**
-     * 按指定 compId 解析规则集并链式执行成员规则。
+     * @deprecated 日志上报由规则集配置决定，业务方传参已废弃
+     */
+    @Deprecated
+    public RuleResult executeRuleSet(String setCode, Map<String, Object> params, String compId, String businessId, boolean reportLog) {
+        return executeRuleSet(setCode, params, RuleCompIds.normalize(compId), businessId);
+    }
+
+    /**
+     * 按指定 compId 解析规则集并链式执行成员规则；是否上报日志由规则集配置决定。
      *
      * @param setCode    规则集编码
      * @param params     入参
@@ -263,19 +249,6 @@ public class RuleEngineClient {
      * @param businessId 业务主键ID,用于关联具体业务记录
      */
     public RuleResult executeRuleSet(String setCode, Map<String, Object> params, String compId, String businessId) {
-        return executeRuleSet(setCode, params, RuleCompIds.normalize(compId), businessId, true);
-    }
-
-    /**
-     * 按指定 compId 解析规则集并链式执行成员规则,可选择是否上报日志。
-     *
-     * @param setCode     规则集编码
-     * @param params      入参
-     * @param compId      省份编码,null 或空串视为全国
-     * @param businessId  业务主键ID,用于关联具体业务记录
-     * @param reportLog   是否执行日志上报
-     */
-    public RuleResult executeRuleSet(String setCode, Map<String, Object> params, String compId, String businessId, boolean reportLog) {
         String scope = RuleCompIds.normalize(compId);
         long start = System.currentTimeMillis();
         CachedRuleSet setSnap = resolveCachedRuleSet(setCode, scope);
@@ -285,6 +258,7 @@ public class RuleEngineClient {
             r.setErrorMessage("规则集未找到: " + setCode);
             return r;
         }
+        boolean reportLog = setSnap.getReportLog() == 1;
         if (setSnap.getMemberRuleCodes() == null || setSnap.getMemberRuleCodes().isEmpty()) {
             RuleResult r = new RuleResult();
             r.setSuccess(false);
@@ -316,7 +290,7 @@ public class RuleEngineClient {
                 }
                 return r;
             }
-            RuleResult step = engine.execute(cached.getCompiledScript(), ctx, config.isTraceEnabled(), cached.isPrecise());
+            RuleResult step = engine.execute(cached.getCompiledScript(), ctx, config.isTraceEnabled(), cached.isPrecise(), cached.getTimeoutMillis());
             Map<String, Object> stepInfo = new HashMap<>();
             stepInfo.put("ruleCode", memberCode);
             stepInfo.put("success", step.isSuccess());
@@ -369,7 +343,7 @@ public class RuleEngineClient {
                 r.setResult(traceSteps);
                 return r;
             }
-            RuleResult step = engine.execute(cached.getCompiledScript(), new HashMap<>(params), config.isTraceEnabled(), cached.isPrecise());
+            RuleResult step = engine.execute(cached.getCompiledScript(), new HashMap<>(params), config.isTraceEnabled(), cached.isPrecise(), cached.getTimeoutMillis());
             Map<String, Object> stepInfo = new HashMap<>();
             stepInfo.put("ruleCode", memberCode);
             stepInfo.put("success", step.isSuccess());
@@ -465,10 +439,6 @@ public class RuleEngineClient {
     }
 
     private RuleResult doExecute(String ruleCode, Map<String, Object> params, String scopeCompId, String businessId) {
-        return doExecute(ruleCode, params, scopeCompId, businessId, true);
-    }
-
-    private RuleResult doExecute(String ruleCode, Map<String, Object> params, String scopeCompId, String businessId, boolean reportLog) {
         long start = System.currentTimeMillis();
 
         CachedRule cached = resolveCachedRule(ruleCode, scopeCompId);
@@ -479,19 +449,16 @@ public class RuleEngineClient {
             return r;
         }
 
-        RuleResult result = engine.execute(cached.getCompiledScript(), params, config.isTraceEnabled(), cached.isPrecise());
+        RuleResult result = engine.execute(cached.getCompiledScript(), params, config.isTraceEnabled(), cached.isPrecise(), cached.getTimeoutMillis());
 
-        if (reportLog) {
+        boolean doReport = cached.getReportLog() == 1;
+        if (doReport) {
             reportLog(ruleCode, cached, params, result, System.currentTimeMillis() - start, businessId);
         }
         return result;
     }
 
     private RuleResult doExecute(String ruleCode, Object params, String scopeCompId, String businessId) {
-        return doExecute(ruleCode, params, scopeCompId, businessId, true);
-    }
-
-    private RuleResult doExecute(String ruleCode, Object params, String scopeCompId, String businessId, boolean reportLog) {
         long start = System.currentTimeMillis();
 
         CachedRule cached = resolveCachedRule(ruleCode, scopeCompId);
@@ -502,9 +469,10 @@ public class RuleEngineClient {
             return r;
         }
 
-        RuleResult result = engine.execute(cached.getCompiledScript(), params, config.isTraceEnabled(), cached.isPrecise());
+        RuleResult result = engine.execute(cached.getCompiledScript(), params, config.isTraceEnabled(), cached.isPrecise(), cached.getTimeoutMillis());
 
-        if (reportLog) {
+        boolean doReport = cached.getReportLog() == 1;
+        if (doReport) {
             reportLog(ruleCode, cached, params, result, System.currentTimeMillis() - start, businessId);
         }
         return result;

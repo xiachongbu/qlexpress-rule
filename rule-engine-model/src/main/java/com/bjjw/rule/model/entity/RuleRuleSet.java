@@ -24,6 +24,8 @@ public class RuleRuleSet {
     private String compId;
     /** 命中策略：ALL-全部执行，FIRST-首个命中即返回，UNIQUE-唯一命中 */
     private String hitPolicy;
+    /** 日志上报：0-关，1-开；发布时随快照下发客户端 */
+    private Integer reportLog;
     /** 状态：0-草稿，1-已发布，2-已下线 */
     private Integer status;
     /** 已发布版本号 */

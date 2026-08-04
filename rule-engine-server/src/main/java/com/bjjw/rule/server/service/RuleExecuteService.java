@@ -78,7 +78,9 @@ public class RuleExecuteService {
                 : funcPrefix + "\n" + content.getCompiledScript();
         // 试跑精度与生产一致：取规则定义的高精度配置
         boolean precise = definition.getPreciseMode() != null && definition.getPreciseMode() == 1;
-        RuleResult result = qlExpressEngine.execute(fullScript, params, true, precise);
+        // 试跑超时与生产一致：取规则定义的执行超时配置（0 表示不限制）
+        long timeout = definition.getTimeoutMillis() != null ? definition.getTimeoutMillis() : 0L;
+        RuleResult result = qlExpressEngine.execute(fullScript, params, true, precise, timeout);
 
         RuleExecutionLog log = new RuleExecutionLog();
         log.setRuleCode(definition.getRuleCode());

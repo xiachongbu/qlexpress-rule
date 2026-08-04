@@ -1,5 +1,9 @@
 package com.bjjw.rule.server.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bjjw.rule.core.util.RuleSetHitPolicies;
 import com.bjjw.rule.model.constant.RuleCompIds;
 import com.bjjw.rule.model.dto.RuleResult;
@@ -10,10 +14,6 @@ import com.bjjw.rule.model.entity.RuleRuleSetMember;
 import com.bjjw.rule.server.mapper.RuleDefinitionMapper;
 import com.bjjw.rule.server.mapper.RuleRuleSetMapper;
 import com.bjjw.rule.server.mapper.RuleRuleSetMemberMapper;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 规则集设计态 CRUD、成员维护、链式试跑
@@ -124,6 +123,9 @@ public class RuleRuleSetService extends ServiceImpl<RuleRuleSetMapper, RuleRuleS
                 return "非法命中策略: " + incoming.getHitPolicy();
             }
             db.setHitPolicy(RuleSetHitPolicies.normalize(incoming.getHitPolicy()));
+        }
+        if (incoming.getReportLog() != null) {
+            db.setReportLog(incoming.getReportLog());
         }
         updateById(db);
         return null;

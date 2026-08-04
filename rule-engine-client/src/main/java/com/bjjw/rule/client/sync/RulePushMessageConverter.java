@@ -39,6 +39,10 @@ public final class RulePushMessageConverter {
         cached.setModelJson(push.getModelJson());
         // L2/推送载荷字段名 precise；旧快照缺字段时为 null → false，天然兼容
         cached.setPrecise(Boolean.TRUE.equals(push.getPrecise()));
+        // L2/推送载荷字段名 timeoutMillis；旧快照缺字段时为 null → 0（不限制）
+        cached.setTimeoutMillis(push.getTimeoutMillis() != null ? push.getTimeoutMillis() : 0L);
+        // L2/推送载荷字段名 reportLog；旧快照缺字段时为 null → 1（开）
+        cached.setReportLog(push.getReportLog() != null ? push.getReportLog() : 1);
         cached.setLastUpdateTime(System.currentTimeMillis());
         return cached;
     }
@@ -57,6 +61,8 @@ public final class RulePushMessageConverter {
         s.setVersion(push.getVersion() != null ? push.getVersion() : 0);
         s.setMemberRuleCodes(parseMemberCodes(push.getMemberRuleCodes()));
         s.setHitPolicy(push.getHitPolicy());
+        // 旧快照缺字段时为 null → 1（开）
+        s.setReportLog(push.getReportLog() != null ? push.getReportLog() : 1);
         s.setLastUpdateTime(System.currentTimeMillis());
         return s;
     }

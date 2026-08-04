@@ -135,6 +135,14 @@
           <el-switch v-model="fm.preciseMode" :active-value="1" :inactive-value="0" />
           <span style="margin-left:8px;color:#909399;font-size:12px;">开启后数值运算使用 BigDecimal，消除浮点误差</span>
         </el-form-item>
+        <el-form-item label="执行超时(ms)">
+          <el-input-number v-model="fm.timeoutMillis" :min="0" :step="100" />
+          <span style="margin-left:8px;color:#909399;font-size:12px;">单次执行超时毫秒数，0 表示不限制</span>
+        </el-form-item>
+        <el-form-item label="日志上报">
+          <el-switch v-model="fm.reportLog" :active-value="1" :inactive-value="0" />
+          <span style="margin-left:8px;color:#909399;font-size:12px;">开启后执行时写入执行日志表</span>
+        </el-form-item>
         <el-form-item label="描述"><el-input v-model="fm.description" type="textarea" :rows="2" /></el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -166,6 +174,14 @@
         <el-form-item label="高精度计算">
           <el-switch v-model="editForm.preciseMode" :active-value="1" :inactive-value="0" />
           <span style="margin-left:8px;color:#909399;font-size:12px;">开启后数值运算使用 BigDecimal，消除浮点误差</span>
+        </el-form-item>
+        <el-form-item label="执行超时(ms)">
+          <el-input-number v-model="editForm.timeoutMillis" :min="0" :step="100" />
+          <span style="margin-left:8px;color:#909399;font-size:12px;">单次执行超时毫秒数，0 表示不限制</span>
+        </el-form-item>
+        <el-form-item label="日志上报">
+          <el-switch v-model="editForm.reportLog" :active-value="1" :inactive-value="0" />
+          <span style="margin-left:8px;color:#909399;font-size:12px;">开启后执行时写入执行日志表</span>
         </el-form-item>
         <el-form-item label="说明">
           <el-input v-model="editForm.description" type="textarea" :rows="3" />
@@ -256,7 +272,7 @@ export default {
       copyLoading: false,
       editDlgVis: false,
       editLoading: false,
-      editForm: { definitionId: null, scopeCompId: null, compId: '', description: '', preciseMode: 0, _origPreciseMode: 0, _published: false },
+      editForm: { definitionId: null, scopeCompId: null, compId: '', description: '', preciseMode: 0, _origPreciseMode: 0, timeoutMillis: 0, _origTimeoutMillis: 0, reportLog: 1, _origReportLog: 1, _published: false },
       projectOptions: [],
       selectedProjectId: null,
       loading: false,
@@ -264,7 +280,7 @@ export default {
       total: 0,
       listQuery: { pageNum: 1, pageSize: 10, keyword: '', modelType: '' },
       dlgVis: false,
-      fm: { ruleCode: '', ruleName: '', modelType: '', description: '', preciseMode: 0 },
+      fm: { ruleCode: '', ruleName: '', modelType: '', description: '', preciseMode: 0, timeoutMillis: 0, reportLog: 1 },
       createRules: {
         ruleCode: [{ required: true, message: '必填', trigger: 'blur' }],
         ruleName: [{ required: true, message: '必填', trigger: 'blur' }],
@@ -502,7 +518,7 @@ export default {
         this.$message.warning('请先选择项目')
         return
       }
-      this.fm = { ruleCode: '', ruleName: '', modelType: '', description: '', preciseMode: 0 }
+      this.fm = { ruleCode: '', ruleName: '', modelType: '', description: '', preciseMode: 0, timeoutMillis: 0, reportLog: 1 }
       this.dlgVis = true
       this.$nextTick(() => {
         if (this.$refs.createForm) this.$refs.createForm.clearValidate()
@@ -567,6 +583,8 @@ export default {
      */
     openEditDlg(row) {
       const precise = row.preciseMode === 1 ? 1 : 0
+      const timeout = row.timeoutMillis != null ? row.timeoutMillis : 0
+      const report = row.reportLog != null ? row.reportLog : 1
       this.editForm = {
         definitionId: this.definitionIdFromRow(row),
         scopeCompId: row._scopeCompId,
@@ -574,6 +592,10 @@ export default {
         description: row.description || '',
         preciseMode: precise,
         _origPreciseMode: precise,
+        timeoutMillis: timeout,
+        _origTimeoutMillis: timeout,
+        reportLog: report,
+        _origReportLog: report,
         _published: row.status === 1
       }
       this.editDlgVis = true
@@ -586,12 +608,14 @@ export default {
       try {
         await updateContentMeta(this.editForm)
         const preciseChanged = this.editForm.preciseMode !== this.editForm._origPreciseMode
-        if (preciseChanged) {
-          // 精度模式是规则定义级字段，单独走 definition 更新接口
-          await updateDefinition({ id: this.editForm.definitionId, preciseMode: this.editForm.preciseMode })
+        const timeoutChanged = this.editForm.timeoutMillis !== this.editForm._origTimeoutMillis
+        const reportChanged = this.editForm.reportLog !== this.editForm._origReportLog
+        if (preciseChanged || timeoutChanged || reportChanged) {
+          // 精度模式、执行超时与日志上报均为规则定义级字段，一并走 definition 更新接口
+          await updateDefinition({ id: this.editForm.definitionId, preciseMode: this.editForm.preciseMode, timeoutMillis: this.editForm.timeoutMillis, reportLog: this.editForm.reportLog })
         }
-        if (preciseChanged && this.editForm._published) {
-          this.$message.warning('精度模式已修改，需重新发布后对业务方生效')
+        if ((preciseChanged || timeoutChanged || reportChanged) && this.editForm._published) {
+          this.$message.warning('精度模式、执行超时或日志上报已修改，需重新发布后对业务方生效')
         } else {
           this.$message.success('修改成功')
         }

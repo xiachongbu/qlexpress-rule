@@ -19,5 +19,7 @@ public class CachedRuleSet {
     private List<String> memberRuleCodes = new ArrayList<>();
     /** 命中策略：ALL/FIRST/UNIQUE，空视为 ALL（兼容旧版快照） */
     private String hitPolicy;
+    /** 日志上报：0-关，1-开，来自规则集发布快照（rule_rule_set.report_log） */
+    private int reportLog;
     private long lastUpdateTime;
 }

@@ -96,6 +96,10 @@
           </el-select>
           <div class="hit-policy-desc">{{ hitPolicyDesc(createFm.hitPolicy) }}</div>
         </el-form-item>
+        <el-form-item label="日志上报">
+          <el-switch v-model="createFm.reportLog" :active-value="1" :inactive-value="0" />
+          <span style="margin-left:8px;color:#909399;font-size:12px;">开启后执行时写入执行日志表</span>
+        </el-form-item>
         <el-form-item label="说明"><el-input v-model="createFm.description" type="textarea" :rows="2" /></el-form-item>
       </el-form>
       <div slot="footer">
@@ -190,22 +194,22 @@
 </template>
 
 <script>
-import { mapState } from 'vuex'
-import { listProjects } from '@/api/project'
-import { listDefinitions } from '@/api/definition'
+import {mapState} from 'vuex'
+import {listProjects} from '@/api/project'
+import {listDefinitions} from '@/api/definition'
 import {
-  listRuleSets,
   createRuleSet,
-  updateRuleSet,
   deleteRuleSet,
+  executeRuleSet,
   listRuleSetMembers,
-  saveRuleSetMembers,
+  listRuleSets,
   publishRuleSet,
+  saveRuleSetMembers,
   unpublishRuleSet,
-  executeRuleSet
+  updateRuleSet
 } from '@/api/ruleSet'
-import { COMP_SCOPE_OPTIONS } from '@/constants/compScopeOptions'
-import { DICT_TYPE_COMP_SCOPE } from '@/constants/dictTypes'
+import {COMP_SCOPE_OPTIONS} from '@/constants/compScopeOptions'
+import {DICT_TYPE_COMP_SCOPE} from '@/constants/dictTypes'
 import Pagination from '@/components/Pagination/index.vue'
 
 export default {
@@ -222,7 +226,7 @@ export default {
       createVis: false,
       createSubmitting: false,
       editRow: null,
-      createFm: { setCode: '', setName: '', description: '', hitPolicy: 'ALL' },
+      createFm: { setCode: '', setName: '', description: '', hitPolicy: 'ALL', reportLog: 1 },
       hitPolicyOptions: [
         { value: 'ALL', label: '全部执行' },
         { value: 'FIRST', label: '首次命中' },
@@ -319,7 +323,7 @@ export default {
     },
     openCreate() {
       this.editRow = null
-      this.createFm = { setCode: '', setName: '', description: '', hitPolicy: 'ALL' }
+      this.createFm = { setCode: '', setName: '', description: '', hitPolicy: 'ALL', reportLog: 1 }
       this.createVis = true
       this.$nextTick(() => this.$refs.createForm && this.$refs.createForm.clearValidate())
     },
@@ -329,7 +333,8 @@ export default {
         setCode: row.setCode,
         setName: row.setName,
         description: row.description || '',
-        hitPolicy: row.hitPolicy || 'ALL'
+        hitPolicy: row.hitPolicy || 'ALL',
+        reportLog: row.reportLog != null ? row.reportLog : 1
       }
       this.createVis = true
       this.$nextTick(() => this.$refs.createForm && this.$refs.createForm.clearValidate())
@@ -359,7 +364,8 @@ export default {
               setCode: this.createFm.setCode.trim(),
               setName: this.createFm.setName.trim(),
               description: this.createFm.description || undefined,
-              hitPolicy: this.createFm.hitPolicy
+              hitPolicy: this.createFm.hitPolicy,
+              reportLog: this.createFm.reportLog
             })
           } else {
             res = await createRuleSet({
@@ -367,7 +373,8 @@ export default {
               setCode: this.createFm.setCode.trim(),
               setName: this.createFm.setName.trim(),
               description: this.createFm.description || undefined,
-              hitPolicy: this.createFm.hitPolicy
+              hitPolicy: this.createFm.hitPolicy,
+              reportLog: this.createFm.reportLog
             })
           }
           if (res && res.code === 200) {

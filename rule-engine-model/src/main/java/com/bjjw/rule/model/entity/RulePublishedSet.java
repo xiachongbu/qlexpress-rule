@@ -23,6 +23,8 @@ public class RulePublishedSet {
     private String memberRuleCodes;
     /** 命中策略（发布快照）：ALL/FIRST/UNIQUE */
     private String hitPolicy;
+    /** 日志上报：0-关，1-开，发布时取自 rule_rule_set.report_log */
+    private Integer reportLog;
     private Integer status;
     private String publishBy;
     private LocalDateTime publishTime;

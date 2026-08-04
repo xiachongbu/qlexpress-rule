@@ -1,31 +1,22 @@
 package com.bjjw.rule.server.service;
 
 import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.bjjw.rule.core.util.RuleSetHitPolicies;
 import com.bjjw.rule.model.constant.RuleCompIds;
 import com.bjjw.rule.model.dto.RulePushMessage;
-import com.bjjw.rule.model.entity.RuleDefinition;
-import com.bjjw.rule.model.entity.RuleProject;
-import com.bjjw.rule.model.entity.RulePublished;
-import com.bjjw.rule.model.entity.RulePublishedSet;
-import com.bjjw.rule.model.entity.RuleRuleSet;
-import com.bjjw.rule.model.entity.RuleRuleSetMember;
+import com.bjjw.rule.model.entity.*;
 import com.bjjw.rule.server.mapper.RulePublishedMapper;
 import com.bjjw.rule.server.mapper.RulePublishedSetMapper;
 import com.bjjw.rule.server.mapper.RuleRuleSetMemberMapper;
 import com.bjjw.rule.server.publish.RulePublishedL2Service;
 import com.bjjw.rule.server.publish.RulePushService;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -110,6 +101,8 @@ public class RuleSetPublishService {
 
         String memberJson = JSON.toJSONString(orderedCodes);
         String hitPolicy = RuleSetHitPolicies.normalize(set.getHitPolicy());
+        // 规则集级日志上报配置，发布时固化进快照随快照下发（1 开、0 关）
+        int setReportLog = set.getReportLog() != null ? set.getReportLog() : 1;
         int batchVersion = (set.getPublishedVersion() != null ? set.getPublishedVersion() : 0) + 1;
 
         for (String compId : toPublish) {
@@ -123,6 +116,7 @@ public class RuleSetPublishService {
                 existing.setVersion(rowVer);
                 existing.setMemberRuleCodes(memberJson);
                 existing.setHitPolicy(hitPolicy);
+                existing.setReportLog(setReportLog);
                 existing.setProjectCode(projectCode);
                 existing.setStatus(1);
                 existing.setPublishTime(LocalDateTime.now());
@@ -136,6 +130,7 @@ public class RuleSetPublishService {
                 row.setVersion(rowVer);
                 row.setMemberRuleCodes(memberJson);
                 row.setHitPolicy(hitPolicy);
+                row.setReportLog(setReportLog);
                 row.setStatus(1);
                 row.setPublishTime(LocalDateTime.now());
                 publishedSetMapper.insert(row);
@@ -146,6 +141,7 @@ public class RuleSetPublishService {
             push.setSetCode(set.getSetCode());
             push.setMemberRuleCodes(memberJson);
             push.setHitPolicy(hitPolicy);
+            push.setReportLog(setReportLog);
             push.setVersion(rowVer);
             push.setModelType("RULE_SET");
             push.setProjectCode(projectCode);

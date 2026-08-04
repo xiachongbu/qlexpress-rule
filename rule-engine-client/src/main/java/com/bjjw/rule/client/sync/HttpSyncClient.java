@@ -231,6 +231,10 @@ public class HttpSyncClient {
         rule.setModelJson(obj.getString("modelJson"));
         // HTTP 返回的是 RulePublished JSON，字段名 preciseMode；旧服务端无此字段时为 0 → false
         rule.setPrecise(obj.getIntValue("preciseMode") == 1);
+        // HTTP 返回的是 RulePublished JSON，字段名 timeoutMillis；旧服务端无此字段时为 0 → 不限制
+        rule.setTimeoutMillis(obj.getLongValue("timeoutMillis"));
+        // HTTP 返回的是 RulePublished JSON，字段名 reportLog；缺字段时默认 1（开）
+        rule.setReportLog(obj.containsKey("reportLog") ? obj.getIntValue("reportLog") : 1);
         rule.setLastUpdateTime(System.currentTimeMillis());
         return rule;
     }
@@ -254,6 +258,8 @@ public class HttpSyncClient {
         s.setVersion(obj.getIntValue("version"));
         s.setMemberRuleCodes(parseMemberRuleCodesField(obj));
         s.setHitPolicy(obj.getString("hitPolicy"));
+        // 缺字段时默认 1（开）
+        s.setReportLog(obj.containsKey("reportLog") ? obj.getIntValue("reportLog") : 1);
         s.setLastUpdateTime(System.currentTimeMillis());
         return s;
     }

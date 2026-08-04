@@ -77,6 +77,14 @@
           <el-switch v-model="fm.preciseMode" :active-value="1" :inactive-value="0" />
           <span style="margin-left:8px;color:#909399;font-size:12px;">开启后数值运算使用 BigDecimal，消除浮点误差</span>
         </el-form-item>
+        <el-form-item label="执行超时(ms)">
+          <el-input-number v-model="fm.timeoutMillis" :min="0" :step="100" />
+          <span style="margin-left:8px;color:#909399;font-size:12px;">单次执行超时毫秒数，0 表示不限制</span>
+        </el-form-item>
+        <el-form-item label="日志上报">
+          <el-switch v-model="fm.reportLog" :active-value="1" :inactive-value="0" />
+          <span style="margin-left:8px;color:#909399;font-size:12px;">开启后执行时写入执行日志表</span>
+        </el-form-item>
         <el-form-item label="描述"><el-input v-model="fm.description" type="textarea" :rows="2" /></el-form-item>
       </el-form>
       <div slot="footer"><el-button size="small" @click="dlgVis=false">取消</el-button><el-button size="small" type="primary" @click="submit">确定</el-button></div>
@@ -178,7 +186,7 @@ export default {
       total: 0,
       qp: { pageNum: 1, pageSize: 10, keyword: '', modelType: '' },
       dlgVis: false,
-      fm: { ruleCode: '', ruleName: '', modelType: '', description: '', initialScopeCompId: '0', preciseMode: 0 }
+      fm: { ruleCode: '', ruleName: '', modelType: '', description: '', initialScopeCompId: '0', preciseMode: 0, timeoutMillis: 0, reportLog: 1 }
     }
   },
   computed: {
@@ -312,7 +320,7 @@ export default {
      * 打开新建弹窗并重置表单（含作用域默认通用）
      */
     openCreateDlg() {
-      this.fm = { ruleCode: '', ruleName: '', modelType: '', description: '', initialScopeCompId: '0', preciseMode: 0 }
+      this.fm = { ruleCode: '', ruleName: '', modelType: '', description: '', initialScopeCompId: '0', preciseMode: 0, timeoutMillis: 0, reportLog: 1 }
       this.dlgVis = true
       this.$nextTick(() => {
         if (this.$refs.f) this.$refs.f.clearValidate()

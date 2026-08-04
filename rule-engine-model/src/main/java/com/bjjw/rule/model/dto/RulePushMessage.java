@@ -12,6 +12,10 @@ public class RulePushMessage {
     private String modelJson;
     /** 高精度计算开关；旧快照无此字段时为 null，客户端按 false 处理 */
     private Boolean precise;
+    /** 单次执行超时（毫秒）；旧快照无此字段时为 null，客户端按 0（不限制）处理 */
+    private Long timeoutMillis;
+    /** 日志上报：0-关，1-开；旧快照无此字段时为 null，客户端按 1（开）处理 */
+    private Integer reportLog;
     private Long publishTime;
     /** 动作类型：PUBLISH / UNPUBLISH / DELETE / FUNC_UPDATE / FUNC_DELETE / SET_PUBLISH / SET_UNPUBLISH */
     private String action;

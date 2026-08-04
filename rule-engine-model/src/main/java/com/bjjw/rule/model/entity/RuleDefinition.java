@@ -22,6 +22,16 @@ public class RuleDefinition {
     private Integer preciseMode;
 
     /**
+     * 单次执行超时（毫秒）：0 或负数表示不限制；发布时随快照下发客户端。
+     */
+    private Long timeoutMillis;
+
+    /**
+     * 日志上报：0-关，1-开；发布时随快照下发客户端。
+     */
+    private Integer reportLog;
+
+    /**
      * 创建规则时的模型类型（仅请求体使用，非表字段）。
      */
     @TableField(exist = false)

@@ -25,6 +25,10 @@ public class RulePublished {
     private String modelJson;
     /** 高精度计算：0-关闭，1-开启（BigDecimal），发布时取自 rule_definition.precise_mode */
     private Integer preciseMode;
+    /** 单次执行超时（毫秒）：0 或负数表示不限制，发布时取自 rule_definition.timeout_millis */
+    private Long timeoutMillis;
+    /** 日志上报：0-关，1-开，发布时取自 rule_definition.report_log */
+    private Integer reportLog;
     private Integer status;
     private String publishBy;
     private LocalDateTime publishTime;

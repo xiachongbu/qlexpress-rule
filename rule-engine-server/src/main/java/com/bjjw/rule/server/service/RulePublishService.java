@@ -144,6 +144,10 @@ public class RulePublishService {
 
         // 规则级高精度配置，发布时固化进快照随快照下发
         int preciseMode = definition.getPreciseMode() != null ? definition.getPreciseMode() : 0;
+        // 规则级执行超时配置，发布时固化进快照随快照下发（0 表示不限制）
+        long timeoutMillis = definition.getTimeoutMillis() != null ? definition.getTimeoutMillis() : 0L;
+        // 规则级日志上报配置，发布时固化进快照随快照下发（1 开、0 关）
+        int reportLog = definition.getReportLog() != null ? definition.getReportLog() : 1;
 
         for (RuleDefinitionContent content : compiled) {
             String compId = RuleCompIds.normalize(content.getScopeCompId());
@@ -164,6 +168,8 @@ public class RulePublishService {
                 existing.setCompiledType(content.getCompiledType());
                 existing.setModelJson(content.getModelJson());
                 existing.setPreciseMode(preciseMode);
+                existing.setTimeoutMillis(timeoutMillis);
+                existing.setReportLog(reportLog);
                 existing.setProjectCode(projectCode);
                 existing.setStatus(1);
                 existing.setPublishTime(LocalDateTime.now());
@@ -181,6 +187,8 @@ public class RulePublishService {
                 published.setCompiledType(content.getCompiledType());
                 published.setModelJson(content.getModelJson());
                 published.setPreciseMode(preciseMode);
+                published.setTimeoutMillis(timeoutMillis);
+                published.setReportLog(reportLog);
                 published.setStatus(1);
                 publishedMapper.insert(published);
             }
@@ -194,6 +202,8 @@ public class RulePublishService {
             pushMessage.setCompiledType(content.getCompiledType());
             pushMessage.setModelJson(content.getModelJson());
             pushMessage.setPrecise(preciseMode == 1);
+            pushMessage.setTimeoutMillis(timeoutMillis);
+            pushMessage.setReportLog(reportLog);
             pushMessage.setProjectCode(projectCode);
             pushMessage.setPublishTime(System.currentTimeMillis());
             pushMessage.setAction("PUBLISH");
