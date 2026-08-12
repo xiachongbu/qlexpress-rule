@@ -199,7 +199,7 @@
       :params-json.sync="testParamsJson"
       :mode.sync="testMode"
       :result="testResult"
-      width="500px"
+      width="750px"
       @execute="doTest"
     >
       <template slot="result">

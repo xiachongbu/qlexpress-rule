@@ -70,7 +70,7 @@
       v-else
       v-model="jsonText"
       type="textarea"
-      :rows="8"
+      :rows="12"
       placeholder="{}"
     />
 
@@ -95,7 +95,7 @@ export default {
   props: {
     visible: {type: Boolean, default: false},
     title: {type: String, default: '测试执行'},
-    width: {type: String, default: '600px'},
+    width: {type: String, default: '900px'},
     /** 字段描述列表：{ code, label, varType, enumOptions[] } */
     fields: {type: Array, default: () => []},
     /** 表单模式入参对象（按引用直接双向修改） */
@@ -145,7 +145,7 @@ export default {
   color: #909399;
 }
 .test-param-form {
-  max-height: 360px;
+  max-height: 540px;
   overflow-y: auto;
 }
 .test-empty {
