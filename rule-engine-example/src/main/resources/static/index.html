@@ -33,6 +33,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hira
 .badge-cross-adv{background:#f9f0ff;color:#531dab}
 .badge-score-adv{background:#fcffe6;color:#389e0d}
 .badge-ql-script{background:#e6fffb;color:#006d75}
+.badge-http{background:#e6f4ff;color:#0958d9}
 .card-body{padding:20px}
 .form-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px}
 .form-group{flex:1;min-width:180px}
@@ -88,6 +89,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hira
   <div class="tabs" id="mainTabs">
     <div class="tab active" data-tab="models">五种决策模型</div>
     <div class="tab" data-tab="risk-ext">扩展风控示例</div>
+    <div class="tab" data-tab="kyb-http">KYB HTTP 调用</div>
     <div class="tab" data-tab="object">对象传入</div>
     <div class="tab" data-tab="functions">函数调用</div>
     <div class="tab" data-tab="funcMgmt">函数管理</div>
@@ -347,6 +349,64 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hira
     </div>
   </div>
 
+  <!-- ==================== KYB HTTP 调用（决策流 + QL 脚本，演示内置 httpCall/httpPost） ==================== -->
+  <div class="tab-panel" id="panel-kyb-http">
+    <div class="section-title">KYB 风控 HTTP 调用示例 — 商户进件场景</div>
+
+    <div class="arch-info" style="margin-bottom:20px">
+      <strong>HTTP 调用能力：</strong>内置 <code>httpCall / httpGet / httpPost</code> 函数已注册到引擎 core 模块，无需在函数管理中配置。
+      <strong>只返回 JSON</strong>：成功（2xx 且响应为 JSON）直接返回业务对象，脚本可短路径访问，如 <code>resp.data.riskLevel</code>、<code>resp.code</code>；
+      失败（超时/连不上/非 2xx/非 JSON）不抛异常，而是返回 <code>{success:false, status, error}</code>，由脚本用 <code>if (resp.success == false)</code> 判断处理；已内置连接/读取超时。
+      <br>本示例 HTTP 目标指向 example 自身的 mock 接口（<code>/api/example/mock/*</code>），开箱即可联调。
+    </div>
+
+    <!-- 决策流 HTTP -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="badge badge-flow">决策流</span> 商户进件工商核验流程 (RC_KYB_HTTP_FLOW) <span class="badge badge-http" style="margin-left:4px">HTTP 动作节点</span></div>
+      </div>
+      <div class="card-body">
+        <div class="arch-info" style="margin-bottom:16px">
+          <strong>决策流 + HTTP 动作节点：</strong>task 节点通过 <code>httpCall</code> 调用工商核验接口，
+          decision 节点依据返回风险等级决定「自动准入（APPROVED）」或「转人工审核（MANUAL）」。
+          <br>Mock 规则：商户名称含「风险」→HIGH（转人工），含「关注」→MEDIUM（转人工），否则 LOW（自动准入）。
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>商户编号 (merchantId)</label><input type="text" id="f-kyb-flow-mid" value="M202600001"></div>
+          <div class="form-group"><label>商户名称 (merchantName)</label><input type="text" id="f-kyb-flow-mname" value="示例科技有限公司"></div>
+          <div class="form-group"><label>接口调用令牌 (bizToken)</label><input type="text" id="f-kyb-flow-token" value="demo-token"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="runKybFlow()" style="background:#0958d9">执行核验流程</button>
+        </div>
+        <div class="result-panel" id="res-kyb-flow"></div>
+      </div>
+    </div>
+
+    <!-- QL 脚本 HTTP -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="badge badge-ql-script">QL脚本</span> 商户黑名单查询脚本 (RC_KYB_HTTP_SCRIPT) <span class="badge badge-http" style="margin-left:4px">httpPost</span></div>
+      </div>
+      <div class="card-body">
+        <div class="arch-info" style="margin-bottom:16px">
+          <strong>QL 脚本 + HTTP 调用：</strong>脚本中直接调用内置 <code>httpPost</code> 查询法人黑名单，
+          依据返回命中情况输出 <code>riskDecision</code>（PASS/REJECT/ERROR）。
+          <br>Mock 规则：法人身份证号含「9999」→命中黑名单（REJECT），否则未命中（PASS）。
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>商户编号 (merchantId)</label><input type="text" id="f-kyb-script-mid" value="M202600001"></div>
+          <div class="form-group"><label>法人身份证号 (legalPersonIdCard)</label><input type="text" id="f-kyb-script-idcard" value="110101199001010011"></div>
+          <div class="form-group"><label>接口调用令牌 (bizToken)</label><input type="text" id="f-kyb-script-token" value="demo-token"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="runKybScript()" style="background:#006d75">执行黑名单查询</button>
+        </div>
+        <div class="result-panel" id="res-kyb-script"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== 原有对象传入 ==================== -->
   <div class="tab-panel" id="panel-object">
     <div class="card">
@@ -600,6 +660,24 @@ function runBlendCalcScript() {
     basicServiceRatio: +v('f-bcs-basic'), vasServiceRatio: +v('f-bcs-vas')
   };
   api('/api/example/risk/blend-calc', body, 'res-bcs');
+}
+
+/* ---- KYB 决策流 HTTP（工商核验） ---- */
+function runKybFlow() {
+  var body = {
+    merchantId: v('f-kyb-flow-mid'), merchantName: v('f-kyb-flow-mname'),
+    bizToken: v('f-kyb-flow-token')
+  };
+  api('/api/example/kyb/http-flow', body, 'res-kyb-flow');
+}
+
+/* ---- KYB QL 脚本 HTTP（黑名单查询） ---- */
+function runKybScript() {
+  var body = {
+    merchantId: v('f-kyb-script-mid'), legalPersonIdCard: v('f-kyb-script-idcard'),
+    bizToken: v('f-kyb-script-token')
+  };
+  api('/api/example/kyb/http-script', body, 'res-kyb-script');
 }
 
 /* ---- SCRIPT 函数 ---- */

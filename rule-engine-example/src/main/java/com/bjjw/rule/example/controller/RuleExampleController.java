@@ -44,6 +44,10 @@ public class RuleExampleController {
     @Resource
     private TaxRateByCtxService taxRateByCtxService;
     @Resource
+    private KybHttpFlowService kybHttpFlowService;
+    @Resource
+    private KybBlacklistScriptService kybBlacklistScriptService;
+    @Resource
     private RuleEngineClient ruleClient;
 
     // ==================== 决策表（Decision Table） ====================
@@ -286,6 +290,58 @@ public class RuleExampleController {
         result.put("success", true);
         result.put("modelType", "SCRIPT");
         result.put("data", calcResult);
+        return result;
+    }
+
+    // ==================== KYB 风控 HTTP 调用（决策流 + QL 脚本） ====================
+
+    /**
+     * KYB 决策流 HTTP 示例：RC_KYB_HTTP_FLOW 商户进件工商核验流程。
+     * 决策流动作节点内置 httpCall 调用工商核验接口，依据风险等级决定自动准入或转人工。
+     *
+     * 请求示例：
+     * POST /api/example/kyb/http-flow
+     * {
+     *   "merchantId": "M202600001",
+     *   "merchantName": "示例科技有限公司",
+     *   "bizToken": "demo-token"
+     * }
+     * 说明：merchantName 含「风险」→HIGH（转人工），含「关注」→MEDIUM（转人工），否则 LOW（自动准入）。
+     */
+    @PostMapping("/kyb/http-flow")
+    public Map<String, Object> kybHttpFlow(@RequestBody KybHttpFlowQuery query) {
+        Map<String, Object> flowResult = kybHttpFlowService.verifyAndAudit(query);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("modelType", "FLOW");
+        result.put("scene", "KYB-商户进件工商核验（HTTP 动作节点）");
+        result.put("data", flowResult);
+        return result;
+    }
+
+    /**
+     * KYB QL 脚本 HTTP 示例：RC_KYB_HTTP_SCRIPT 商户黑名单查询脚本。
+     * 脚本直接调用内置 httpPost 查询法人黑名单，输出 PASS/REJECT/ERROR 风控结论。
+     *
+     * 请求示例：
+     * POST /api/example/kyb/http-script
+     * {
+     *   "merchantId": "M202600001",
+     *   "legalPersonIdCard": "110101199001010011",
+     *   "bizToken": "demo-token"
+     * }
+     * 说明：legalPersonIdCard 含「9999」→命中黑名单（REJECT），否则未命中（PASS）。
+     */
+    @PostMapping("/kyb/http-script")
+    public Map<String, Object> kybHttpScript(@RequestBody KybBlacklistScriptQuery query) {
+        Map<String, Object> scriptResult = kybBlacklistScriptService.queryBlacklist(query);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("modelType", "SCRIPT");
+        result.put("scene", "KYB-商户黑名单查询（HTTP 脚本调用）");
+        result.put("data", scriptResult);
         return result;
     }
 

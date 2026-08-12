@@ -6,13 +6,14 @@
  *   if-block:     条件分支      { type:'if-block', branches:[{type,condVar,condOp,condValue,actions}] }
  *   switch-block: switch匹配    { type:'switch-block', matchVar, cases:[{value,actions}], defaultActions:[] }
  *   func-call:    函数调用      { type:'func-call', target, funcName, args:[] }
+ *   http-call:    HTTP调用       { type:'http-call', target, method, url, headers:[{key,value}], bodyMode:'none'|'text'|'json', body, connectTimeout, readTimeout }
  *   foreach:      for-each循环  { type:'foreach', itemVar, listExpr, actions:[] }
  *   ternary:      三元表达式    { type:'ternary', target, condVar, condOp, condValue, trueValue, falseValue }
  *   in-check:     in判断赋值    { type:'in-check', target, checkVar, inValues:[], trueValue, falseValue }
  *   template-str: 动态字符串    { type:'template-str', target, parts:[{type:'text'|'expr', content}] }
  */
 
-import { buildQlConditionExpr, constTypeFromVarType, inferConstVarType } from './conditionExpr'
+import {buildQlConditionExpr, constTypeFromVarType, inferConstVarType} from './conditionExpr'
 
 function wrapValue(val) {
   if (val === null || val === undefined || val === '') return '""'
@@ -23,6 +24,27 @@ function wrapValue(val) {
   if (s.startsWith('"') || s.startsWith("'")) return s
   if (/[+\-*/()><=!&|,[\]{}]/.test(s)) return s
   return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
+}
+
+/**
+ * 文本 → QL 字符串字面量（保留 ${} 插值）；与后端 ActionDataCompiler.qlStringLiteral 一致。
+ */
+function qlStringLiteral(s) {
+  if (s == null) s = ''
+  return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
+}
+
+/**
+ * headers 数组 [{key,value}] → QL map 字面量 {"k": "v"}；无有效项时返回空字符串。
+ */
+function buildHeaderMap(headers) {
+  if (!Array.isArray(headers) || headers.length === 0) return ''
+  const segs = []
+  for (const h of headers) {
+    if (!h || !h.key || !String(h.key).trim()) continue
+    segs.push(qlStringLiteral(String(h.key).trim()) + ': ' + qlStringLiteral(h.value))
+  }
+  return segs.length ? '{' + segs.join(', ') + '}' : ''
 }
 
 function generateBlock(block, indent) {
@@ -85,6 +107,25 @@ function generateBlock(block, indent) {
       if (!block.funcName) return ''
       const args = (block.args || []).join(', ')
       const call = block.funcName + '(' + args + ')'
+      return block.target ? pad + block.target + ' = ' + call : pad + call
+    }
+
+    case 'http-call': {
+      if (!block.url) return ''
+      const parts = []
+      parts.push('"url": ' + qlStringLiteral(block.url))
+      const method = (block.method || 'GET').trim().toUpperCase()
+      parts.push('"method": ' + qlStringLiteral(method))
+      const headerMap = buildHeaderMap(block.headers)
+      if (headerMap) parts.push('"headers": ' + headerMap)
+      if (block.bodyMode === 'json') {
+        if (block.body && String(block.body).trim()) parts.push('"body": ' + String(block.body).trim())
+      } else if (block.bodyMode === 'text') {
+        if (block.body && String(block.body).trim()) parts.push('"body": ' + qlStringLiteral(block.body))
+      }
+      if (block.connectTimeout != null && Number(block.connectTimeout) > 0) parts.push('"connectTimeout": ' + Number(block.connectTimeout))
+      if (block.readTimeout != null && Number(block.readTimeout) > 0) parts.push('"readTimeout": ' + Number(block.readTimeout))
+      const call = 'httpCall({' + parts.join(', ') + '})'
       return block.target ? pad + block.target + ' = ' + call : pad + call
     }
 
@@ -190,6 +231,9 @@ export function actionDataToBlocks(actionData) {
       const inValues = Array.isArray(block.inValues) ? block.inValues.filter(v => v != null && String(v).trim() !== '') : []
       return { ...block, inValues }
     }
+    if (block.type === 'http-call') {
+      return { ...block, headers: Array.isArray(block.headers) ? block.headers.map(h => ({ ...h })) : [] }
+    }
     return { ...block }
   })
 }
@@ -209,6 +253,8 @@ export function newBlock(type) {
       return { type: 'switch-block', matchVar: '', cases: [{ value: '', actions: [{ type: 'assign', target: '', value: '' }] }], defaultActions: [{ type: 'assign', target: '', value: '' }] }
     case 'func-call':
       return { type: 'func-call', target: '', funcName: '', args: [''] }
+    case 'http-call':
+      return { type: 'http-call', target: 'httpResult', method: 'GET', url: '', headers: [], bodyMode: 'none', body: '', connectTimeout: 3000, readTimeout: 5000 }
     case 'foreach':
       return { type: 'foreach', itemVar: 'item', listExpr: '', actions: [{ type: 'assign', target: '', value: '' }] }
     case 'ternary':
@@ -227,6 +273,7 @@ export const BLOCK_TYPES = [
   { type: 'if-block', label: '条件分支', icon: 'el-icon-s-operation', color: '#fa8c16' },
   { type: 'switch-block', label: 'Switch 匹配', icon: 'el-icon-menu', color: '#722ed1' },
   { type: 'func-call', label: '函数调用', icon: 'el-icon-phone-outline', color: '#13c2c2' },
+  { type: 'http-call', label: 'HTTP 调用', icon: 'el-icon-connection', color: '#0958d9' },
   { type: 'foreach', label: 'ForEach 循环', icon: 'el-icon-refresh', color: '#52c41a' },
   { type: 'ternary', label: '三元表达式', icon: 'el-icon-question', color: '#eb2f96' },
   { type: 'in-check', label: 'IN 判断', icon: 'el-icon-finished', color: '#2f54eb' },

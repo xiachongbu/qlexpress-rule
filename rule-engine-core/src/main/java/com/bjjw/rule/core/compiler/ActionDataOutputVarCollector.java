@@ -34,7 +34,7 @@ public final class ActionDataOutputVarCollector {
     }
 
     /**
-     * 递归遍历 actionData 数组，收集 assign/ternary/func-call 等块的目标变量。
+     * 递归遍历 actionData 数组，收集 assign/ternary/func-call/http-call 等块的目标变量。
      */
     public static void collectFromActionData(JSONArray actionData, LinkedHashSet<String> out) {
         if (actionData == null) {
@@ -78,6 +78,9 @@ public final class ActionDataOutputVarCollector {
                 collectFromActionData(block.getJSONArray("defaultActions"), out);
                 break;
             case "func-call":
+                addTarget(out, block.getString("target"));
+                break;
+            case "http-call":
                 addTarget(out, block.getString("target"));
                 break;
             case "foreach":

@@ -175,6 +175,68 @@
           <el-button size="mini" style="width:100%;margin-top:2px" @click="block.args.push(''); sync()">添加参数</el-button>
         </template>
 
+        <!-- ===== HTTP 调用 ===== -->
+        <template v-if="block.type === 'http-call'">
+          <div class="inline-row" style="margin-bottom:4px">
+            <span class="mini-label">结果</span>
+            <el-input v-model="block.target" size="mini" placeholder="结果变量（成功=业务JSON对象直取 .data/.code；失败=.success==false/.error）" @input="sync" />
+          </div>
+          <div class="inline-row" style="margin-bottom:4px">
+            <span class="mini-label">请求</span>
+            <el-select v-model="block.method" size="mini" style="width:96px" @change="sync">
+              <el-option label="GET" value="GET" />
+              <el-option label="POST" value="POST" />
+              <el-option label="PUT" value="PUT" />
+              <el-option label="DELETE" value="DELETE" />
+              <el-option label="PATCH" value="PATCH" />
+            </el-select>
+            <el-input v-model="block.url" size="mini" placeholder="URL，可用 ${变量} 插值" style="flex:1" @input="sync" />
+          </div>
+          <div class="http-sub">
+            <div class="http-sub-title">请求头</div>
+            <div v-for="(h, hi) in block.headers" :key="hi" class="inline-row" style="margin-bottom:2px">
+              <el-input v-model="h.key" size="mini" placeholder="Header 名" style="width:120px" @input="sync" />
+              <span class="eq">:</span>
+              <el-input v-model="h.value" size="mini" placeholder="值，可用 ${变量} 插值" @input="sync" />
+              <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C" @click="block.headers.splice(hi,1); sync()" />
+            </div>
+            <el-button size="mini" icon="el-icon-plus" style="width:100%;margin-top:2px" @click="addHeader(block)">添加请求头</el-button>
+          </div>
+          <div class="http-sub">
+            <div class="inline-row" style="margin-bottom:4px">
+              <span class="mini-label">请求体</span>
+              <el-select v-model="block.bodyMode" size="mini" style="width:110px" @change="sync">
+                <el-option label="无" value="none" />
+                <el-option label="文本" value="text" />
+                <el-option label="JSON表达式" value="json" />
+              </el-select>
+            </div>
+            <el-input
+              v-if="block.bodyMode === 'text'"
+              v-model="block.body"
+              type="textarea"
+              :rows="2"
+              size="mini"
+              placeholder="文本请求体，可用 ${变量} 插值"
+              @input="sync"
+            />
+            <el-input
+              v-else-if="block.bodyMode === 'json'"
+              v-model="block.body"
+              size="mini"
+              placeholder="变量名或 QL 对象字面量（自动序列化为 JSON）"
+              @input="sync"
+            />
+          </div>
+          <div class="inline-row">
+            <span class="mini-label">连接超时</span>
+            <el-input-number v-model="block.connectTimeout" :min="0" :max="60000" :step="500" size="mini" style="width:110px" @change="sync" />
+            <span class="mini-label">读取超时</span>
+            <el-input-number v-model="block.readTimeout" :min="0" :max="60000" :step="500" size="mini" style="width:110px" @change="sync" />
+            <span class="mini-label" style="color:#bbb">ms</span>
+          </div>
+        </template>
+
         <!-- ===== ForEach ===== -->
         <template v-if="block.type === 'foreach'">
           <div class="inline-row" style="margin-bottom:4px">
@@ -422,6 +484,11 @@ export default {
       }
       this.sync()
     },
+    addHeader(block) {
+      if (!Array.isArray(block.headers)) this.$set(block, 'headers', [])
+      block.headers.push({ key: '', value: '' })
+      this.sync()
+    },
     typeLabel(type) {
       const t = BLOCK_TYPES.find(b => b.type === type)
       return t ? t.label : type
@@ -577,6 +644,18 @@ export default {
   border: 1px dashed #d9d9d9;
   border-radius: 3px;
   background: #fff;
+}
+.http-sub {
+  padding: 4px 6px;
+  margin-bottom: 4px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 3px;
+  background: #fff;
+}
+.http-sub-title {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 3px;
 }
 .const-hint-input {
   background-color: #f5f7fa;

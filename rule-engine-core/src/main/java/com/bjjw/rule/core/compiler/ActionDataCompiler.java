@@ -6,7 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 /**
  * actionData JSON → QLExpress 脚本生成器（后端 Java 版）
  *
- * 支持块类型：assign, if-block, switch-block, func-call, foreach, ternary, in-check, template-str
+ * 支持块类型：assign, if-block, switch-block, func-call, foreach, ternary, in-check, template-str, http-call
  */
 public class ActionDataCompiler {
 
@@ -32,6 +32,7 @@ public class ActionDataCompiler {
             case "if-block": return compileIfBlock(block, indent);
             case "switch-block": return compileSwitchBlock(block, indent);
             case "func-call": return compileFuncCall(block, indent);
+            case "http-call": return compileHttpCall(block, indent);
             case "foreach": return compileForeach(block, indent);
             case "ternary": return compileTernary(block, indent);
             case "in-check": return compileInCheck(block, indent);
@@ -120,6 +121,76 @@ public class ActionDataCompiler {
         String call = funcName + "(" + ab + ")";
         String target = b.getString("target");
         return pad(indent) + (!empty(target) ? target + " = " + call : call);
+    }
+
+    /**
+     * HTTP 调用块 → 内置 httpCall(config) 调用。
+     * config 为 QL map 字面量；url / header value / 文本 body 均作为支持 ${} 插值的字符串字面量；
+     * JSON body 作为表达式原样传入（由 httpCall 内部 JSON 序列化）。
+     */
+    private static String compileHttpCall(JSONObject b, int indent) {
+        String url = b.getString("url");
+        if (empty(url)) return "";
+        StringBuilder cfg = new StringBuilder();
+        cfg.append("{");
+        cfg.append("\"url\": ").append(qlStringLiteral(url));
+
+        String method = b.getString("method");
+        if (empty(method)) method = "GET";
+        cfg.append(", \"method\": ").append(qlStringLiteral(method.trim().toUpperCase()));
+
+        JSONArray headers = b.getJSONArray("headers");
+        String headerMap = buildHeaderMap(headers);
+        if (headerMap != null) {
+            cfg.append(", \"headers\": ").append(headerMap);
+        }
+
+        String bodyMode = b.getString("bodyMode");
+        String body = b.getString("body");
+        if ("json".equals(bodyMode)) {
+            if (!empty(body)) cfg.append(", \"body\": ").append(body.trim());
+        } else if ("text".equals(bodyMode)) {
+            if (!empty(body)) cfg.append(", \"body\": ").append(qlStringLiteral(body));
+        }
+
+        Integer ct = b.getInteger("connectTimeout");
+        if (ct != null && ct > 0) cfg.append(", \"connectTimeout\": ").append(ct);
+        Integer rt = b.getInteger("readTimeout");
+        if (rt != null && rt > 0) cfg.append(", \"readTimeout\": ").append(rt);
+
+        cfg.append("}");
+        String call = "httpCall(" + cfg + ")";
+        String target = b.getString("target");
+        return pad(indent) + (!empty(target) ? target + " = " + call : call);
+    }
+
+    /**
+     * headers 数组 [{key,value}] → QL map 字面量 {\"k\": \"v\"}；
+     * value 作为支持 ${} 插值的字符串字面量。无有效项时返回 null。
+     */
+    private static String buildHeaderMap(JSONArray headers) {
+        if (headers == null || headers.isEmpty()) return null;
+        StringBuilder sb = new StringBuilder();
+        int cnt = 0;
+        for (int i = 0; i < headers.size(); i++) {
+            JSONObject h = headers.getJSONObject(i);
+            if (h == null) continue;
+            String k = h.getString("key");
+            if (empty(k)) continue;
+            if (cnt > 0) sb.append(", ");
+            sb.append(qlStringLiteral(k.trim())).append(": ").append(qlStringLiteral(h.getString("value")));
+            cnt++;
+        }
+        if (cnt == 0) return null;
+        return "{" + sb + "}";
+    }
+
+    /**
+     * 文本 → QL 字符串字面量（保留 ${} 插值）；转义反斜杠与双引号，null 视为空串。
+     */
+    private static String qlStringLiteral(String s) {
+        if (s == null) s = "";
+        return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 
     private static String compileForeach(JSONObject b, int indent) {

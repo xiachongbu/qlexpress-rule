@@ -340,3 +340,74 @@ INSERT INTO `rule_rule_set_member` (`id`, `set_id`, `definition_id`, `sort_order
 (1, 1, 2, 0),
 (2, 1, 5, 1)
 ON DUPLICATE KEY UPDATE `sort_order` = VALUES(`sort_order`);
+
+-- ============================================================
+-- 14. KYB 风控扩展示例 —— HTTP 调用动作（内置 httpCall/httpPost 函数）
+--     场景：商户进件风控。演示决策流动作节点与 QL 脚本两种形态发起线上 HTTP 接口调用。
+--     HTTP 目标默认指向 rule-engine-example 自身的 mock 接口（/api/example/mock/*），
+--     使示例自包含、可直接联调；生产环境替换为真实工商核验 / 黑名单查询服务地址即可。
+--     compiled_script 由 rule-engine-core 编译器真实产出（httpCall(config) / httpPost(url,body,headers)）。
+-- ============================================================
+
+-- 14.1 新增 KYB 场景变量（含 HTTP 入参与规则输出）
+INSERT INTO `rule_variable` (`id`, `project_id`, `var_code`, `var_label`, `script_name`, `var_type`, `var_source`, `default_value`, `example_value`, `description`, `sort_order`, `status`) VALUES
+(31, 1, 'merchantId',        '商户编号',       'merchantId',        'STRING', 'INPUT',    NULL, 'M202600001',      'KYB 进件商户唯一编号',                    31, 1),
+(32, 1, 'merchantName',      '商户名称',       'merchantName',      'STRING', 'INPUT',    NULL, '示例科技有限公司', '工商核验用商户名称',                      32, 1),
+(33, 1, 'legalPersonIdCard', '法人身份证号',   'legalPersonIdCard', 'STRING', 'INPUT',    NULL, '110101199001010011', '黑名单查询用法人证件号',                33, 1),
+(34, 1, 'bizToken',          '接口调用令牌',   'bizToken',          'STRING', 'INPUT',    NULL, 'demo-token',      '透传到 HTTP 请求头 Authorization 的令牌', 34, 1),
+(35, 1, 'kybRiskLevel',      'KYB风险等级',    'kybRiskLevel',      'STRING', 'COMPUTED', NULL, 'LOW',             'HTTP 工商核验返回的风险等级 LOW/MEDIUM/HIGH', 35, 1),
+(36, 1, 'auditResult',       '准入审核结论',   'auditResult',       'STRING', 'COMPUTED', NULL, 'APPROVED',        '决策流输出：APPROVED/MANUAL',            36, 1),
+(37, 1, 'auditRemark',       '审核备注',       'auditRemark',       'STRING', 'COMPUTED', NULL, '工商核验低风险，自动准入', '决策流输出：审核说明',            37, 1),
+(38, 1, 'riskDecision',      '黑名单风控结论', 'riskDecision',      'STRING', 'COMPUTED', NULL, 'PASS',            'QL脚本输出：PASS/REJECT/ERROR',          38, 1),
+(39, 1, 'riskReason',        '风控原因',       'riskReason',        'STRING', 'COMPUTED', NULL, '未命中黑名单',    'QL脚本输出：命中说明',                    39, 1),
+(40, 1, 'hitBlacklist',      '是否命中黑名单', 'hitBlacklist',      'BOOLEAN','COMPUTED', NULL, 'false',           'QL脚本输出：是否命中黑名单',              40, 1)
+ON DUPLICATE KEY UPDATE `var_label` = VALUES(`var_label`);
+
+-- 14.2 KYB 规则定义（决策流 + QL 脚本各一条）
+INSERT INTO `rule_definition` (`id`, `project_id`, `rule_code`, `rule_name`, `description`) VALUES
+(12, 1, 'RC_KYB_HTTP_FLOW',   '商户进件工商核验流程', '决策流示例：动作节点通过内置 httpCall 调用工商核验接口，依据返回风险等级决定自动准入或转人工（HTTP 动作节点示例）'),
+(13, 1, 'RC_KYB_HTTP_SCRIPT', '商户黑名单查询脚本',   'QL脚本示例：直接调用内置 httpPost 查询法人黑名单，依据返回命中情况输出风控结论（HTTP 脚本调用示例）')
+ON DUPLICATE KEY UPDATE `rule_name` = VALUES(`rule_name`), `description` = VALUES(`description`);
+
+-- 14.3 KYB 规则内容（compiled_script 为 rule-engine-core 编译器真实产出）
+-- ---------- 决策流：RC_KYB_HTTP_FLOW ----------
+INSERT INTO `rule_definition_content` (`id`, `definition_id`, `model_json`, `compiled_script`, `compiled_type`, `compile_status`, `compile_time`) VALUES
+(12, 12,
+ '{"defaultEdgeLineType":"polyline","nodes":[{"id":"n1","type":"start","name":"开始","x":80,"y":200},{"id":"n2","type":"task","name":"调用工商核验接口","actionData":[{"type":"http-call","target":"kybResp","method":"POST","url":"http://localhost:7070/api/example/mock/kyb-verify","headers":[{"key":"Authorization","value":"Bearer ${bizToken}"}],"bodyMode":"json","body":"{\\"merchantId\\": merchantId, \\"merchantName\\": merchantName}","connectTimeout":2000,"readTimeout":3000},{"type":"assign","target":"kybRiskLevel","value":"kybResp.success == false ? \\"UNKNOWN\\" : kybResp.data.riskLevel"}],"x":300,"y":200},{"id":"n3","type":"decision","name":"核验风险判断","x":540,"y":200},{"id":"n4","type":"task","name":"准入通过","actionData":[{"type":"assign","target":"auditResult","value":"\\"APPROVED\\""},{"type":"assign","target":"auditRemark","value":"\\"工商核验低风险，自动准入\\""}],"x":760,"y":80},{"id":"n5","type":"task","name":"转人工审核","actionData":[{"type":"assign","target":"auditResult","value":"\\"MANUAL\\""},{"type":"assign","target":"auditRemark","value":"\\"工商核验存在风险，转人工审核\\""}],"x":760,"y":320},{"id":"n6","type":"join","name":"汇合","x":980,"y":200},{"id":"n7","type":"end","name":"结束","x":1180,"y":200}],"edges":[{"id":"e1","source":"n1","target":"n2"},{"id":"e2","source":"n2","target":"n3"},{"id":"e3","source":"n3","target":"n4","conditionExpression":"kybRiskLevel == \\"LOW\\"","name":"低风险"},{"id":"e4","source":"n3","target":"n5","name":"非低风险"},{"id":"e5","source":"n4","target":"n6"},{"id":"e6","source":"n5","target":"n6"},{"id":"e7","source":"n6","target":"n7"}]}',
+ 'kybResp = null\nkybRiskLevel = null\nauditResult = null\nauditRemark = null\n// 调用工商核验接口\nkybResp = httpCall({"url": "http://localhost:7070/api/example/mock/kyb-verify", "method": "POST", "headers": {"Authorization": "Bearer ${bizToken}"}, "body": {"merchantId": merchantId, "merchantName": merchantName}, "connectTimeout": 2000, "readTimeout": 3000})\nkybRiskLevel = kybResp.success == false ? "UNKNOWN" : kybResp.data.riskLevel\n\nif (kybRiskLevel == "LOW") {\n    // 准入通过\n    auditResult = "APPROVED"\n    auditRemark = "工商核验低风险，自动准入"\n\n} else {\n    // 转人工审核\n    auditResult = "MANUAL"\n    auditRemark = "工商核验存在风险，转人工审核"\n\n}\n_result = {"kybResp": kybResp, "kybRiskLevel": kybRiskLevel, "auditResult": auditResult, "auditRemark": auditRemark}\n_result\n',
+ 'QLEXPRESS', 1, NOW())
+ON DUPLICATE KEY UPDATE `model_json` = VALUES(`model_json`), `compiled_script` = VALUES(`compiled_script`), `compiled_type` = VALUES(`compiled_type`), `compile_status` = 1;
+
+-- ---------- QL脚本：RC_KYB_HTTP_SCRIPT ----------
+INSERT INTO `rule_definition_content` (`id`, `definition_id`, `model_json`, `compiled_script`, `compiled_type`, `compile_status`, `compile_time`) VALUES
+(13, 13,
+ '{"script": "// KYB 商户黑名单查询脚本（演示 QL 脚本中直接调用内置 httpPost 函数）\\n// httpPost 成功返回业务 JSON，失败返回 {success:false,status,error}，由脚本判断\\nreqBody = {\\"merchantId\\": merchantId, \\"idCard\\": legalPersonIdCard}\\nresp = httpPost(\\"http://localhost:7070/api/example/mock/blacklist-query\\", reqBody, {\\"Authorization\\": \\"Bearer \\" + bizToken})\\nif (resp.success == false) {\\n    hitBlacklist = false\\n    riskDecision = \\"ERROR\\"\\n    riskReason = \\"黑名单接口调用失败：\\" + resp.error\\n} else {\\n    hitBlacklist = resp.data.hit\\n    blacklistType = resp.data.type\\n    if (hitBlacklist) {\\n        riskDecision = \\"REJECT\\"\\n        riskReason = \\"命中黑名单：\\" + blacklistType\\n    } else {\\n        riskDecision = \\"PASS\\"\\n        riskReason = \\"未命中黑名单\\"\\n    }\\n}\\n_result = {\\"riskDecision\\": riskDecision, \\"riskReason\\": riskReason, \\"hitBlacklist\\": hitBlacklist}\\n_result"}',
+ '// KYB 商户黑名单查询脚本（演示 QL 脚本中直接调用内置 httpPost 函数）\n// httpPost 成功返回业务 JSON，失败返回 {success:false,status,error}，由脚本判断\nreqBody = {"merchantId": merchantId, "idCard": legalPersonIdCard}\nresp = httpPost("http://localhost:7070/api/example/mock/blacklist-query", reqBody, {"Authorization": "Bearer " + bizToken})\nif (resp.success == false) {\n    hitBlacklist = false\n    riskDecision = "ERROR"\n    riskReason = "黑名单接口调用失败：" + resp.error\n} else {\n    hitBlacklist = resp.data.hit\n    blacklistType = resp.data.type\n    if (hitBlacklist) {\n        riskDecision = "REJECT"\n        riskReason = "命中黑名单：" + blacklistType\n    } else {\n        riskDecision = "PASS"\n        riskReason = "未命中黑名单"\n    }\n}\n_result = {"riskDecision": riskDecision, "riskReason": riskReason, "hitBlacklist": hitBlacklist}\n_result',
+ 'QLEXPRESS', 1, NOW())
+ON DUPLICATE KEY UPDATE `model_json` = VALUES(`model_json`), `compiled_script` = VALUES(`compiled_script`), `compiled_type` = VALUES(`compiled_type`), `compile_status` = 1;
+
+-- 14.4 KYB 发布记录
+INSERT INTO `rule_published` (`id`, `rule_code`, `definition_id`, `project_code`, `version`, `model_type`, `compiled_script`, `compiled_type`, `model_json`, `status`)
+SELECT 12, 'RC_KYB_HTTP_FLOW',   12, 'RISK_DEMO', 1, 'FLOW',   c.compiled_script, c.compiled_type, c.model_json, 1 FROM `rule_definition_content` c WHERE c.definition_id = 12
+ON DUPLICATE KEY UPDATE `compiled_script` = VALUES(`compiled_script`), `compiled_type` = VALUES(`compiled_type`), `model_json` = VALUES(`model_json`), `project_code` = VALUES(`project_code`), `version` = 1, `status` = 1;
+
+INSERT INTO `rule_published` (`id`, `rule_code`, `definition_id`, `project_code`, `version`, `model_type`, `compiled_script`, `compiled_type`, `model_json`, `status`)
+SELECT 13, 'RC_KYB_HTTP_SCRIPT', 13, 'RISK_DEMO', 1, 'SCRIPT', c.compiled_script, c.compiled_type, c.model_json, 1 FROM `rule_definition_content` c WHERE c.definition_id = 13
+ON DUPLICATE KEY UPDATE `compiled_script` = VALUES(`compiled_script`), `compiled_type` = VALUES(`compiled_type`), `model_json` = VALUES(`model_json`), `project_code` = VALUES(`project_code`), `version` = 1, `status` = 1;
+
+-- 14.5 KYB 版本历史
+INSERT INTO `rule_definition_version` (`definition_id`, `version`, `model_json`, `compiled_script`, `compiled_type`, `change_log`, `publish_by`) VALUES
+(12, 1, (SELECT `model_json` FROM `rule_definition_content` WHERE `definition_id` = 12), (SELECT `compiled_script` FROM `rule_definition_content` WHERE `definition_id` = 12), 'QLEXPRESS', '初始发布 - 商户进件工商核验流程（HTTP 决策流动作节点）', 'system'),
+(13, 1, (SELECT `model_json` FROM `rule_definition_content` WHERE `definition_id` = 13), (SELECT `compiled_script` FROM `rule_definition_content` WHERE `definition_id` = 13), 'QLEXPRESS', '初始发布 - 商户黑名单查询脚本（HTTP QL 脚本调用）', 'system')
+ON DUPLICATE KEY UPDATE `change_log` = VALUES(`change_log`);
+
+-- 14.6 作用域对齐（与 12 节一致：将新内容行的模型类型/状态/版本与已发布记录对齐）
+UPDATE `rule_definition_content` c
+JOIN `rule_published` p ON p.`definition_id` = c.`definition_id`
+SET c.`scope_comp_id`     = '0',
+    c.`comp_id`           = '0',
+    c.`model_type`        = p.`model_type`,
+    c.`status`            = 1,
+    c.`current_version`   = 1,
+    c.`published_version` = p.`version`
+WHERE c.`definition_id` IN (12, 13);
