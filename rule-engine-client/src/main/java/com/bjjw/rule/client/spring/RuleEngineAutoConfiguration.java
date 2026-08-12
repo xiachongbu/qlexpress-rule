@@ -3,6 +3,7 @@ package com.bjjw.rule.client.spring;
 import com.bjjw.rule.client.RuleEngineClient;
 import com.bjjw.rule.client.log.ExecutionLogReporter;
 import com.bjjw.rule.client.log.KafkaLogReporter;
+import com.bjjw.rule.core.function.HttpBuiltinFunctions;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -60,6 +61,8 @@ public class RuleEngineAutoConfiguration {
                                              ObjectProvider<StringRedisTemplate> stringRedisTemplateProvider,
                                              ApplicationContext applicationContext,
                                              ObjectProvider<ExecutionLogReporter> logReporterProvider) {
+        // 将配置文件中的 host 白名单注入 core 侧内置 HTTP 函数（为空则不限制）
+        HttpBuiltinFunctions.configureAllowHosts(props.getAllowHosts());
         RedisConnectionFactory connectionFactory = resolveRedisConnectionFactory(
                 props, applicationContext, connectionFactoryProvider, stringRedisTemplateProvider);
         if (connectionFactory == null) {

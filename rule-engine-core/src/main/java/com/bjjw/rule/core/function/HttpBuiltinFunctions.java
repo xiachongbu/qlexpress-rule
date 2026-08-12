@@ -11,9 +11,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 内置 HTTP 调用函数实现。
@@ -46,8 +44,9 @@ import java.util.Map;
  * 因此内置强制默认超时（连接 {@value #DEFAULT_CONNECT_TIMEOUT_MS}ms、读取
  * {@value #DEFAULT_READ_TIMEOUT_MS}ms），避免慢接口拖垮规则执行线程池；可按需在 config 覆盖。</p>
  *
- * <p><b>SSRF 防护</b>：默认放开（KYB 场景常调用内网核验服务）。如需限制，可通过系统属性
- * {@code rule.http.allowHosts}（逗号分隔的 host 白名单）开启白名单校验，命中失败返回错误 Map，不发起连接。</p>
+ * <p><b>SSRF 防护</b>：默认放开（KYB 场景常调用内网核验服务）。如需限制，可在 SDK 侧通过
+ * {@code rule-engine.client.allow-hosts} 配置 host 白名单，由 {@link #configureAllowHosts(Collection)} 注入；
+ * 开启后 host 不在白名单则返回错误 Map，不发起连接。</p>
  */
 public class HttpBuiltinFunctions {
 
@@ -60,8 +59,31 @@ public class HttpBuiltinFunctions {
     /** 硬上限：单次调用超时不允许超过该值，避免误配置成超长阻塞 */
     static final int MAX_TIMEOUT_MS = 60000;
 
-    /** 可选 host 白名单系统属性；配置后仅允许其中的 host 被访问 */
-    private static final String PROP_ALLOW_HOSTS = "rule.http.allowHosts";
+    /**
+     * 由配置文件注入的 host 白名单（小写去重）。为 {@code null} 或空表示不启用白名单校验（放行所有 host）。
+     * 声明为 volatile 以便注入线程与执行线程间可见。
+     */
+    private static volatile Set<String> allowHostsFromConfig;
+
+    /**
+     * 注入 host 白名单（由 SDK 在 Spring 启动时根据 {@code rule-engine.client.allow-hosts} 调用）。
+     * <p>传入 null 或空集合表示不启用白名单（放行所有 host）。host 大小写不敏感。</p>
+     *
+     * @param hosts 允许访问的 host 集合
+     */
+    public static void configureAllowHosts(Collection<String> hosts) {
+        if (hosts == null || hosts.isEmpty()) {
+            allowHostsFromConfig = null;
+            return;
+        }
+        Set<String> set = new LinkedHashSet<>();
+        for (String h : hosts) {
+            if (h != null && !h.trim().isEmpty()) {
+                set.add(h.trim().toLowerCase());
+            }
+        }
+        allowHostsFromConfig = set.isEmpty() ? null : set;
+    }
 
     /**
      * 全能 HTTP 调用。
@@ -284,12 +306,12 @@ public class HttpBuiltinFunctions {
     }
 
     /**
-     * host 白名单校验。未配置系统属性时不限制，返回 null（放行）；
+     * host 白名单校验。白名单（{@link #allowHostsFromConfig}）未配置时不限制，返回 null（放行）；
      * 配置后 host 不在白名单则返回拒绝原因。
      */
     private static String checkHostAllowed(String url) {
-        String allow = System.getProperty(PROP_ALLOW_HOSTS);
-        if (allow == null || allow.trim().isEmpty()) {
+        Set<String> allow = allowHostsFromConfig;
+        if (allow == null || allow.isEmpty()) {
             return null;
         }
         String host;
@@ -301,12 +323,10 @@ public class HttpBuiltinFunctions {
         if (host == null) {
             return "无法解析 url 的 host: " + url;
         }
-        for (String h : allow.split(",")) {
-            if (host.equalsIgnoreCase(h.trim())) {
-                return null;
-            }
+        if (allow.contains(host.toLowerCase())) {
+            return null;
         }
-        return "目标 host 不在白名单(rule.http.allowHosts): " + host;
+        return "目标 host 不在白名单(rule-engine.client.allow-hosts): " + host;
     }
 
     private static String asString(Object o) {

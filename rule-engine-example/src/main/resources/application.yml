@@ -17,6 +17,13 @@ rule-engine:
     project-id: 1
     # 是否开启表达式追踪，默认 true；生产环境如不需要追踪信息可设为 false 以提升性能
     trace-enabled: true
+    # 内置 HTTP 函数(httpCall/httpGet/httpPost)的 host 白名单，逗号分隔或 YAML 列表。
+    # 不配置或留空 = 不限制（默认放开，适配调用内网核验服务的场景）；
+    # 配置后仅允许列表内的 host 被访问，其余请求直接返回错误、不发起连接。host 大小写不敏感。
+    # allow-hosts: api.example.com,10.0.0.10
+    # allow-hosts:
+    #   - api.example.com
+    #   - 10.0.0.10
 
 # ============================================================
 # Redis 配置 - SDK 通过 Redis Pub/Sub 接收规则推送

@@ -2,6 +2,8 @@ package com.bjjw.rule.client.spring;
 
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * 规则引擎客户端 Spring 配置属性。
  * <p>默认从容器中的 {@link org.springframework.data.redis.connection.RedisConnectionFactory}
@@ -54,4 +56,11 @@ public class RuleEngineClientProperties {
      * 关闭后可忽略启动预热开销，首次执行时仍会有第一次编译延迟。</p>
      */
     private boolean warmUpOnStart = true;
+
+    /**
+     * 内置 HTTP 函数（httpCall/httpGet/httpPost）的 host 白名单，逗号或列表形式配置。
+     * <p>为空表示不限制（默认放开，适配 KYB 调用内网核验服务的场景）；配置后仅允许列表内的 host 被访问，
+     * 命中失败返回错误 Map、不发起连接。host 大小写不敏感。</p>
+     */
+    private List<String> allowHosts;
 }
