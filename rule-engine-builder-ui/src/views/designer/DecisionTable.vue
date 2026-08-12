@@ -214,42 +214,17 @@
     </div>
 
     <!-- 测试执行弹窗 -->
-    <el-dialog title="测试执行" :visible.sync="testVisible" width="600px" append-to-body>
-      <el-form label-width="130px" size="small">
-        <el-form-item
-          v-for="code in testVarCodeList"
-          :key="'tc-' + code"
-          :label="testVarLabel(code)"
-        >
-          <el-select
-            v-if="testVarMeta(code).varType === 'ENUM' && testVarMeta(code).enumOptions"
-            v-model="testParams[code]"
-            style="width:100%"
-            clearable
-          >
-            <el-option v-for="opt in testEnumOpts(code)" :key="opt" :label="opt" :value="opt" />
-          </el-select>
-          <el-select
-            v-else-if="testVarMeta(code).varType === 'BOOLEAN'"
-            v-model="testParams[code]"
-            style="width:100%"
-          >
-            <el-option label="true" :value="true" />
-            <el-option label="false" :value="false" />
-          </el-select>
-          <el-input-number
-            v-else-if="testVarMeta(code).varType === 'NUMBER'"
-            v-model="testParams[code]"
-            style="width:100%"
-          />
-          <el-input v-else v-model="testParams[code]" />
-        </el-form-item>
-      </el-form>
-      <template slot="footer">
-        <el-button size="small" @click="testVisible = false">取消</el-button>
-        <el-button size="small" type="primary" icon="el-icon-video-play" @click="doTest">执行</el-button>
-      </template>
-      <div v-if="testResult" class="test-result">
+    <test-execute-dialog
+      :visible.sync="testVisible"
+      :fields="testFields"
+      :params="testParams"
+      :params-json.sync="testParamsJson"
+      :mode.sync="testMode"
+      :result="testResult"
+      @execute="doTest"
+    >
+      <template slot="result">
+        <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"
           :type="testResult.success ? 'success' : 'error'"
@@ -266,17 +241,20 @@
             <span style="color:#F56C6C">{{ testResult.errorMessage }}</span>
           </el-descriptions-item>
         </el-descriptions>
-      </div>
-    </el-dialog>
+        </div>
+      </template>
+    </test-execute-dialog>
 
     <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
 
 <script>
-import {compileRule, executeRule, getContent, saveContent} from '@/api/definition'
+import {compileRule, getContent, saveContent} from '@/api/definition'
 import {VAR_TYPE_FORM_OPTIONS} from '@/constants/varTypes'
 import varPickerMixin from '@/mixins/varPickerMixin'
+import designerTestMixin from '@/mixins/designerTestMixin'
+import TestExecuteDialog from '@/components/designer/TestExecuteDialog.vue'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
 import designerDefinitionIdMixin from '@/mixins/designerDefinitionIdMixin'
@@ -294,8 +272,8 @@ import {
 
 export default {
   name: 'DecisionTable',
-  components: { VarPicker, ScriptPanel, ConditionGroupEditor, DesignSaveVersionDialog, DesignVersionSwitcher },
-  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin],
+  components: { VarPicker, ScriptPanel, ConditionGroupEditor, DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog },
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin],
   data() {
     return {
       definitionId: null,
@@ -306,9 +284,6 @@ export default {
         rules: []
       },
       scriptMode: 'visual',
-      testVisible: false,
-      testParams: {},
-      testResult: null,
       contentLoaded: false,
       colConfigVisible: false,
       colConfigRuleIndex: -1,
@@ -334,15 +309,6 @@ export default {
       if (!r || !r.actions || this.colConfigActionIndex < 0) return null
       return r.actions[this.colConfigActionIndex]
     },
-    /** 测试弹窗中需要录入的变量编码列表（条件树 DFS 去重） */
-    testVarCodeList() {
-      const s = new Set()
-      ;(this.model.rules || []).forEach(r => {
-        collectVarCodesFromConditionTree(r.conditionRoot, s)
-      })
-      return Array.from(s)
-    },
-
     /**
      * 判断当前选中的变量是否为常量；常量的值输入框应置灰不可写。
      */
@@ -502,36 +468,14 @@ export default {
     },
 
     /**
-     * 测试弹窗：变量中文标签。
+     * 测试弹窗：以条件树 DFS 精确收集每条规则中用到的变量（覆写共享 mixin 的扫描实现）。
      */
-    testVarLabel(code) {
-      const ref = this.projectRefs.find(r => r.refCode === code)
-      if (ref && ref.varObj && ref.varObj.varLabel) return ref.varObj.varLabel
-      if (ref && ref.refLabel) return ref.refLabel
-      return code
-    },
-
-    /**
-     * 测试弹窗：从变量库解析类型与枚举串（用于表单控件）。
-     */
-    testVarMeta(code) {
-      const ref = this.projectRefs.find(r => r.refCode === code)
-      const vt = (ref && ref.varType) || 'STRING'
-      let enumOptions = ''
-      if (vt === 'ENUM' && ref && ref.varObj) {
-        const opts = this.getVarOptions(code) || []
-        enumOptions = opts.map(o => o.value || o.optionValue).filter(Boolean).join(',')
-      }
-      return { varType: vt, enumOptions }
-    },
-
-    /**
-     * 测试弹窗：枚举选项列表。
-     */
-    testEnumOpts(code) {
-      const m = this.testVarMeta(code)
-      if (!m.enumOptions) return []
-      return m.enumOptions.split(',').map(s => s.trim()).filter(Boolean)
+    collectTestVarCodes() {
+      const s = new Set()
+      ;(this.model.rules || []).forEach(r => {
+        collectVarCodesFromConditionTree(r.conditionRoot, s)
+      })
+      return Array.from(s)
     },
 
     /**
@@ -734,45 +678,6 @@ export default {
       } else {
         this.$message.error('编译失败：' + (res && res.data ? res.data.errorMessage : '未知错误'))
       }
-    },
-
-    /**
-     * 根据条件树涉及的变量构造测试默认值模板。
-     */
-    buildTestParamsTemplate() {
-      const template = {}
-      this.testVarCodeList.forEach(code => {
-        const ref = this.projectRefs.find(r => r.refCode === code)
-        if (ref && ref.varObj && ref.varObj.defaultValue !== undefined && ref.varObj.defaultValue !== null) {
-          template[code] = ref.varObj.defaultValue
-        } else {
-          const meta = this.testVarMeta(code)
-          if (meta.varType === 'NUMBER') template[code] = 0
-          else if (meta.varType === 'BOOLEAN') template[code] = false
-          else template[code] = ''
-        }
-      })
-      return template
-    },
-
-    handleTest() {
-      const template = this.buildTestParamsTemplate()
-      const params = {}
-      this.testVarCodeList.forEach(code => {
-        params[code] = template[code] !== undefined ? template[code] : ''
-      })
-      this.testParams = params
-      this.testResult = null
-      this.testVisible = true
-    },
-
-    async doTest() {
-      const res = await executeRule({
-        definitionId: this.definitionId,
-        scopeCompId: this.scopeCompId,
-        params: this.testParams
-      })
-      this.testResult = res && res.data ? res.data : res
     },
 
     formatResult(val) {

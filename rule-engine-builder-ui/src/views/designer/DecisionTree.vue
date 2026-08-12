@@ -268,19 +268,17 @@
       />
     </div>
 
-    <el-dialog title="测试执行" :visible.sync="testVisible" width="600px" append-to-body>
-      <p class="test-hint"><i class="el-icon-info" /> 请输入测试参数（JSON 格式）</p>
-      <el-input
-        v-model="testParamsJson"
-        type="textarea"
-        :rows="6"
-        placeholder="{&quot;income&quot;: 100000, &quot;taxRate&quot;: 0.13}"
-      />
-      <template slot="footer">
-        <el-button size="small" @click="testVisible = false">取消</el-button>
-        <el-button size="small" type="primary" icon="el-icon-video-play" @click="doTest">执行</el-button>
-      </template>
-      <div v-if="testResult" class="test-result">
+    <test-execute-dialog
+      :visible.sync="testVisible"
+      :fields="testFields"
+      :params="testParams"
+      :params-json.sync="testParamsJson"
+      :mode.sync="testMode"
+      :result="testResult"
+      @execute="doTest"
+    >
+      <template slot="result">
+        <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"
           :type="testResult.success ? 'success' : 'error'"
@@ -297,18 +295,21 @@
             <span style="color:#F56C6C">{{ testResult.errorMessage }}</span>
           </el-descriptions-item>
         </el-descriptions>
-      </div>
-    </el-dialog>
+        </div>
+      </template>
+    </test-execute-dialog>
 
     <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
 
 <script>
-import {compileRule, executeRule, getContent, saveContent} from '@/api/definition'
+import {compileRule, getContent, saveContent} from '@/api/definition'
 import {generateScript} from '@/utils/actionDataCodegen'
 import {buildQlConditionExpr, inferConstVarType, parseQlConditionExpr} from '@/utils/conditionExpr'
 import varPickerMixin from '@/mixins/varPickerMixin'
+import designerTestMixin from '@/mixins/designerTestMixin'
+import TestExecuteDialog from '@/components/designer/TestExecuteDialog.vue'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
 import designerDefinitionIdMixin from '@/mixins/designerDefinitionIdMixin'
@@ -342,9 +343,10 @@ export default {
     ActionBlockEditor,
     DesignSaveVersionDialog,
     DesignVersionSwitcher,
-    HorizontalDecisionTree
+    HorizontalDecisionTree,
+    TestExecuteDialog
   },
-  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin],
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin],
   data() {
     return {
       definitionId: null,
@@ -359,9 +361,6 @@ export default {
       edgeCondVisual: { leftVar: '', leftLabel: '', operator: '==', rightValue: '', rightType: 'value', rightVar: '' },
       actionMode: 'visual',
       currentActionData: [],
-      testVisible: false,
-      testParamsJson: '{}',
-      testResult: null,
       /** 撤销栈：每项为 { nodes, edges } 深拷贝快照 */
       undoStack: [],
       /** 重做栈 */
@@ -1005,21 +1004,13 @@ export default {
         this.$message.error('编译失败: ' + (res && res.data ? res.data.errorMessage : '未知错误'))
       }
     },
-    handleTest() {
-      this.testParamsJson = '{}'
-      this.testResult = null
-      this.testVisible = true
-    },
-    async doTest() {
-      let params = {}
+    /** 以后端模型（节点动作 + 边条件表达式）作为扫描测试变量的设计源 */
+    getTestSourceText() {
       try {
-        params = JSON.parse(this.testParamsJson || '{}')
+        return JSON.stringify(this.buildBackendModel())
       } catch (e) {
-        this.$message.error('参数 JSON 格式错误')
-        return
+        return ''
       }
-      const res = await executeRule({ definitionId: this.definitionId, scopeCompId: this.scopeCompId, params })
-      this.testResult = res && res.data ? res.data : res
     },
     onScriptModeChange(mode) {
       this.scriptMode = mode

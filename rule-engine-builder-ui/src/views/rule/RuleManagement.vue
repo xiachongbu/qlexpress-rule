@@ -420,7 +420,7 @@ export default {
     /**
      * el-table span-method：只有规则名称(0)和规则编码(1)合并，其余列每行独立。
      */
-    objectSpanMethod({ row, column, rowIndex, columnIndex }) {
+    objectSpanMethod({ row, columnIndex }) {
       // 规则名称(0)和规则编码(1)按记录合并
       if (columnIndex === 0 || columnIndex === 1) {
         if (row._rowspan === 0) {

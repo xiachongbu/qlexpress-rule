@@ -192,26 +192,18 @@
     </div>
 
     <!-- 测试执行弹窗 -->
-    <el-dialog title="测试执行" :visible.sync="testVisible" width="500px" append-to-body>
-      <el-form label-width="130px" size="small">
-        <el-form-item :label="model.rowVar.varLabel || '行变量'">
-          <el-select v-if="model.rowHeaders.length" v-model="testParams[model.rowVar.varCode]" style="width:100%" clearable>
-            <el-option v-for="r in model.rowHeaders" :key="r" :label="r" :value="r" />
-          </el-select>
-          <el-input v-else v-model="testParams[model.rowVar.varCode]" :placeholder="model.rowVar.varCode" />
-        </el-form-item>
-        <el-form-item :label="model.colVar.varLabel || '列变量'">
-          <el-select v-if="model.colHeaders.length" v-model="testParams[model.colVar.varCode]" style="width:100%" clearable>
-            <el-option v-for="c in model.colHeaders" :key="c" :label="c" :value="c" />
-          </el-select>
-          <el-input v-else v-model="testParams[model.colVar.varCode]" :placeholder="model.colVar.varCode" />
-        </el-form-item>
-      </el-form>
-      <template slot="footer">
-        <el-button size="small" @click="testVisible = false">取消</el-button>
-        <el-button size="small" type="primary" icon="el-icon-video-play" @click="doTest">执行</el-button>
-      </template>
-      <div v-if="testResult" class="test-result">
+    <test-execute-dialog
+      :visible.sync="testVisible"
+      :fields="testFields"
+      :params="testParams"
+      :params-json.sync="testParamsJson"
+      :mode.sync="testMode"
+      :result="testResult"
+      width="500px"
+      @execute="doTest"
+    >
+      <template slot="result">
+        <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"
           :type="testResult.success ? 'success' : 'error'"
@@ -228,17 +220,20 @@
             <span style="color:#F56C6C">{{ testResult.errorMessage }}</span>
           </el-descriptions-item>
         </el-descriptions>
-      </div>
-    </el-dialog>
+        </div>
+      </template>
+    </test-execute-dialog>
 
     <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
 
 <script>
-import { compileRule, executeRule, getContent, saveContent } from '@/api/definition'
-import { VAR_TYPE_FORM_OPTIONS } from '@/constants/varTypes'
+import {compileRule, getContent, saveContent} from '@/api/definition'
+import {VAR_TYPE_FORM_OPTIONS} from '@/constants/varTypes'
 import varPickerMixin from '@/mixins/varPickerMixin'
+import designerTestMixin from '@/mixins/designerTestMixin'
+import TestExecuteDialog from '@/components/designer/TestExecuteDialog.vue'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
 import DesignSaveVersionDialog from '@/components/designer/DesignSaveVersionDialog.vue'
@@ -248,8 +243,8 @@ import designerScopeMixin from '@/mixins/designerScopeMixin'
 
 export default {
   name: 'CrossTable',
-  components: { VarPicker, ScriptPanel, DesignSaveVersionDialog, DesignVersionSwitcher },
-  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin],
+  components: { VarPicker, ScriptPanel, DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog },
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin],
   data() {
     return {
       definitionId: null,
@@ -264,10 +259,34 @@ export default {
       },
       focusedCell: null,
       scriptMode: 'visual',
-      testVisible: false,
-      testParams: {},
-      testResult: null,
       varTypeFormOptions: VAR_TYPE_FORM_OPTIONS
+    }
+  },
+  computed: {
+    /** 测试弹窗字段：行/列变量，并以已配置的行/列表头作为可选值（覆写共享 mixin） */
+    testFields() {
+      const fields = []
+      const rv = this.model.rowVar
+      const cv = this.model.colVar
+      if (rv && rv.varCode) {
+        fields.push({
+          code: rv.varCode,
+          label: rv.varLabel || '行变量',
+          varType: rv.varType || 'STRING',
+          enumOptions: [],
+          options: (this.model.rowHeaders || []).filter(Boolean)
+        })
+      }
+      if (cv && cv.varCode) {
+        fields.push({
+          code: cv.varCode,
+          label: cv.varLabel || '列变量',
+          varType: cv.varType || 'STRING',
+          enumOptions: [],
+          options: (this.model.colHeaders || []).filter(Boolean)
+        })
+      }
+      return fields
     }
   },
   created() {
@@ -282,6 +301,13 @@ export default {
     })()
   },
   methods: {
+    /** 测试入参变量：行变量 + 列变量（覆写共享 mixin 的扫描实现） */
+    collectTestVarCodes() {
+      const codes = []
+      if (this.model.rowVar && this.model.rowVar.varCode) codes.push(this.model.rowVar.varCode)
+      if (this.model.colVar && this.model.colVar.varCode) codes.push(this.model.colVar.varCode)
+      return codes
+    },
     applyVarToDim(variable, dimKey) {
       if (!variable) return
       const varLabel = (variable.varObj && variable.varObj.varLabel) || variable.varLabel || variable.varCode
@@ -442,22 +468,6 @@ export default {
       } else {
         this.$message.error('编译失败: ' + (res && res.data ? res.data.errorMessage : '未知错误'))
       }
-    },
-    handleTest() {
-      this.testParams = {
-        [this.model.rowVar.varCode]: '',
-        [this.model.colVar.varCode]: ''
-      }
-      this.testResult = null
-      this.testVisible = true
-    },
-    async doTest() {
-      const res = await executeRule({
-        definitionId: this.definitionId,
-        scopeCompId: this.scopeCompId,
-        params: this.testParams
-      })
-      this.testResult = res && res.data ? res.data : res
     }
   }
 }

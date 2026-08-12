@@ -47,9 +47,11 @@
           @change="onChange"
           @clear="$emit('input', ''); $emit('select', null)"
         >
-          <el-option-group v-for="group in groupedOptions" v-if="grouped" :key="group.label" :label="group.label">
-            <el-option v-for="v in group.vars" :key="v.varCode" :value="v.varCode" :label="v.varLabel + ' (' + v.varCode + ')'" />
-          </el-option-group>
+          <template v-if="grouped">
+            <el-option-group v-for="group in groupedOptions" :key="group.label" :label="group.label">
+              <el-option v-for="v in group.vars" :key="v.varCode" :value="v.varCode" :label="v.varLabel + ' (' + v.varCode + ')'" />
+            </el-option-group>
+          </template>
           <template v-if="!grouped">
             <el-option v-for="v in filteredVars" :key="v.varCode" :value="v.varCode" :label="v.varLabel" />
             <div v-if="filteredVars.length === 0" class="var-empty">

@@ -163,19 +163,17 @@
     </div>
 
     <!-- 测试弹窗 -->
-    <el-dialog title="测试执行" :visible.sync="testVisible" width="600px" append-to-body>
-      <p class="test-hint"><i class="el-icon-info" /> 输入测试参数（JSON 格式），包含脚本中使用的变量</p>
-      <el-input
-        v-model="testParamsJson"
-        type="textarea"
-        :rows="6"
-        placeholder="{&quot;taxpayerQualification&quot;: &quot;一般纳税人&quot;, &quot;billingAmount&quot;: 10000}"
-      />
-      <template slot="footer">
-        <el-button size="small" @click="testVisible = false">取消</el-button>
-        <el-button size="small" type="primary" icon="el-icon-video-play" @click="doTest">执行</el-button>
-      </template>
-      <div v-if="testResult" class="test-result">
+    <test-execute-dialog
+      :visible.sync="testVisible"
+      :fields="testFields"
+      :params="testParams"
+      :params-json.sync="testParamsJson"
+      :mode.sync="testMode"
+      :result="testResult"
+      @execute="doTest"
+    >
+      <template slot="result">
+        <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"
           :type="testResult.success ? 'success' : 'error'"
@@ -192,16 +190,19 @@
             <span style="color:#F56C6C">{{ testResult.errorMessage }}</span>
           </el-descriptions-item>
         </el-descriptions>
-      </div>
-    </el-dialog>
+        </div>
+      </template>
+    </test-execute-dialog>
 
     <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
 
 <script>
-import { executeRule, getContent, saveContent, validateScript } from '@/api/definition'
+import {getContent, saveContent, validateScript} from '@/api/definition'
 import varPickerMixin from '@/mixins/varPickerMixin'
+import designerTestMixin from '@/mixins/designerTestMixin'
+import TestExecuteDialog from '@/components/designer/TestExecuteDialog.vue'
 import DesignSaveVersionDialog from '@/components/designer/DesignSaveVersionDialog.vue'
 import DesignVersionSwitcher from '@/components/designer/DesignVersionSwitcher.vue'
 import designerDefinitionIdMixin from '@/mixins/designerDefinitionIdMixin'
@@ -210,8 +211,8 @@ import qlCodeEditorMixin from '@/mixins/qlCodeEditorMixin'
 
 export default {
   name: 'ScriptEditor',
-  components: { DesignSaveVersionDialog, DesignVersionSwitcher },
-  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, qlCodeEditorMixin],
+  components: { DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog },
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, qlCodeEditorMixin, designerTestMixin],
   data() {
     return {
       definitionId: null,
@@ -222,10 +223,7 @@ export default {
       varPanelCollapsed: false,
       varSearchKey: '',
       expandedCats: {},
-      expandedGroups: {},
-      testVisible: false,
-      testParamsJson: '{}',
-      testResult: null
+      expandedGroups: {}
     }
   },
   computed: {
@@ -449,23 +447,9 @@ export default {
         this.$message.error('脚本验证失败: ' + this.compileMessage)
       }
     },
-    handleTest() {
-      this.testParamsJson = '{}'
-      this.testResult = null
-      this.testVisible = true
-    },
-    async doTest() {
-      let params = {}
-      try { params = JSON.parse(this.testParamsJson || '{}') } catch (e) {
-        this.$message.error('参数 JSON 格式错误')
-        return
-      }
-      const res = await executeRule({
-        definitionId: this.definitionId,
-        scopeCompId: this.scopeCompId,
-        params
-      })
-      this.testResult = res && res.data ? res.data : res
+    /** 脚本文本作为扫描测试变量的设计源 */
+    getTestSourceText() {
+      return this.script || ''
     },
     /** 编辑器占位提示（覆写 mixin 默认值，保留双击插入提示） */
     cmPlaceholder() {
