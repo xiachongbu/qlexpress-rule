@@ -120,6 +120,8 @@
                     <configuration>
                         <release>${maven.compiler.release}</release>
                         <encoding>${project.build.sourceEncoding}</encoding>
+                        <!-- Spring Framework 6.1+ 移除字节码参数名推断，@RequestParam 等依赖 -parameters -->
+                        <parameters>true</parameters>
                     </configuration>
                 </plugin>
                 <plugin>
