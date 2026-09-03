@@ -154,7 +154,7 @@
     <!-- 列配置弹窗（仅动作列） -->
     <el-dialog
       :title="colConfigTitle"
-      :visible.sync="colConfigVisible"
+      v-model="colConfigVisible"
       width="520px"
       append-to-body
       destroy-on-close
@@ -192,7 +192,7 @@
           <el-input v-model="activeColDef.enumOptions" placeholder="逗号分隔，如：普通，免税，优惠" />
         </el-form-item>
       </el-form>
-      <template slot="footer">
+      <template #footer">
         <el-button size="small" @click="colConfigVisible = false">关闭</el-button>
       </template>
     </el-dialog>
@@ -215,15 +215,15 @@
 
     <!-- 测试执行弹窗 -->
     <test-execute-dialog
-      :visible.sync="testVisible"
+      v-model:visible="testVisible"
       :fields="testFields"
       :params="testParams"
-      :params-json.sync="testParamsJson"
-      :mode.sync="testMode"
+      v-model:paramsJson="testParamsJson"
+      v-model:mode="testMode"
       :result="testResult"
       @execute="doTest"
     >
-      <template slot="result">
+      <template #result">
         <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"

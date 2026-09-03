@@ -12,13 +12,13 @@
       <div class="toolbar-right">
         <el-dropdown trigger="click" :disabled="!currentProjectId" @command="handleImportCmd">
           <el-button type="primary" icon="el-icon-upload2">批量导入 <i class="el-icon-arrow-down el-icon--right" /></el-button>
-          <el-dropdown-menu slot="dropdown">
+          <template #dropdown><el-dropdown-menu>
             <el-dropdown-item command="java-entity" icon="el-icon-document">导入 Java 实体类</el-dropdown-item>
             <el-dropdown-item command="json-object" icon="el-icon-tickets">导入 JSON 对象</el-dropdown-item>
             <el-dropdown-item command="ddl-table" icon="el-icon-s-grid">导入 DDL 建表语句</el-dropdown-item>
             <el-dropdown-item command="java-const" icon="el-icon-coin" divided>导入 Java 常量类</el-dropdown-item>
             <el-dropdown-item command="json-const" icon="el-icon-price-tag">导入 JSON 常量</el-dropdown-item>
-          </el-dropdown-menu>
+          </el-dropdown-menu></template>
         </el-dropdown>
         <el-button type="primary" icon="el-icon-plus" :disabled="!currentProjectId" @click="handlePrimaryCreate">{{ primaryCreateLabel }}</el-button>
         <el-button icon="el-icon-video-play" type="success" :disabled="!currentProjectId" :loading="validating" style="margin-left: 0" @click="handleBatchValidate">验证规则</el-button>
@@ -241,7 +241,7 @@
     </el-tabs>
 
     <!-- Create/Edit Variable Dialog -->
-    <el-dialog :title="variableDialogTitle" :visible.sync="dialogVisible" width="510px" :close-on-click-modal="false" custom-class="middleDialog">
+    <el-dialog :title="variableDialogTitle" v-model="dialogVisible" width="510px" :close-on-click-modal="false" custom-class="middleDialog">
       <el-form ref="form" :model="form" :rules="rules" label-width="120px" size="small">
         <el-form-item v-if="!form.id && isObjectField && objectFieldParentId" label="所属数据对象">
           <span class="text-muted">{{ getObjectCode(objectFieldParentId) }}</span>
@@ -275,14 +275,14 @@
         <el-form-item label="状态"><el-switch v-model="form.status" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="停用" /></el-form-item>
         <el-form-item v-if="!isObjectField" label="说明"><el-input v-model="form.description" type="textarea" :rows="2" /></el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button type="primary" @click="dialogVisible=false">取消</el-button>
         <el-button type="success" @click="handleSubmit">确定</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <!-- Enum Options Dialog -->
-    <el-dialog title="枚举选项管理" :visible.sync="optionDialogVisible" width="510px" :close-on-click-modal="false" custom-class="middleDialog">
+    <el-dialog title="枚举选项管理" v-model="optionDialogVisible" width="510px" :close-on-click-modal="false" custom-class="middleDialog">
       <div style="margin-bottom:12px;">
         <span style="font-weight:bold;">{{ currentVar ? currentVar.varLabel : '' }}</span>
         <span style="color:#999;margin-left:8px;">{{ currentVar ? currentVar.varCode : '' }}</span>
@@ -299,14 +299,14 @@
         </el-table-column>
       </el-table>
       <el-button type="text" size="small" icon="el-icon-plus" style="margin-top:8px;" @click="optionList.push({optionValue:'',optionLabel:'',sortOrder:optionList.length})">添加选项</el-button>
-      <div slot="footer">
+      <template #footer><div>
         <el-button type="primary" @click="optionDialogVisible=false">取消</el-button>
         <el-button type="success" @click="handleSaveOptions">保存选项</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <!-- Java Entity Import Dialog -->
-    <el-dialog title="导入 Java 实体类" :visible.sync="importJavaEntityVisible" width="700px" :close-on-click-modal="false">
+    <el-dialog title="导入 Java 实体类" v-model="importJavaEntityVisible" width="700px" :close-on-click-modal="false">
       <el-form size="small" label-width="100px">
         <el-form-item label="对象类型">
           <el-radio-group v-model="importForm.objectType">
@@ -322,14 +322,14 @@
           </el-upload>
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button type="primary" @click="importJavaEntityVisible=false">取消</el-button>
         <el-button type="success" :loading="importing" @click="doImportJavaEntity">导入</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <!-- JSON Object Import Dialog -->
-    <el-dialog title="导入 JSON 对象" :visible.sync="importJsonObjectVisible" width="700px" :close-on-click-modal="false">
+    <el-dialog title="导入 JSON 对象" v-model="importJsonObjectVisible" width="700px" :close-on-click-modal="false">
       <el-form size="small" label-width="100px">
         <el-form-item label="对象编码"><el-input v-model="importForm.objectCode" placeholder="如 TaxRequest" /></el-form-item>
         <el-form-item label="对象类型">
@@ -341,14 +341,14 @@
           <el-input v-model="importForm.jsonContent" type="textarea" :rows="14" placeholder="粘贴 JSON 样本数据，如：{&quot;name&quot;:&quot;张三&quot;,&quot;age&quot;:30,&quot;address&quot;:{&quot;city&quot;:&quot;北京&quot;}}" style="font-family:Consolas,monospace;" />
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button type="primary" @click="importJsonObjectVisible=false">取消</el-button>
         <el-button type="success" :loading="importing" @click="doImportJsonObject">导入</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <!-- DDL Import Dialog -->
-    <el-dialog title="导入 DDL 建表语句" :visible.sync="importDdlVisible" width="720px" :close-on-click-modal="false">
+    <el-dialog title="导入 DDL 建表语句" v-model="importDdlVisible" width="720px" :close-on-click-modal="false">
       <el-form size="small" label-width="100px">
         <el-form-item label="对象类型">
           <el-radio-group v-model="importForm.objectType">
@@ -359,14 +359,14 @@
           <el-input v-model="importForm.ddlSource" type="textarea" :rows="14" placeholder="粘贴 CREATE TABLE ... 语句；支持多张表。列 COMMENT 将解析为变量名称（中文名）。" style="font-family:Consolas,monospace;" />
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button type="primary" @click="importDdlVisible=false">取消</el-button>
         <el-button type="success" :loading="importing" @click="doImportDdl">导入</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <!-- Java Constants Import Dialog -->
-    <el-dialog title="导入 Java 常量类" :visible.sync="importJavaConstVisible" width="700px" :close-on-click-modal="false">
+    <el-dialog title="导入 Java 常量类" v-model="importJavaConstVisible" width="700px" :close-on-click-modal="false">
       <el-form size="small" label-width="100px">
         <el-form-item label="Java 源码">
           <el-input v-model="importForm.javaSource" type="textarea" :rows="14" placeholder="粘贴包含 static final 字段的 Java 类源码..." style="font-family:Consolas,monospace;" />
@@ -377,27 +377,27 @@
           </el-upload>
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button type="primary" @click="importJavaConstVisible=false">取消</el-button>
         <el-button type="success" :loading="importing" @click="doImportJavaConst">导入</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <!-- JSON Constants Import Dialog -->
-    <el-dialog title="导入 JSON 常量" :visible.sync="importJsonConstVisible" width="700px" :close-on-click-modal="false">
+    <el-dialog title="导入 JSON 常量" v-model="importJsonConstVisible" width="700px" :close-on-click-modal="false">
       <el-form size="small" label-width="100px">
         <el-form-item label="JSON 数据">
           <el-input v-model="importForm.jsonContent" type="textarea" :rows="14" placeholder="扁平 JSON 键值对，如：{&quot;VAT_RATE&quot;:0.13,&quot;TAX_FREE&quot;:5000,&quot;REGION&quot;:&quot;CN&quot;}" style="font-family:Consolas,monospace;" />
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button type="primary" @click="importJsonConstVisible=false">取消</el-button>
         <el-button type="success" :loading="importing" @click="doImportJsonConst">导入</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <!-- Validation Results Dialog -->
-    <el-dialog title="规则验证结果" :visible.sync="validateVisible" width="700px">
+    <el-dialog title="规则验证结果" v-model="validateVisible" width="700px">
       <el-table :data="validateResults" size="small" border>
         <el-table-column prop="ruleName" label="规则名称" min-width="160" show-overflow-tooltip />
         <el-table-column prop="ruleCode" label="规则编码" min-width="120" show-overflow-tooltip />
@@ -410,22 +410,22 @@
         </el-table-column>
         <el-table-column prop="errorMsg" label="错误信息" min-width="200" show-overflow-tooltip />
       </el-table>
-      <div slot="footer">
-        <el-button type="success" @click="validateVisible=false">关闭</el-button></div>
+      <template #footer><div>
+        <el-button type="success" @click="validateVisible=false">关闭</el-button></div></template>
     </el-dialog>
 
     <!-- Import Result Dialog -->
-    <el-dialog title="导入结果" :visible.sync="importResultVisible" width="500px">
+    <el-dialog title="导入结果" v-model="importResultVisible" width="500px">
       <div class="import-result-body">
         <i class="el-icon-success" style="font-size:48px;color:#67C23A;" />
         <h3>导入完成</h3>
         <p v-if="importResult.objectCount != null">创建/更新 <b>{{ importResult.objectCount }}</b> 个数据对象，<b>{{ importResult.variableCount }}</b> 个变量</p>
         <p v-if="importResult.constantCount != null">创建/更新 <b>{{ importResult.constantCount }}</b> 个常量</p>
       </div>
-      <div slot="footer">
+      <template #footer><div>
         <el-button type="warning" icon="el-icon-video-play" @click="importResultVisible=false;handleBatchValidate()">验证项目规则</el-button>
         <el-button type="primary" @click="importResultVisible=false">关闭</el-button>
-      </div>
+      </div></template>
     </el-dialog>
   </div>
 </template>

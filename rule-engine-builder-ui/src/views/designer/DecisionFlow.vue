@@ -139,10 +139,10 @@
                 <div class="cond-row">
                   <span class="cond-label">值</span>
                   <el-input v-model="edgeCondVisual.rightValue" size="mini" placeholder="比较值，如：100000">
-                    <el-select slot="prepend" v-model="edgeCondVisual.rightType" style="width:70px" size="mini">
+                    <template #prepend><el-select v-model="edgeCondVisual.rightType" style="width:70px" size="mini">
                       <el-option label="值" value="value" />
                       <el-option label="变量" value="var" />
-                    </el-select>
+                    </el-select></template>
                   </el-input>
                 </div>
                 <div v-if="edgeCondVisual.rightType === 'var'" class="cond-row">
@@ -310,15 +310,15 @@
 
     <!-- 测试执行弹窗 -->
     <test-execute-dialog
-      :visible.sync="testVisible"
+      v-model:visible="testVisible"
       :fields="testFields"
       :params="testParams"
-      :params-json.sync="testParamsJson"
-      :mode.sync="testMode"
+      v-model:paramsJson="testParamsJson"
+      v-model:mode="testMode"
       :result="testResult"
       @execute="doTest"
     >
-      <template slot="result">
+      <template #result">
         <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"
@@ -345,6 +345,7 @@
 </template>
 
 <script>
+import { markRaw } from 'vue'
 import LogicFlow from '@logicflow/core'
 import {Menu, SelectionSelect, Snapshot} from '@logicflow/extension'
 import '@logicflow/core/dist/style/index.css'
@@ -472,7 +473,7 @@ export default {
       LogicFlow.use(Menu)
       LogicFlow.use(Snapshot)
 
-      this.lf = new LogicFlow({
+      this.lf = markRaw(new LogicFlow({
         container: this.$refs.canvasContainer,
         grid: { size: 20, visible: true },
         keyboard: {
@@ -496,7 +497,7 @@ export default {
           anchorHover: { stroke: '#1890ff', fill: '#1890ff', r: 5 }
         },
         guards: { beforeClone: () => true, beforeDelete: () => true }
-      })
+      }))
 
       registerCustomNodes(this.lf)
       this.setupContextMenu()

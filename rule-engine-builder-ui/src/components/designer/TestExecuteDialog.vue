@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     :title="title"
-    :visible.sync="innerVisible"
+    v-model="innerVisible"
     :width="width"
     append-to-body
   >
@@ -74,7 +74,7 @@
       placeholder="{}"
     />
 
-    <template slot="footer">
+    <template #footer">
       <el-button size="small" @click="innerVisible = false">取消</el-button>
       <el-button size="small" type="primary" icon="el-icon-video-play" @click="$emit('execute')">执行</el-button>
     </template>

@@ -60,10 +60,10 @@
         </el-empty>
       </template>
     </el-table>
-    <pagination v-show="total>0" :total="total" :page.sync="listQuery.pageNum" :limit.sync="listQuery.pageSize" @pagination="loadFunctions" />
+    <pagination v-show="total>0" :total="total" v-model:page="listQuery.pageNum" v-model:limit="listQuery.pageSize" @pagination="loadFunctions" />
 
     <!-- 新建/编辑弹窗 -->
-    <el-dialog :title="editForm.id ? '编辑函数' : '新建函数'" :visible.sync="dialogVisible" width="600px" append-to-body>
+    <el-dialog :title="editForm.id ? '编辑函数' : '新建函数'" v-model="dialogVisible" width="600px" append-to-body>
       <el-form :model="editForm" label-width="90px" size="small">
         <el-form-item label="函数编码" required>
           <el-input v-model="editForm.funcCode" placeholder="如 calcTax（QLExpress 脚本中的调用名）" />
@@ -113,7 +113,7 @@
           <el-input v-model="editForm.implMethod" placeholder="Bean 上的方法名，如 calculateVAT（不填则默认使用函数编码）" />
         </el-form-item>
       </el-form>
-      <template slot="footer">
+      <template #footer">
         <el-button type="primary" @click="dialogVisible = false">取消</el-button>
         <el-button type="success" @click="handleSave">保存</el-button>
       </template>

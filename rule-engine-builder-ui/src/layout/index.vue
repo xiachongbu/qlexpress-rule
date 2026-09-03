@@ -52,7 +52,7 @@
     </el-container>
     <!-- 规则引擎设计器抽屉（全局挂载，由 Vuex designerDrawer 模块控制显隐；从右侧滑出） -->
     <el-drawer
-      :visible.sync="designerDrawerSync"
+      v-model="designerDrawerSync"
       direction="rtl"
       size="92%"
       :with-header="false"

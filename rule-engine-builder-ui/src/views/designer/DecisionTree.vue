@@ -109,10 +109,10 @@
                 <div class="cond-row">
                   <span class="cond-label">值</span>
                   <el-input v-model="edgeCondVisual.rightValue" size="mini" placeholder="比较值，如：100000">
-                    <el-select slot="prepend" v-model="edgeCondVisual.rightType" style="width:70px" size="mini">
+                    <template #prepend><el-select v-model="edgeCondVisual.rightType" style="width:70px" size="mini">
                       <el-option label="值" value="value" />
                       <el-option label="变量" value="var" />
-                    </el-select>
+                    </el-select></template>
                   </el-input>
                 </div>
                 <div v-if="edgeCondVisual.rightType === 'var'" class="cond-row">
@@ -269,15 +269,15 @@
     </div>
 
     <test-execute-dialog
-      :visible.sync="testVisible"
+      v-model:visible="testVisible"
       :fields="testFields"
       :params="testParams"
-      :params-json.sync="testParamsJson"
-      :mode.sync="testMode"
+      v-model:paramsJson="testParamsJson"
+      v-model:mode="testMode"
       :result="testResult"
       @execute="doTest"
     >
-      <template slot="result">
+      <template #result">
         <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"

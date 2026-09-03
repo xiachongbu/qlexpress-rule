@@ -43,30 +43,30 @@
     <el-pagination style="margin-top:16px;text-align:right;" :current-page="queryParams.pageNum" :page-size="queryParams.pageSize" :total="total"
       layout="total,sizes,prev,pager,next" :page-sizes="[10,30,50,100,200,500]"
       @current-change="p => { queryParams.pageNum = p; loadData() }" @size-change="s => { queryParams.pageSize = s; queryParams.pageNum = 1; loadData() }" />
-    <el-dialog :title="form.id ? '编辑项目' : '新建项目'" :visible.sync="dialogVisible" width="500px">
+    <el-dialog :title="form.id ? '编辑项目' : '新建项目'" v-model="dialogVisible" width="500px">
       <el-form ref="form" :model="form" :rules="rules" label-width="100px" size="small">
         <el-form-item label="项目编码" prop="projectCode"><el-input v-model="form.projectCode" :disabled="!!form.id" /></el-form-item>
         <el-form-item label="项目名称" prop="projectName"><el-input v-model="form.projectName" /></el-form-item>
         <el-form-item label="描述"><el-input v-model="form.description" type="textarea" :rows="3" /></el-form-item>
         <el-form-item label="状态"><el-switch v-model="form.status" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="停用" /></el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button size="small" @click="dialogVisible = false">取消</el-button>
         <el-button size="small" type="primary" @click="handleSubmit">确定</el-button>
-      </div>
+      </div></template>
     </el-dialog>
     <!-- Token显示对话框 -->
-    <el-dialog title="AccessToken" :visible.sync="tokenDialogVisible" width="500px">
+    <el-dialog title="AccessToken" v-model="tokenDialogVisible" width="500px">
       <div style="padding: 20px; background: #f5f7fa; border-radius: 4px;">
         <p style="margin: 0; font-family: monospace; word-break: break-all;">{{ fullToken }}</p>
       </div>
       <div style="margin-top: 10px; color: #909399; font-size: 12px;">
         <i class="el-icon-warning"></i> 请妥善保管Token，不要泄露给他人
       </div>
-      <div slot="footer">
+      <template #footer><div>
         <el-button size="small" @click="copyToken">复制</el-button>
         <el-button size="small" type="primary" @click="tokenDialogVisible = false">关闭</el-button>
-      </div>
+      </div></template>
     </el-dialog>
   </div>
 </template>

@@ -92,7 +92,7 @@
       @current-change="p=>{qp.pageNum=p;load()}"
       @size-change="s=>{qp.pageSize=s;qp.pageNum=1;load()}"
     />
-    <el-drawer title="日志详情" :visible.sync="detailVis" size="92%" @opened="onDetailDrawerOpened">
+    <el-drawer title="日志详情" v-model="detailVis" size="92%" @opened="onDetailDrawerOpened">
       <div v-if="detail" style="padding:16px">
         <!-- 汇总条：结论前置（成功/失败、耗时、模型、版本、来源、业务ID、执行时间） -->
         <div class="log-summary-bar">
@@ -133,10 +133,10 @@
             </div>
           </el-tab-pane>
           <el-tab-pane name="trace" :disabled="!detail.traceInfo">
-            <span slot="label">
+            <template #label><span>
               <i class="el-icon-connection" /> 表达式追踪树
               <el-badge v-if="detail.traceInfo" is-dot class="trace-badge" />
-            </span>
+            </span></template>
             <template v-if="detail.modelType === 'FLOW' && detail.traceInfo">
               <flow-trace-logic-flow
                 ref="flowTraceLf"
@@ -174,7 +174,7 @@
             />
           </el-tab-pane>
           <el-tab-pane v-if="detail && detail.modelType === 'RULE_SET'" name="setTrace">
-            <span slot="label"><i class="el-icon-sort" /> 规则集追踪</span>
+            <template #label><span><i class="el-icon-sort" /> 规则集追踪</span></template>
             <div v-if="ruleSetSteps.length" class="rs-trace">
               <div v-for="(step, idx) in ruleSetSteps" :key="idx" class="rs-step">
                 <div v-if="idx > 0" class="rs-connector"><div class="rs-conn-line" /></div>

@@ -101,12 +101,12 @@
           <img class="empty" src="@/assets/uiueImages/uiue_emptyIcon.png" alt="">
         </template>
       </el-table>
-      <pagination v-show="total>0" :total="total" :page.sync="listQuery.pageNum" :limit.sync="listQuery.pageSize" @pagination="loadRules" />
+      <pagination v-show="total>0" :total="total" v-model:page="listQuery.pageNum" v-model:limit="listQuery.pageSize" @pagination="loadRules" />
     </template>
 
     <el-dialog
       title="新建规则"
-      :visible.sync="dlgVis"
+      v-model="dlgVis"
       width="510px"
       custom-class="middleDialog"
     >
@@ -145,21 +145,21 @@
         </el-form-item>
         <el-form-item label="描述"><el-input v-model="fm.description" type="textarea" :rows="2" /></el-form-item>
       </el-form>
-      <div slot="footer" class="dialog-footer">
+      <template #footer><div class="dialog-footer">
         <el-button type="primary" @click="dlgVis = false">取消</el-button>
         <el-button type="success" @click="submitCreate">确定</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <publish-scope-dialog
-      :visible.sync="publishDlgVis"
+      v-model:visible="publishDlgVis"
       :definition-id="publishDefinitionId"
       :comp-scope-options="compScopeOptions"
       @published="loadRules"
     />
 
     <!-- 修改省份/说明弹窗 -->
-    <el-dialog title="修改规则" :visible.sync="editDlgVis" width="500px">
+    <el-dialog title="修改规则" v-model="editDlgVis" width="500px">
       <el-form label-width="100px" size="small">
         <el-form-item label="省份">
           <el-select v-model="editForm.compId" filterable style="width:100%">
@@ -187,14 +187,14 @@
           <el-input v-model="editForm.description" type="textarea" :rows="3" />
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button size="small" @click="editDlgVis = false">取消</el-button>
         <el-button size="small" type="primary" :loading="editLoading" @click="submitEdit">确定</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <!-- 复制到省份弹窗 -->
-    <el-dialog title="复制规则到其他省份" :visible.sync="copyDlgVis" width="560px">
+    <el-dialog title="复制规则到其他省份" v-model="copyDlgVis" width="560px">
       <p style="margin:0 0 12px;color:#606266;font-size:13px;">选择要复制到的目标省份，规则内容将被复制到选中的省份作用域下。</p>
       <el-form label-width="100px" size="small">
         <el-form-item label="当前规则">
@@ -230,10 +230,10 @@
           </el-table>
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button size="small" @click="copyDlgVis = false">取消</el-button>
         <el-button size="small" type="primary" :loading="copyLoading" @click="submitCopy">确定复制</el-button>
-      </div>
+      </div></template>
     </el-dialog>
   </div>
 </template>

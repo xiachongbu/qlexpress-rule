@@ -83,10 +83,10 @@
           <img class="empty" src="@/assets/uiueImages/uiue_emptyIcon.png" alt="">
         </template>
       </el-table>
-      <pagination v-show="total>0" :total="total" :page.sync="listQuery.pageNum" :limit.sync="listQuery.pageSize" @pagination="load" />
+      <pagination v-show="total>0" :total="total" v-model:page="listQuery.pageNum" v-model:limit="listQuery.pageSize" @pagination="load" />
     </template>
 
-    <el-dialog :title="editRow ? '编辑规则集' : '新建规则集'" :visible.sync="createVis" width="510px" append-to-body custom-class="middleDialog">
+    <el-dialog :title="editRow ? '编辑规则集' : '新建规则集'" v-model="createVis" width="510px" append-to-body custom-class="middleDialog">
       <el-form ref="createForm" :model="createFm" :rules="createRules" label-width="100px" size="small">
         <el-form-item label="集编码" prop="setCode"><el-input v-model="createFm.setCode" placeholder="全局唯一，勿与规则编码重复" /></el-form-item>
         <el-form-item label="集名称" prop="setName"><el-input v-model="createFm.setName" /></el-form-item>
@@ -102,13 +102,13 @@
         </el-form-item>
         <el-form-item label="说明"><el-input v-model="createFm.description" type="textarea" :rows="2" /></el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button size="small" type="primary" @click="createVis = false">取消</el-button>
         <el-button size="small" type="success" :loading="createSubmitting" @click="submitCreate">确定</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
-    <el-drawer title="维护成员顺序" :visible.sync="membersVis" size="92%" class="members-drawer" @open="onMembersOpen">
+    <el-drawer title="维护成员顺序" v-model="membersVis" size="92%" class="members-drawer" @open="onMembersOpen">
       <div v-if="membersCtx" class="members-drawer-content">
         <div class="members-scroll-area">
           <p class="rule-set-tip">自上而下为执行顺序。从下方多选添加本项目规则。</p>
@@ -153,7 +153,7 @@
       </div>
     </el-drawer>
 
-    <el-dialog title="发布规则集" :visible.sync="publishVis" width="510px" append-to-body custom-class="middleDialog">
+    <el-dialog title="发布规则集" v-model="publishVis" width="510px" append-to-body custom-class="middleDialog">
       <el-form size="small" label-width="120px">
         <el-form-item label="作用域策略">
           <el-radio-group v-model="publishMode">
@@ -167,13 +167,13 @@
           </el-select>
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button type="primary" @click="publishVis = false">取消</el-button>
         <el-button type="success" :loading="publishSubmitting" @click="submitPublish">确定发布</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
-    <el-dialog title="规则集试跑" :visible.sync="testVis" width="510px" append-to-body custom-class="middleDialog">
+    <el-dialog title="规则集试跑" v-model="testVis" width="510px" append-to-body custom-class="middleDialog">
       <el-form size="small" label-width="88px">
         <el-form-item label="作用域">
           <el-select v-model="testScope" filterable style="width:100%;">
@@ -185,10 +185,10 @@
         </el-form-item>
       </el-form>
       <el-alert v-if="testResultText" :title="testResultText" type="info" show-icon :closable="false" style="margin-top:8px;" />
-      <div slot="footer">
+      <template #footer><div>
         <el-button type="primary" @click="testVis = false">关闭</el-button>
         <el-button type="success" :loading="testRunning" @click="runTest">执行</el-button>
-      </div>
+      </div></template>
     </el-dialog>
   </div>
 </template>

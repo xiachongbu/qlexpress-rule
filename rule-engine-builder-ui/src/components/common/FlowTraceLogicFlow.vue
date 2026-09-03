@@ -14,6 +14,7 @@
 </template>
 
 <script>
+import { markRaw } from 'vue'
 import LogicFlow, {
   BezierEdge,
   BezierEdgeModel,
@@ -237,7 +238,7 @@ export default {
       if (!el) return
       var w = Math.max(320, el.clientWidth || el.offsetWidth || 800)
       var h = Math.max(200, el.clientHeight || el.offsetHeight || 360)
-      this.lf = new LogicFlow({
+      this.lf = markRaw(new LogicFlow({
         container: el,
         width: w,
         height: h,
@@ -259,7 +260,7 @@ export default {
           beforeClone: function() { return false },
           beforeDelete: function() { return false }
         }
-      })
+      }))
       registerCustomNodes(this.lf)
       registerTraceEdges(this.lf)
       this.lf.updateEditConfig({

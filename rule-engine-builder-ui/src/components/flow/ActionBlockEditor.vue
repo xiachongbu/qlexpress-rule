@@ -361,11 +361,11 @@
     <!-- 添加块按钮 -->
     <el-dropdown trigger="click" style="width:100%;margin-top:6px" @command="addBlock">
       <el-button size="mini" icon="el-icon-plus" style="width:100%">添加动作块</el-button>
-      <el-dropdown-menu slot="dropdown">
+      <template #dropdown><el-dropdown-menu>
         <el-dropdown-item v-for="bt in blockTypes" :key="bt.type" :command="bt.type">
           <i :class="bt.icon" :style="{color: bt.color}" /> {{ bt.label }}
         </el-dropdown-item>
-      </el-dropdown-menu>
+      </el-dropdown-menu></template>
     </el-dropdown>
   </div>
 </template>

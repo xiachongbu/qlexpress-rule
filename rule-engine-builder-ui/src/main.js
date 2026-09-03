@@ -3,6 +3,8 @@ import ElementPlus from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import 'element-plus/dist/index.css'
+// element-plus 移除了字体图标；引入 element-ui 兼容字体图标（存量 el-icon-* 类名零改动）
+import './assets/element-ui-icons/icon.css'
 import App from './App.vue'
 import router from './router'
 import store from './store'
