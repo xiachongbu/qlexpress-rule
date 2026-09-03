@@ -4,7 +4,7 @@
 
 ## 1. 项目简介
 
-**qlexpress-rule** 是一套基于 **Spring Boot 2.3** 与 **QLExpress 4** 的可视化规则引擎：在 Web 控制台中编排 **决策表、决策树、决策流、交叉表、评分卡、复杂交叉表、复杂评分卡、QL 脚本** 等模型，并可将多条规则编排为 **规则集（RuleSet）** 链式执行；编译发布后由 **rule-engine-client** SDK 在业务系统中执行。支持基于 **作用域（scope）** 的多变体规则、Redis 推送规则/规则集变更、客户端 **L1/L2** 缓存、可选 Kafka 执行日志等扩展。**部署拓扑与业务侧集成步骤见 §3。**
+**qlexpress-rule** 是一套基于 **Spring Boot 4.1** 与 **QLExpress 4** 的可视化规则引擎：在 Web 控制台中编排 **决策表、决策树、决策流、交叉表、评分卡、复杂交叉表、复杂评分卡、QL 脚本** 等模型，并可将多条规则编排为 **规则集（RuleSet）** 链式执行；编译发布后由 **rule-engine-client** SDK 在业务系统中执行。支持基于 **作用域（scope）** 的多变体规则、Redis 推送规则/规则集变更、客户端 **L1/L2** 缓存、可选 Kafka 执行日志等扩展。**部署拓扑与业务侧集成步骤见 §3。**
 
 ---
 
@@ -15,7 +15,7 @@
 | `rule-engine-model` | 公共实体与 DTO |
 | `rule-engine-core` | 规则编译与执行核心 |
 | `rule-engine-server` | 管理端 **REST API**（规则同步、日志等），默认 **8080**；与前端工程解耦，**不再**将 Vue 构建结果输出到本模块目录 |
-| `rule-engine-builder-ui` | Vue 2 **独立前端**：**`npm run build`** |
+| `rule-engine-builder-ui` | Vue 3 **独立前端**（element-plus + vite）：**`npm run build`** |
 | `rule-engine-client` | 客户端 SDK（HTTP 拉取 + Redis 订阅） |
 | `rule-engine-example` | 集成示例服务，默认 **7070**，演示多种模型与函数类型调用 |
 
@@ -155,11 +155,11 @@ public void example() {
 
 ## 4. 环境要求
 
-- **JDK 8**
+- **JDK 21**
 - **Maven 3.6+**
 - **MySQL 8**（库名示例：`rule_engine`）
 - **Redis**（与 server、client 示例共用，用于规则推送）
-- 构建带前端时：**Node.js**（与 `rule-engine-server/pom.xml` 中 `frontend-maven-plugin` 一致时为 **22.14.x**；本地也可使用 **14+** 以满足 `vue-cli-service`）
+- 前端（`rule-engine-builder-ui`）：**Node.js 18+**（构建工具链为 Vite；与 `rule-engine-server/pom.xml` 中 `frontend-maven-plugin` 一致时为 **22.14.x**）
 
 ---
 
