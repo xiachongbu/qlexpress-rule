@@ -367,12 +367,12 @@ export default {
       if (changed) this.$forceUpdate()
     },
     normalizeModel() {
-      if (!this.model.rowVar) this.$set(this.model, 'rowVar', { varCode: '', varLabel: '', varType: 'STRING' })
-      if (!this.model.colVar) this.$set(this.model, 'colVar', { varCode: '', varLabel: '', varType: 'STRING' })
-      if (!this.model.resultVar) this.$set(this.model, 'resultVar', { varCode: '', varLabel: '', varType: 'NUMBER' })
-      if (!this.model.rowHeaders) this.$set(this.model, 'rowHeaders', [''])
-      if (!this.model.colHeaders) this.$set(this.model, 'colHeaders', [''])
-      if (!this.model.cells) this.$set(this.model, 'cells', [['']])
+      if (!this.model.rowVar) this.model['rowVar'] = { varCode: '', varLabel: '', varType: 'STRING' }
+      if (!this.model.colVar) this.model['colVar'] = { varCode: '', varLabel: '', varType: 'STRING' }
+      if (!this.model.resultVar) this.model['resultVar'] = { varCode: '', varLabel: '', varType: 'NUMBER' }
+      if (!this.model.rowHeaders) this.model['rowHeaders'] = ['']
+      if (!this.model.colHeaders) this.model['colHeaders'] = ['']
+      if (!this.model.cells) this.model['cells'] = [['']]
       const rows = this.model.rowHeaders.length
       const cols = this.model.colHeaders.length
       while (this.model.cells.length < rows) {
@@ -675,7 +675,7 @@ export default {
   }
   &:hover { background: #f5f5f5; }
 }
-.cell-input ::v-deep input {
+.cell-input :deep(input){
   text-align: center;
   font-weight: 500;
 }

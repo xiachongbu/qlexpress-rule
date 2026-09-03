@@ -36,7 +36,7 @@
               :value="block.value || ''"
               size="mini"
               placeholder="值/表达式"
-              @input="$set(block, 'value', $event)"
+              @input="block.value = $event"
             />
           </div>
           <div class="rounding-row">
@@ -108,7 +108,7 @@
                   size="mini"
                   class="dt-act-value-ctl"
                   placeholder="值"
-                  @input="$set(a, 'value', $event)"
+                  @input="a.value = $event"
                 />
                 <el-button v-if="br.actions.length > 1" type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C" @click="br.actions.splice(ai,1); sync()" />
               </div>
@@ -293,7 +293,7 @@
               :value="block.trueValue || ''"
               size="mini"
               placeholder="真值"
-              @input="$set(block, 'trueValue', $event)"
+              @input="block.trueValue = $event"
             />
             <span class="mini-label" style="color:#F56C6C">假</span>
             <el-tooltip
@@ -313,7 +313,7 @@
               :value="block.falseValue || ''"
               size="mini"
               placeholder="假值"
-              @input="$set(block, 'falseValue', $event)"
+              @input="block.falseValue = $event"
             />
           </div>
         </template>
@@ -403,13 +403,13 @@ export default {
       deep: false
     }
   },
-  beforeDestroy() {
+  beforeUnmount() {
     // 切换至脚本预览时组件会被销毁，先提交未按回车添加的值
     if (this.newInValue.trim()) {
       const inCheckBlock = this.blocks.find(b => b.type === 'in-check')
       if (inCheckBlock) {
         const vals = [...(inCheckBlock.inValues || []).filter(v => v != null && String(v).trim() !== ''), this.newInValue.trim()]
-        this.$set(inCheckBlock, 'inValues', vals)
+        inCheckBlock['inValues'] = vals
         this.$emit('update', blocksToActionData(this.blocks))
       }
     }
@@ -430,8 +430,8 @@ export default {
       const target = bi + dir
       if (target < 0 || target >= this.blocks.length) return
       const temp = this.blocks[bi]
-      this.$set(this.blocks, bi, this.blocks[target])
-      this.$set(this.blocks, target, temp)
+      this.blocks[bi] = this.blocks[target]
+      this.blocks[target] = temp
       this.sync()
     },
     hasElse(block) {
@@ -447,11 +447,11 @@ export default {
      */
     onCondVarSelect(branch, v) {
       if (!v) {
-        this.$set(branch, 'condVar', '')
-        this.$set(branch, 'condVarType', '')
+        branch['condVar'] = ''
+        branch['condVarType'] = ''
       } else {
-        this.$set(branch, 'condVar', v.varCode)
-        this.$set(branch, 'condVarType', (!v._custom && v.varType) || '')
+        branch['condVar'] = v.varCode
+        branch['condVarType'] = (!v._custom && v.varType) || ''
       }
       this.sync()
     },
@@ -463,7 +463,7 @@ export default {
     addInValue(block) {
       if (this.newInValue.trim()) {
         const vals = [...(block.inValues || []).filter(v => v != null && String(v).trim() !== ''), this.newInValue.trim()]
-        this.$set(block, 'inValues', vals)
+        block['inValues'] = vals
         this.newInValue = ''
         this.sync()
       }
@@ -471,7 +471,7 @@ export default {
     removeInValue(block, index) {
       const vals = [...(block.inValues || [])]
       vals.splice(index, 1)
-      this.$set(block, 'inValues', vals)
+      block['inValues'] = vals
       this.sync()
     },
     onFuncSelect(block, funcCode) {
@@ -485,7 +485,7 @@ export default {
       this.sync()
     },
     addHeader(block) {
-      if (!Array.isArray(block.headers)) this.$set(block, 'headers', [])
+      if (!Array.isArray(block.headers)) block['headers'] = []
       block.headers.push({ key: '', value: '' })
       this.sync()
     },

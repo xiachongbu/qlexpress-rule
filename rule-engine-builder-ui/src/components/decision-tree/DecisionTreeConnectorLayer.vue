@@ -55,7 +55,7 @@ export default {
     this.scheduleDraw()
     window.addEventListener('resize', this._onWinResize)
   },
-  beforeDestroy() {
+  beforeUnmount() {
     window.removeEventListener('resize', this._onWinResize)
   },
   methods: {

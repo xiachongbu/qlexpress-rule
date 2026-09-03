@@ -60,22 +60,22 @@
       </div>
       <el-table v-loading="loading" :height="tableHeight" :max-height="tableHeight" :data="expandedList" border size="small" row-class-name="uiueTable" header-row-class-name="uiueTableHeader" :span-method="objectSpanMethod">
         <el-table-column prop="ruleName" label="规则名称" min-width="180" show-overflow-tooltip sortable>
-          <template slot-scope="{ row }">
+          <template #default="{ row }">
             {{ row.ruleName }}
             <el-tag v-if="row.preciseMode === 1" size="mini" type="warning" style="margin-left:4px;">高精度</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="ruleCode" label="规则编码" min-width="150" show-overflow-tooltip sortable />
         <el-table-column label="省份" min-width="120" show-overflow-tooltip sortable>
-          <template slot-scope="{ row }">{{ row._province }}</template>
+          <template #default="{ row }">{{ row._province }}</template>
         </el-table-column>
         <el-table-column prop="modelType" label="模型类型" min-width="140" align="center" show-overflow-tooltip sortable>
-          <template slot-scope="{ row }">
+          <template #default="{ row }">
             <el-tag size="mini">{{ mtl(row.modelType) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" min-width="120" align="center" show-overflow-tooltip sortable>
-          <template slot-scope="{ row }">
+          <template #default="{ row }">
             <el-tag :type="{ 0: 'info', 1: 'success', 2: 'warning' }[row.status]" size="mini">
               {{ ['草稿', '已发布', '已下线'][row.status] }}
             </el-tag>
@@ -83,10 +83,10 @@
         </el-table-column>
         <el-table-column prop="description" label="说明" min-width="160" show-overflow-tooltip sortable />
         <el-table-column label="创建时间" min-width="160" align="center" sortable show-overflow-tooltip>
-          <template slot-scope="{ row }">{{ formatDateTime(row.createTime) }}</template>
+          <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
         </el-table-column>
         <el-table-column label="操作" min-width="250" align="center" class-name="rule-ops-col">
-          <template slot-scope="{ row }">
+          <template #default="{ row }">
             <div style="white-space:nowrap">
               <el-button type="text" size="small" @click="goDesigner(row)">设计</el-button>
               <el-button type="text" size="small" @click="openEditDlg(row)">修改</el-button>
@@ -223,7 +223,7 @@
             <el-table-column type="index" label="#" width="50" />
             <el-table-column prop="label" label="省份 / 组织" />
             <el-table-column label="操作" width="80" align="center">
-              <template slot-scope="{ $index }">
+              <template #default="{ $index }">
                 <el-button type="text" size="mini" style="color:#F56C6C" @click="removeCopyScope($index)">删除</el-button>
               </template>
             </el-table-column>

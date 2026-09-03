@@ -103,7 +103,7 @@ export default {
     this.bumpConnector()
     document.addEventListener('click', this.closeCtxMenu)
   },
-  beforeDestroy() {
+  beforeUnmount() {
     document.removeEventListener('click', this.closeCtxMenu)
   },
   methods: {

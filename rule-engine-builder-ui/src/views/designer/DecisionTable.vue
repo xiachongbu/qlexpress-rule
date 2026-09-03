@@ -128,7 +128,7 @@
                         size="mini"
                         class="dt-act-value-ctl"
                         placeholder="赋值"
-                        @input="$set(act, 'value', $event)"
+                        @input="act.value = $event"
                       />
                     </template>
                   </div>
@@ -387,7 +387,7 @@ export default {
         if (ref && ref.category === 'constant' && ref.varObj && ref.varObj.defaultValue != null) {
           const dv = String(ref.varObj.defaultValue).trim()
           if (dv && act.value !== dv) {
-            this.$set(act, 'value', dv)
+            act['value'] = dv
           }
         }
       })
@@ -418,23 +418,23 @@ export default {
           _varId: def._varId,
           value: acts[i] && acts[i].value !== undefined ? acts[i].value : ''
         }))
-        this.$set(rule, 'actions', merged)
+        rule['actions'] = merged
       } else if (!full) {
-        this.$set(rule, 'actions', (acts.length ? acts : [{}]).map(a => ({
+        rule['actions'] = (acts.length ? acts : [{}]).map(a => ({
           varCode: '',
           varLabel: '',
           varType: 'STRING',
           enumOptions: '',
           value: a && a.value !== undefined ? a.value : ''
-        })))
+        }))
       }
       acts = rule.actions || []
       if (!acts.length) {
-        this.$set(rule, 'actions', [createEmptyActionItem()])
+        rule['actions'] = [createEmptyActionItem()]
         acts = rule.actions
       }
       acts.forEach(a => {
-        if (a.enumOptions === undefined) this.$set(a, 'enumOptions', '')
+        if (a.enumOptions === undefined) a['enumOptions'] = ''
       })
     },
 
@@ -454,7 +454,7 @@ export default {
         const hasTree = r.conditionRoot && r.conditionRoot.type === 'group' && Array.isArray(r.conditionRoot.children)
         if (!hasTree) {
           const migrated = migrateRuleConditionsToTree(r.conditions || [], legacyCols)
-          this.$set(r, 'conditionRoot', migrated)
+          r['conditionRoot'] = migrated
         }
         if (r.conditions !== undefined) delete r.conditions
       })
@@ -491,7 +491,7 @@ export default {
         if (ref && ref.category === 'constant' && ref.varObj && ref.varObj.defaultValue != null) {
           const dv = String(ref.varObj.defaultValue).trim()
           if (dv && act.value !== dv) {
-            this.$set(act, 'value', dv)
+            act['value'] = dv
           }
         }
       } else if (act && !act.varCode) {
@@ -500,7 +500,7 @@ export default {
           const ref = this.findRefByVarId(act._varId)
           if (ref && ref.category === 'constant' && ref.varObj && ref.varObj.defaultValue != null) {
             const dv = String(ref.varObj.defaultValue).trim()
-            this.$set(act, 'value', dv)
+            act['value'] = dv
           }
         }
       }
@@ -543,24 +543,24 @@ export default {
       if (!act) return
       const varLabel = (variable.varObj && variable.varObj.varLabel) || variable.varLabel || variable.varCode
       const _varId = variable.varObj && variable.varObj.id ? variable.varObj.id : null
-      this.$set(act, 'varCode', variable.varCode)
-      this.$set(act, 'varLabel', varLabel)
-      this.$set(act, '_varId', _varId)
-      this.$set(act, 'varType', variable.varType)
-      this.$set(act, 'enumOptions', variable.varType === 'ENUM'
+      act['varCode'] = variable.varCode
+      act['varLabel'] = varLabel
+      act['_varId'] = _varId
+      act['varType'] = variable.varType
+      act['enumOptions'] = variable.varType === 'ENUM'
         ? this.getVarOptions(variable.varCode).map(o => o.value || o.optionValue).join(',')
-        : '')
+        : ''
       // 常量回填最新默认值（defaultValue 在选项的 varObj 上，非顶层字段）
       if (this.isConstRef(variable)) {
         const raw = variable.varObj && variable.varObj.defaultValue != null
           ? variable.varObj.defaultValue
           : variable.defaultValue
         const dv = raw != null ? String(raw) : ''
-        this.$set(act, 'value', dv)
+        act['value'] = dv
         this.$message.warning('「' + varLabel + '」是常量，已自动填入其默认值；如需修改常量值请到常量配置管理中修改后重新发布')
       } else {
         // 非常量清空值（因为新选的是普通变量，不是之前的常量）
-        this.$set(act, 'value', '')
+        act['value'] = ''
       }
     },
 
@@ -569,7 +569,7 @@ export default {
      */
     onColDefVarTypeChange(type) {
       if (!this.activeColDef || type === 'ENUM') return
-      this.$set(this.activeColDef, 'enumOptions', '')
+      this.activeColDef['enumOptions'] = ''
     },
 
     /**
@@ -578,7 +578,7 @@ export default {
     addRuleAction(ruleIndex) {
       const r = this.model.rules[ruleIndex]
       if (!r) return
-      if (!r.actions) this.$set(r, 'actions', [])
+      if (!r.actions) r['actions'] = []
       r.actions.push(createEmptyActionItem())
     },
 

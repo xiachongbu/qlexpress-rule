@@ -46,24 +46,24 @@
             <el-table-column prop="varCode" label="变量编码" min-width="130" show-overflow-tooltip />
             <el-table-column prop="varLabel" label="名称（中文）" min-width="120" show-overflow-tooltip />
             <el-table-column label="脚本名称" min-width="130">
-              <template slot-scope="{row}">
+              <template #default="{row}">
                 <el-input v-model="row.scriptName" size="mini" placeholder="脚本名称" @blur="onVarScriptNameChange(row)" />
               </template>
             </el-table-column>
             <el-table-column prop="varType" label="类型" min-width="80" align="center">
-              <template slot-scope="{ row }"><el-tag size="mini" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
+              <template #default="{ row }"><el-tag size="mini" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
             </el-table-column>
             <el-table-column prop="varSource" label="来源" min-width="80" align="center">
-              <template slot-scope="{ row }">
+              <template #default="{ row }">
                 <el-tag size="mini" :type="sourceTagColor(row.varSource)">{{ sourceLabel(row.varSource) }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column prop="defaultValue" label="默认值" min-width="90" show-overflow-tooltip />
             <el-table-column prop="status" label="状态" min-width="60" align="center">
-              <template slot-scope="{ row }"><el-tag :type="row.status===1?'success':'info'" size="mini">{{ row.status===1?'启用':'停用' }}</el-tag></template>
+              <template #default="{ row }"><el-tag :type="row.status===1?'success':'info'" size="mini">{{ row.status===1?'启用':'停用' }}</el-tag></template>
             </el-table-column>
             <el-table-column label="操作" min-width="140" align="center">
-              <template slot-scope="{ row }">
+              <template #default="{ row }">
                 <el-button type="text" size="small" @click="handleEdit(row)">编辑</el-button>
                 <el-button v-if="row.varType==='ENUM'" type="text" size="small" @click="handleOptions(row)">选项</el-button>
                 <el-button type="text" size="small" style="color:#F56C6C;" @click="handleDelete(row)">删除</el-button>
@@ -142,18 +142,18 @@
                 <el-table-column prop="varCode" label="字段编码" min-width="140" show-overflow-tooltip />
                 <el-table-column prop="varLabel" label="名称" min-width="120" show-overflow-tooltip />
                 <el-table-column label="脚本名称" min-width="140">
-                  <template slot-scope="{row}">
+                  <template #default="{row}">
                     <el-input v-model="row.scriptName" size="mini" placeholder="脚本名称" @blur="onObjectFieldScriptNameBlur(row)" />
                   </template>
                 </el-table-column>
                 <el-table-column prop="varType" label="类型" min-width="80" align="center">
-                  <template slot-scope="{row}"><el-tag size="mini" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
+                  <template #default="{row}"><el-tag size="mini" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
                 </el-table-column>
                 <el-table-column prop="refObjectCode" label="引用对象" min-width="110" show-overflow-tooltip>
-                  <template slot-scope="{row}"><span v-if="row.refObjectCode" class="badge badge-obj">{{ row.refObjectCode }}</span><span v-else style="color:#ccc;">—</span></template>
+                  <template #default="{row}"><span v-if="row.refObjectCode" class="badge badge-obj">{{ row.refObjectCode }}</span><span v-else style="color:#ccc;">—</span></template>
                 </el-table-column>
                 <el-table-column label="操作" width="140" align="center">
-                  <template slot-scope="{ row }">
+                  <template #default="{ row }">
                     <el-button type="text" size="small" @click="handleEditObjectField(row, node)">编辑</el-button>
                     <el-button v-if="row.varType==='ENUM'" type="text" size="small" @click="handleOptions(row, true)">选项</el-button>
                     <el-button type="text" size="small" style="color:#F56C6C;" @click="handleDeleteObjectField(row)">删除</el-button>
@@ -204,23 +204,23 @@
             <el-table-column prop="varCode" label="常量编码" min-width="130" show-overflow-tooltip />
             <el-table-column prop="varLabel" label="名称" min-width="120" show-overflow-tooltip />
             <el-table-column label="脚本名称" min-width="130">
-              <template slot-scope="{row}">
+              <template #default="{row}">
                 <el-input v-model="row.scriptName" size="mini" placeholder="脚本名称" @blur="onVarScriptNameChange(row)" />
               </template>
             </el-table-column>
             <el-table-column prop="varType" label="类型" min-width="80" align="center">
-              <template slot-scope="{ row }"><el-tag size="mini" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
+              <template #default="{ row }"><el-tag size="mini" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
             </el-table-column>
             <el-table-column label="常量值（默认）" min-width="160">
-              <template slot-scope="{row}">
+              <template #default="{row}">
                 <el-input v-model="row.defaultValue" size="mini" @blur="onConstDefaultBlur(row)" />
               </template>
             </el-table-column>
             <el-table-column prop="status" label="状态" min-width="60" align="center">
-              <template slot-scope="{ row }"><el-tag :type="row.status===1?'success':'info'" size="mini">{{ row.status===1?'启用':'停用' }}</el-tag></template>
+              <template #default="{ row }"><el-tag :type="row.status===1?'success':'info'" size="mini">{{ row.status===1?'启用':'停用' }}</el-tag></template>
             </el-table-column>
             <el-table-column label="操作" min-width="120" align="center">
-              <template slot-scope="{ row }">
+              <template #default="{ row }">
                 <el-button type="text" size="small" @click="handleEdit(row)">编辑</el-button>
                 <el-button type="text" size="small" style="color:#F56C6C;" @click="handleDelete(row)">删除</el-button>
               </template>
@@ -289,13 +289,13 @@
       </div>
       <el-table :data="optionList" border size="small" style="width:100%;">
         <el-table-column label="选项值" min-width="160">
-          <template slot-scope="{row}"><el-input v-model="row.optionValue" size="mini" placeholder="选项值" /></template>
+          <template #default="{row}"><el-input v-model="row.optionValue" size="mini" placeholder="选项值" /></template>
         </el-table-column>
         <el-table-column label="选项标签（中文）" min-width="180">
-          <template slot-scope="{row}"><el-input v-model="row.optionLabel" size="mini" placeholder="中文标签" /></template>
+          <template #default="{row}"><el-input v-model="row.optionLabel" size="mini" placeholder="中文标签" /></template>
         </el-table-column>
         <el-table-column label="操作" width="80" align="center">
-          <template slot-scope="{$index}"><el-button type="text" size="small" style="color:#F56C6C;" @click="optionList.splice($index,1)">移除</el-button></template>
+          <template #default="{$index}"><el-button type="text" size="small" style="color:#F56C6C;" @click="optionList.splice($index,1)">移除</el-button></template>
         </el-table-column>
       </el-table>
       <el-button type="text" size="small" icon="el-icon-plus" style="margin-top:8px;" @click="optionList.push({optionValue:'',optionLabel:'',sortOrder:optionList.length})">添加选项</el-button>
@@ -403,10 +403,10 @@
         <el-table-column prop="ruleCode" label="规则编码" min-width="120" show-overflow-tooltip />
         <el-table-column prop="modelType" label="模型" min-width="70" align="center" />
         <el-table-column label="编译" min-width="60" align="center">
-          <template slot-scope="{row}"><el-tag :type="row.compileOk?'success':'danger'" size="mini">{{ row.compileOk?'通过':'失败' }}</el-tag></template>
+          <template #default="{row}"><el-tag :type="row.compileOk?'success':'danger'" size="mini">{{ row.compileOk?'通过':'失败' }}</el-tag></template>
         </el-table-column>
         <el-table-column label="执行" min-width="60" align="center">
-          <template slot-scope="{row}"><el-tag :type="row.executeOk?'success':'danger'" size="mini">{{ row.executeOk?'通过':'失败' }}</el-tag></template>
+          <template #default="{row}"><el-tag :type="row.executeOk?'success':'danger'" size="mini">{{ row.executeOk?'通过':'失败' }}</el-tag></template>
         </el-table-column>
         <el-table-column prop="errorMsg" label="错误信息" min-width="200" show-overflow-tooltip />
       </el-table>
@@ -604,7 +604,7 @@ export default {
       if (this.activeTab === 'constants') this.loadConstants()
     },
     toggleObjectExpand(node) {
-      this.$set(this.objExpanded, node.object.id, !this.objExpanded[node.object.id])
+      this.objExpanded[node.object.id] = !this.objExpanded[node.object.id]
     },
     handleObjPageChange(p) { this.objPageNum = p },
     async loadData() {

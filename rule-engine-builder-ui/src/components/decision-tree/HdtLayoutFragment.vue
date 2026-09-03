@@ -16,7 +16,6 @@
           :layout="layout.child"
           :selected-node-id="selectedNodeId"
           :selected-edge-id="selectedEdgeId"
-          v-on="$listeners"
         />
       </div>
     </template>
@@ -51,7 +50,6 @@
               :layout="br.child"
               :selected-node-id="selectedNodeId"
               :selected-edge-id="selectedEdgeId"
-              v-on="$listeners"
             />
           </div>
         </div>
@@ -75,7 +73,6 @@
           :layout="layout.next"
           :selected-node-id="selectedNodeId"
           :selected-edge-id="selectedEdgeId"
-          v-on="$listeners"
         />
       </div>
     </template>

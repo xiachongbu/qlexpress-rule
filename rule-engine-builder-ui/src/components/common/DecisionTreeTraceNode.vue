@@ -79,7 +79,7 @@ export default {
     for (var i = 0; i < this.node.children.length; i++) {
       var ch = this.node.children[i]
       if (ch.status !== 'hit' && ch.status !== 'blocked') {
-        this.$set(this.collapsed, i, true)
+        this.collapsed[i] = true
       }
     }
   },
@@ -102,7 +102,7 @@ export default {
       return !this.collapsed[idx]
     },
     toggle: function(idx) {
-      this.$set(this.collapsed, idx, !this.collapsed[idx])
+      this.collapsed[idx] = !this.collapsed[idx]
     }
   }
 }

@@ -442,9 +442,9 @@ export default {
       })
     },
     normalizeModel() {
-      if (!this.model.rowDimensions) this.$set(this.model, 'rowDimensions', [])
-      if (!this.model.colDimensions) this.$set(this.model, 'colDimensions', [])
-      if (!this.model.resultVar) this.$set(this.model, 'resultVar', { varCode: '', varLabel: '', varType: 'NUMBER' })
+      if (!this.model.rowDimensions) this.model['rowDimensions'] = []
+      if (!this.model.colDimensions) this.model['colDimensions'] = []
+      if (!this.model.resultVar) this.model['resultVar'] = { varCode: '', varLabel: '', varType: 'NUMBER' }
     },
     applyVarToDim(variable, dimKey, di) {
       if (!variable) return
@@ -649,7 +649,7 @@ export default {
 }
 .row-header-first { background: #e0f5e9; font-weight: 600; }
 .data-cell { background: #fff; min-width: 90px; }
-.cell-input ::v-deep input { text-align: center; font-weight: 500; }
+.cell-input :deep(input){ text-align: center; font-weight: 500; }
 
 .test-hint { font-size: 12px; color: #909399; margin-bottom: 8px; }
 .test-result { margin-top: 16px; }

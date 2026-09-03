@@ -68,7 +68,14 @@
 </template>
 
 <script>
-import variables from '@/styles/variables.scss'
+// ICSS :export 在 vite 下不可用，改用 JS 常量（与 styles/variables.scss 保持一致）
+const variables = {
+  sideBarWidth: '210px',
+  menuBg: '#E9EBF0',
+  menuText: '#161617',
+  menuActiveText: '#B30000',
+  menuHover: '#F4F5F7'
+}
 import { mapState } from 'vuex'
 import { getConsoleAuthConfig, consoleLogout, getConsoleMe } from '@/api/auth'
 import DesignerDrawerHost from '@/components/common/DesignerDrawerHost.vue'

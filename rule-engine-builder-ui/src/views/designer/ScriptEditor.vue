@@ -346,15 +346,15 @@ export default {
       this.resetCmHistoryBaseline()
     }
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.destroyCmEditor()
   },
   methods: {
     toggleCat(key) {
-      this.$set(this.expandedCats, key, !this.expandedCats[key])
+      this.expandedCats[key] = !this.expandedCats[key]
     },
     toggleGroup(key) {
-      this.$set(this.expandedGroups, key, !this.expandedGroups[key])
+      this.expandedGroups[key] = !this.expandedGroups[key]
     },
     /** 统计一级分类下叶子节点总数 */
     countLeaves(cat) {
@@ -669,27 +669,27 @@ $editor-border: #313244;
   display: flex;
   flex-direction: column;
 }
-.se-editor-cm ::v-deep .CodeMirror {
+.se-editor-cm :deep(.CodeMirror ){
   height: 100%;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.6;
 }
 /* 同名变量高亮：光标点到某变量时，所有同名出现处高亮 */
-.se-editor-cm ::v-deep .cm-matchhighlight {
+.se-editor-cm :deep(.cm-matchhighlight ){
   background: rgba(102, 168, 255, 0.30);
   border-radius: 2px;
 }
-.se-editor-cm ::v-deep .CodeMirror-selection-highlight-scrollbar {
+.se-editor-cm :deep(.CodeMirror-selection-highlight-scrollbar ){
   background: #66a8ff;
 }
 /* 查找匹配项高亮（全部高亮显示） */
-.se-editor-cm ::v-deep .cm-search-highlight {
+.se-editor-cm :deep(.cm-search-highlight ){
   background: rgba(255, 170, 0, 0.40);
   border-radius: 2px;
 }
 /* 匹配的花括号/括号对：高亮加粗 + 背景 + 下划线，便于快速识别配对关系 */
-.se-editor-cm ::v-deep .CodeMirror-matchingbracket {
+.se-editor-cm :deep(.CodeMirror-matchingbracket ){
   color: #ffd166 !important;
   font-weight: 700;
   background: rgba(255, 209, 102, 0.28);
@@ -697,7 +697,7 @@ $editor-border: #313244;
   border-radius: 2px;
 }
 /* 未找到匹配的括号：红色告警 */
-.se-editor-cm ::v-deep .CodeMirror-nonmatchingbracket {
+.se-editor-cm :deep(.CodeMirror-nonmatchingbracket ){
   color: #fff !important;
   font-weight: 700;
   background: rgba(255, 107, 107, 0.55);

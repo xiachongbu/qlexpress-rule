@@ -405,7 +405,7 @@ export default {
   color: #999;
   flex-shrink: 0;
 }
-.mono-textarea ::v-deep textarea {
+.mono-textarea :deep(textarea){
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.5;
@@ -413,7 +413,7 @@ export default {
 .el-divider {
   margin: 12px 0 4px;
 }
-.el-divider ::v-deep .el-divider__text {
+.el-divider :deep(.el-divider__text ){
   font-size: 13px;
   font-weight: bold;
   color: #333;

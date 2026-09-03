@@ -17,17 +17,17 @@
       <el-table-column prop="funcCode" label="函数编码" min-width="90" show-overflow-tooltip sortable />
       <el-table-column prop="funcName" label="函数名称" min-width="90" show-overflow-tooltip sortable />
       <el-table-column prop="returnType" label="返回类型" width="90" align="center" show-overflow-tooltip sortable>
-        <template slot-scope="{ row }">
+        <template #default="{ row }">
           <el-tag size="mini">{{ typeLabel(row.returnType) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="implType" label="实现方式" width="110" align="center" show-overflow-tooltip sortable>
-        <template slot-scope="{ row }">
+        <template #default="{ row }">
           <el-tag :type="implTypeTagType(row.implType)" size="mini">{{ implTypeLabel(row.implType) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="参数" min-width="150" sortable>
-        <template slot-scope="{ row }">
+        <template #default="{ row }">
           <span v-if="row.paramsJson">
             <el-tag v-for="(p, pi) in parseParams(row.paramsJson)" :key="pi" size="mini" type="info" style="margin:1px 2px;">
               {{ p.name }}: {{ typeLabel(p.type) }}
@@ -37,12 +37,12 @@
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" width="70" align="center" sortable>
-        <template slot-scope="{ row }">
+        <template #default="{ row }">
           <el-tag :type="row.status===1?'success':'info'" size="mini">{{ row.status===1?'启用':'停用' }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="操作" width="190" align="center">
-        <template slot-scope="{ row }">
+        <template #default="{ row }">
           <el-button type="text" size="small" @click="handleEdit(row)">编辑</el-button>
           <el-button type="text" size="small" style="color:#F56C6C;" @click="handleDelete(row)">删除</el-button>
         </template>
@@ -230,5 +230,5 @@ export default {
 .linkage-hint { font-size: 13px; color: #909399; margin-bottom: 12px; background: #fafafa; padding: 8px 12px; border-radius: 4px; }
 .var-toolbar { display: flex; align-items: center; justify-content: space-between; }
 .toolbar-right { display: flex; gap: 8px; }
-.mono-input ::v-deep textarea { font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; }
+.mono-input :deep(textarea){ font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; }
 </style>

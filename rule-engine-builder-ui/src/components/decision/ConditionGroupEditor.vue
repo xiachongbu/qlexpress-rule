@@ -176,7 +176,7 @@ export default {
      * 切换组内与/或。
      */
     setGroupOp(op) {
-      this.$set(this.group, 'op', op)
+      this.group['op'] = op
     },
 
     /**
@@ -192,7 +192,7 @@ export default {
      */
     onOpChange(leaf) {
       if (leaf.operator === '*') {
-        this.$set(leaf, 'value', '')
+        leaf['value'] = ''
       }
     },
 
@@ -200,17 +200,17 @@ export default {
      * 常量/变量切换时重置右侧。
      */
     onValueKindChange(leaf) {
-      this.$set(leaf, 'value', '')
-      this.$set(leaf, 'rightVarType', '')
-      this.$set(leaf, 'rightVarLabel', '')
-      this.$set(leaf, '_rightVarId', undefined)
+      leaf['value'] = ''
+      leaf['rightVarType'] = ''
+      leaf['rightVarLabel'] = ''
+      leaf['_rightVarId'] = undefined
       // 如果切换到常量类型且左侧是已知的常量，则回填默认值
       if (leaf.valueKind === 'CONST' && leaf.varCode) {
         const ref = (this.vars || []).find(v => v.varCode === leaf.varCode)
         if (ref && this.isConstRef(ref)) {
           const raw = ref.varObj && ref.varObj.defaultValue != null ? ref.varObj.defaultValue : ref.defaultValue
           const dv = raw != null ? String(raw) : ''
-          this.$set(leaf, 'value', dv)
+          leaf['value'] = dv
           if (dv) {
             const varLabel = ref.varObj && ref.varObj.varLabel || ref.varLabel || ref.varCode
             this.$message.warning('「' + varLabel + '」是常量，已自动填入其默认值用于比较')
@@ -224,32 +224,32 @@ export default {
      */
     onLeafLeftSelect(leaf, variable) {
       if (!variable) {
-        this.$set(leaf, 'varCode', '')
-        this.$set(leaf, 'varLabel', '')
-        this.$set(leaf, 'varType', 'STRING')
-        this.$set(leaf, 'enumOptions', '')
-        this.$set(leaf, '_varId', undefined)
+        leaf['varCode'] = ''
+        leaf['varLabel'] = ''
+        leaf['varType'] = 'STRING'
+        leaf['enumOptions'] = ''
+        leaf['_varId'] = undefined
         return
       }
       const varLabel = (variable.varObj && variable.varObj.varLabel) || variable.varLabel || variable.varCode
       const _varId = variable.varObj && variable.varObj.id ? variable.varObj.id : null
-      this.$set(leaf, 'varCode', variable.varCode)
-      this.$set(leaf, 'varLabel', varLabel)
-      this.$set(leaf, 'varType', variable.varType || 'STRING')
-      this.$set(leaf, '_varId', _varId)
+      leaf['varCode'] = variable.varCode
+      leaf['varLabel'] = varLabel
+      leaf['varType'] = variable.varType || 'STRING'
+      leaf['_varId'] = _varId
       // 判断是否为常量
       const isConstant = this.isConstRef(variable)
       if (variable.varType === 'ENUM' && this.getVarOptionsFn) {
         const opts = this.getVarOptionsFn(variable.varCode) || []
-        this.$set(leaf, 'enumOptions', opts.map(o => o.value || o.optionValue).filter(Boolean).join(','))
+        leaf['enumOptions'] = opts.map(o => o.value || o.optionValue).filter(Boolean).join(',')
       } else {
-        this.$set(leaf, 'enumOptions', '')
+        leaf['enumOptions'] = ''
       }
       // 如果是常量且当前值为空或右侧类型为常量，则自动回填默认值
       if (isConstant && leaf.valueKind === 'CONST' && leaf.value === '') {
         const raw = variable.varObj && variable.varObj.defaultValue != null ? variable.varObj.defaultValue : variable.defaultValue
         const dv = raw != null ? String(raw) : ''
-        this.$set(leaf, 'value', dv)
+        leaf['value'] = dv
         this.$message.warning('「' + varLabel + '」是常量，已自动填入其默认值用于比较；如需修改请在常量配置管理中修改后重新发布')
       }
     },
@@ -276,25 +276,25 @@ export default {
      */
     onLeafRightSelect(leaf, variable) {
       if (!variable) {
-        this.$set(leaf, 'value', '')
-        this.$set(leaf, 'rightVarType', '')
-        this.$set(leaf, 'rightVarLabel', '')
-        this.$set(leaf, '_rightVarId', undefined)
+        leaf['value'] = ''
+        leaf['rightVarType'] = ''
+        leaf['rightVarLabel'] = ''
+        leaf['_rightVarId'] = undefined
         return
       }
       const varLabel = (variable.varObj && variable.varObj.varLabel) || variable.varLabel || variable.varCode
       const _varId = variable.varObj && variable.varObj.id ? variable.varObj.id : null
-      this.$set(leaf, 'value', variable.varCode)
-      this.$set(leaf, 'rightVarType', variable.varType || 'STRING')
-      this.$set(leaf, 'rightVarLabel', varLabel)
-      this.$set(leaf, '_rightVarId', _varId)
+      leaf['value'] = variable.varCode
+      leaf['rightVarType'] = variable.varType || 'STRING'
+      leaf['rightVarLabel'] = varLabel
+      leaf['_rightVarId'] = _varId
     },
 
     /**
      * 追加一条叶条件。
      */
     addLeaf() {
-      if (!Array.isArray(this.group.children)) this.$set(this.group, 'children', [])
+      if (!Array.isArray(this.group.children)) this.group['children'] = []
       this.group.children.push(createEmptyLeaf())
     },
 
@@ -302,7 +302,7 @@ export default {
      * 追加嵌套的与/或组。
      */
     addSubGroup() {
-      if (!Array.isArray(this.group.children)) this.$set(this.group, 'children', [])
+      if (!Array.isArray(this.group.children)) this.group['children'] = []
       const g = createEmptyGroup('AND')
       g.children.push(createEmptyLeaf())
       this.group.children.push(g)
@@ -342,7 +342,7 @@ export default {
   color: #333;
   margin-right: 4px;
 }
-.cg-op ::v-deep .el-button--mini {
+.cg-op :deep(.el-button--mini ){
   border-radius: 4px;
 }
 .cg-remove-group {
@@ -431,18 +431,18 @@ export default {
 .cg-input-full {
   width: 100%;
 }
-.cg-field ::v-deep .var-picker-wrap {
+.cg-field :deep(.var-picker-wrap ){
   width: 100% !important;
   max-width: 100%;
 }
-.cg-field ::v-deep .el-select {
+.cg-field :deep(.el-select ){
   width: 100%;
   display: block;
 }
-.cg-field ::v-deep .el-select > .el-input {
+.cg-field :deep(.el-select > .el-input ){
   width: 100%;
 }
-.cg-field ::v-deep .el-input {
+.cg-field :deep(.el-input ){
   width: 100%;
 }
 .cg-del {

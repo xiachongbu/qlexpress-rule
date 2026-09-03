@@ -441,7 +441,7 @@ export default {
     boot()
     this.bindTreeHistoryHotkeys()
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.unbindTreeHistoryHotkeys()
   },
   methods: {
@@ -1333,7 +1333,7 @@ export default {
   border-radius: 4px;
   line-height: 1.6;
 }
-.mono-input ::v-deep textarea {
+.mono-input :deep(textarea){
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.5;

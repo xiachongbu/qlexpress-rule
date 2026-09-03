@@ -212,8 +212,8 @@
               <code>{{ model.initialScore }}</code>
               <span class="op"> + </span>
             </span>
-            <template v-for="(group, gi) in model.dimensionGroups">
-              <span :key="'g-' + gi" class="formula-group">
+            <template v-for="(group, gi) in model.dimensionGroups" :key="'g-' + gi">
+              <span class="formula-group">
                 <span class="formula-group-label">{{ group.groupLabel || '维度组' + (gi + 1) }}</span>
                 <template v-if="group.weight != null && group.weight !== 1">
                   <span class="op"> × </span>
@@ -221,19 +221,19 @@
                 </template>
                 <span class="formula-dims">
                   (
-                  <template v-for="(dim, di) in (group.dimensions || [])">
-                    <span :key="'d-' + di" class="formula-term">
+                  <template v-for="(dim, di) in (group.dimensions || [])" :key="'d-' + di">
+                    <span class="formula-term">
                       {{ dim.varLabel || dim.varCode || '维度' + (di + 1) }}
                       <template v-if="dim.weight != null && dim.weight !== 1">
                         <span class="op">×</span>{{ (dim.weight || 0).toFixed(2) }}
                       </template>
                     </span>
-                    <span v-if="di < (group.dimensions || []).length - 1" :key="'dop-' + di" class="op"> + </span>
+                    <span v-if="di < (group.dimensions || []).length - 1" class="op"> + </span>
                   </template>
                   )
                 </span>
               </span>
-              <span v-if="gi < model.dimensionGroups.length - 1" :key="'gop-' + gi" class="op"> + </span>
+              <span v-if="gi < model.dimensionGroups.length - 1" class="op"> + </span>
             </template>
           </div>
         </div>
@@ -259,9 +259,9 @@
             <span class="weight-detail-name">{{ group.groupLabel || '维度组' + (gi + 1) }}</span>
             <span class="weight-detail-val">组权重 {{ (group.weight || 1).toFixed(2) }}</span>
             <span class="weight-detail-dims">
-              × ( <template v-for="(dim, di) in (group.dimensions || [])">
-                <span :key="di">{{ dim.varLabel || '维度' }}:{{ (dim.weight || 1).toFixed(2) }}</span>
-                <span v-if="di < (group.dimensions || []).length - 1" :key="'s-' + di">, </span>
+              × ( <template v-for="(dim, di) in (group.dimensions || [])" :key="'d-' + di">
+                <span>{{ dim.varLabel || '维度' }}:{{ (dim.weight || 1).toFixed(2) }}</span>
+                <span v-if="di < (group.dimensions || []).length - 1">, </span>
               </template> )
             </span>
           </div>
@@ -423,23 +423,23 @@ export default {
       }
     },
     normalizeModel() {
-      if (this.model.initialScore == null) this.$set(this.model, 'initialScore', 100)
-      if (!this.model.resultVar) this.$set(this.model, 'resultVar', { varCode: '', varLabel: '' })
-      if (!this.model.dimensionGroups) this.$set(this.model, 'dimensionGroups', [])
-      if (!this.model.thresholds) this.$set(this.model, 'thresholds', [])
+      if (this.model.initialScore == null) this.model['initialScore'] = 100
+      if (!this.model.resultVar) this.model['resultVar'] = { varCode: '', varLabel: '' }
+      if (!this.model.dimensionGroups) this.model['dimensionGroups'] = []
+      if (!this.model.thresholds) this.model['thresholds'] = []
       this.model.dimensionGroups.forEach(g => {
-        if (g.weight == null) this.$set(g, 'weight', 1.0)
+        if (g.weight == null) g['weight'] = 1.0
         ;(g.dimensions || []).forEach(d => {
-          if (d.weight == null) this.$set(d, 'weight', 1.0)
+          if (d.weight == null) d['weight'] = 1.0
         })
       })
     },
     onResultVarSelect(v) {
       if (!v) return
-      this.$set(this.model, 'resultVar', {
+      this.model['resultVar'] = {
         varCode: v.varCode,
         varLabel: (v.varObj && v.varObj.varLabel) || v.varLabel || v.varCode
-      })
+      }
     },
     onDimVarSelect(gi, di, v) {
       if (!v) return
@@ -452,7 +452,7 @@ export default {
     },
     toggleGroup(gi) {
       const g = this.model.dimensionGroups[gi]
-      this.$set(g, '_collapsed', !g._collapsed)
+      g['_collapsed'] = !g._collapsed
     },
     addGroup() {
       this.model.dimensionGroups.push({ groupLabel: '', dimensions: [], weight: 1.0, _collapsed: false })

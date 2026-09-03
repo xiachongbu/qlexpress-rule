@@ -319,11 +319,11 @@ $login-primary-soft: rgba(179, 0, 0, 0.12);
 /**
  * Element 表单：圆角输入、清晰 focus 环、标签层次。
  */
-::v-deep .login-form .el-form-item {
+:deep(.login-form .el-form-item ){
   margin-bottom: 20px;
 }
 
-::v-deep .login-form .el-form-item__label {
+:deep(.login-form .el-form-item__label ){
   padding: 0 0 8px;
   line-height: 1.3;
   font-weight: 600;
@@ -331,7 +331,7 @@ $login-primary-soft: rgba(179, 0, 0, 0.12);
   color: $login-text;
 }
 
-::v-deep .login-form .el-input__inner {
+:deep(.login-form .el-input__inner ){
   height: 44px;
   line-height: 44px;
   border-radius: 12px;
@@ -341,16 +341,16 @@ $login-primary-soft: rgba(179, 0, 0, 0.12);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-::v-deep .login-form .el-input__inner:hover {
+:deep(.login-form .el-input__inner:hover ){
   border-color: #cbd5e1;
 }
 
-::v-deep .login-form .el-input__inner:focus {
+:deep(.login-form .el-input__inner:focus ){
   border-color: $login-primary;
   box-shadow: 0 0 0 3px $login-primary-soft;
 }
 
-::v-deep .login-form .el-input__inner::placeholder {
+:deep(.login-form .el-input__inner::placeholder ){
   color: #94a3b8;
 }
 

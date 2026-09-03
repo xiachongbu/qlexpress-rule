@@ -21,19 +21,19 @@
       <el-table-column prop="projectName" label="项目名称" min-width="180" show-overflow-tooltip />
       <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
       <el-table-column prop="status" label="状态" min-width="70" align="center">
-        <template slot-scope="{ row }">
+        <template #default="{ row }">
           <el-tag :type="row.status === 1 ? 'success' : 'info'" size="mini">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="访问令牌" min-width="160">
-        <template slot-scope="{ row }">
+        <template #default="{ row }">
           <span v-if="row.maskedToken" style="font-family: monospace;">{{ row.maskedToken }}</span>
           <span v-else style="color: #909399;">未生成</span>
         </template>
       </el-table-column>
       <el-table-column prop="createTime" label="创建时间" min-width="160" />
       <el-table-column label="操作" min-width="160" align="center">
-        <template slot-scope="{ row }">
+        <template #default="{ row }">
           <el-button type="text" size="small" @click="handleEdit(row)">编辑</el-button>
           <el-button type="text" size="small" @click="$router.push('/project/' + row.id)">进入</el-button>
           <el-button type="text" size="small" style="color: #F56C6C;" @click="handleDelete(row)">删除</el-button>
@@ -101,7 +101,7 @@ export default {
           try {
             const tokenRes = await getMaskedToken(row.id)
             if (tokenRes.code === 200 && tokenRes.data) {
-              this.$set(row, 'maskedToken', tokenRes.data)
+              row['maskedToken'] = tokenRes.data
             }
           } catch (e) {
             // ignore

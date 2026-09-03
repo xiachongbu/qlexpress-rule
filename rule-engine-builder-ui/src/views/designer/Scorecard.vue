@@ -180,8 +180,8 @@
               <code>{{ model.initialScore }}</code>
               <span class="op"> + </span>
             </span>
-            <template v-for="(item, idx) in model.scoreItems">
-              <span :key="idx" class="formula-term">
+            <template v-for="(item, idx) in model.scoreItems" :key="idx">
+              <span class="formula-term">
                 <span class="formula-cond">IF({{ item.conditionLabel || item.condVar || '条件' + (idx + 1) }} {{ item.condOperator }} {{ item.condValue }})</span>
                 <span class="op"> × </span>
                 <code>{{ item.score }}</code>
@@ -190,7 +190,7 @@
                   <code>{{ item.weight.toFixed(2) }}</code>
                 </template>
               </span>
-              <span v-if="idx < model.scoreItems.length - 1" :key="'op-' + idx" class="op"> + </span>
+              <span v-if="idx < model.scoreItems.length - 1" class="op"> + </span>
             </template>
             <span v-if="model.scoreItems.length === 0" class="formula-empty">（暂未配置评分项）</span>
           </div>
@@ -391,20 +391,20 @@ export default {
       }
     },
     normalizeModel() {
-      if (this.model.initialScore == null) this.$set(this.model, 'initialScore', 0)
-      if (!this.model.scoreItems) this.$set(this.model, 'scoreItems', [])
-      if (!this.model.resultVar) this.$set(this.model, 'resultVar', { varCode: '', varLabel: '' })
-      if (!this.model.thresholds) this.$set(this.model, 'thresholds', [])
+      if (this.model.initialScore == null) this.model['initialScore'] = 0
+      if (!this.model.scoreItems) this.model['scoreItems'] = []
+      if (!this.model.resultVar) this.model['resultVar'] = { varCode: '', varLabel: '' }
+      if (!this.model.thresholds) this.model['thresholds'] = []
       this.model.scoreItems.forEach(item => {
-        if (item.score == null) this.$set(item, 'score', 1)
-        if (item.weight == null) this.$set(item, 'weight', 1.0)
+        if (item.score == null) item['score'] = 1
+        if (item.weight == null) item['weight'] = 1.0
         if (!item.condVar && item.condition) {
           this.parseCondition(item)
         }
-        if (item.condVar == null) this.$set(item, 'condVar', '')
-        if (item.condOperator == null) this.$set(item, 'condOperator', '==')
-        if (item.condValue == null) this.$set(item, 'condValue', '')
-        if (item.condVarType == null) this.$set(item, 'condVarType', 'STRING')
+        if (item.condVar == null) item['condVar'] = ''
+        if (item.condOperator == null) item['condOperator'] = '=='
+        if (item.condValue == null) item['condValue'] = ''
+        if (item.condVarType == null) item['condVarType'] = 'STRING'
       })
     },
     /** 从已有 condition 字符串反解出结构化字段 */
@@ -442,12 +442,12 @@ export default {
       if (!v) return
       const varLabel = (v.varObj && v.varObj.varLabel) || v.varLabel || v.varCode
       const _varId = v.varObj && v.varObj.id ? v.varObj.id : null
-      this.$set(this.model, 'resultVar', {
+      this.model['resultVar'] = {
         ...this.model.resultVar,
         varCode: v.varCode,
         varLabel,
         _varId
-      })
+      }
     },
     addScoreItem() {
       this.model.scoreItems.push({ condVar: '', condOperator: '==', condValue: '', condVarType: 'STRING', condition: '', conditionLabel: '', score: 1, weight: 1.0 })

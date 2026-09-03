@@ -551,28 +551,28 @@ $warning-bg: #fffbe6;
   min-height: 220px;
   overflow: hidden;
 }
-.sp-editor-cm ::v-deep .CodeMirror {
+.sp-editor-cm :deep(.CodeMirror ){
   height: 320px;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.6;
 }
-.sp-editor-cm ::v-deep .cm-matchhighlight {
+.sp-editor-cm :deep(.cm-matchhighlight ){
   background: rgba(102, 168, 255, 0.30);
   border-radius: 2px;
 }
-.sp-editor-cm ::v-deep .cm-search-highlight {
+.sp-editor-cm :deep(.cm-search-highlight ){
   background: rgba(255, 170, 0, 0.40);
   border-radius: 2px;
 }
-.sp-editor-cm ::v-deep .CodeMirror-matchingbracket {
+.sp-editor-cm :deep(.CodeMirror-matchingbracket ){
   color: #ffd166 !important;
   font-weight: 700;
   background: rgba(255, 209, 102, 0.28);
   border-bottom: 2px solid #ffd166;
   border-radius: 2px;
 }
-.sp-editor-cm ::v-deep .CodeMirror-nonmatchingbracket {
+.sp-editor-cm :deep(.CodeMirror-nonmatchingbracket ){
   color: #fff !important;
   font-weight: 700;
   background: rgba(255, 107, 107, 0.55);
@@ -627,7 +627,7 @@ $warning-bg: #fffbe6;
   flex: 1 1 auto;
   min-height: 0;
 }
-.script-panel.sp-fullscreen .sp-editor-cm ::v-deep .CodeMirror {
+.script-panel.sp-fullscreen .sp-editor-cm :deep(.CodeMirror ){
   height: 100%;
 }
 
@@ -653,7 +653,7 @@ $warning-bg: #fffbe6;
 }
 
 /* 全局 el-radio-button 在深色背景下样式微调 */
-.sp-header-right ::v-deep .el-radio-button__inner {
+.sp-header-right :deep(.el-radio-button__inner ){
   padding: 4px 10px;
   font-size: 12px;
 }

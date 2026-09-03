@@ -972,7 +972,7 @@ export default {
       else document.removeEventListener('keydown', this._onEsc)
     }
   },
-  beforeDestroy: function() {
+  beforeUnmount: function() {
     document.removeEventListener('keydown', this._onEsc)
   },
   methods: {
