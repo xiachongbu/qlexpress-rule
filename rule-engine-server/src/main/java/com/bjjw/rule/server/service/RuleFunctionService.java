@@ -7,7 +7,7 @@ import com.bjjw.rule.model.entity.RuleFunction;
 import com.bjjw.rule.server.mapper.RuleFunctionMapper;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.List;
 
 @Service

@@ -1,5 +1,6 @@
 package com.bjjw.rule.server.consolelogin;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -16,8 +17,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @ConditionalOnProperty(prefix = "rule-engine.console-login", name = "enabled", havingValue = "true")
 public class ConsoleLoginConfiguration implements WebMvcConfigurer {
 
+    // 延迟获取自身 @Bean 定义的拦截器，避免配置类初始化期的循环依赖（Spring Boot 2.6+ 默认禁止）
     @Autowired
-    private ConsoleSessionAuthInterceptor consoleSessionAuthInterceptor;
+    private ObjectProvider<ConsoleSessionAuthInterceptor> consoleSessionAuthInterceptorProvider;
 
     @Autowired
     private RuleEngineConsoleLoginProperties ruleEngineConsoleLoginProperties;
@@ -44,7 +46,7 @@ public class ConsoleLoginConfiguration implements WebMvcConfigurer {
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(consoleSessionAuthInterceptor)
+        registry.addInterceptor(consoleSessionAuthInterceptorProvider.getObject())
                 .addPathPatterns(ruleEngineConsoleLoginProperties.getIncludePatterns())
                 .excludePathPatterns(ruleEngineConsoleLoginProperties.getExcludePatterns());
     }

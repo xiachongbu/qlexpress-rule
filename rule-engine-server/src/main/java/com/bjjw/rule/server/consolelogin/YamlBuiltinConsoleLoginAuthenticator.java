@@ -5,7 +5,7 @@ import cn.hutool.crypto.digest.BCrypt;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 /**
  * 使用 yml 中 rule-engine.console-login.builtin 配置的用户名、密码做校验（PLAIN 或 BCrypt）。

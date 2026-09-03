@@ -5,7 +5,7 @@ import com.bjjw.rule.server.common.R;
 import com.bjjw.rule.server.service.RuleExecutionLogService;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.List;
 
 @RestController

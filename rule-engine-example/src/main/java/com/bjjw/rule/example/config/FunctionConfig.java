@@ -5,8 +5,8 @@ import com.bjjw.rule.example.functions.TaxFunctions;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 
 /**
  * 自定义函数补充注册配置。

@@ -8,7 +8,7 @@ import com.bjjw.rule.model.entity.RuleVariable;
 import com.bjjw.rule.server.mapper.RuleDefinitionContentMapper;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
