@@ -13,20 +13,21 @@ spring:
     url: jdbc:mysql://localhost:3306/rule_engine?useUnicode=true&allowMultiQueries=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true
     username: ${MYSQL_USERNAME:root}
     password: ${MYSQL_PASSWORD:root}
-  redis:
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
-    # 无密码时留空或删除本行
-    password: ${REDIS_PASSWORD:123456}
-    connect-timeout: 2000
-    timeout: 3000
-    lettuce:
-      pool:
-        max-active: 8
-        max-idle: 8
-        min-idle: 0
-        max-wait: 1000ms
-      shutdown-timeout: 200ms
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      # 无密码时留空或删除本行
+      password: ${REDIS_PASSWORD:123456}
+      connect-timeout: 2000
+      timeout: 3000
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: 1000ms
+        shutdown-timeout: 200ms
 
 rule-engine:
   # 启用 Kafka 消费执行日志时，与 spring.kafka 一并配置；参见 README

@@ -22,7 +22,7 @@
       >
         <code class="var-code">{{ v.varCode }}</code>
         <span class="var-label">{{ v.varLabel }}</span>
-        <el-tag :type="typeColor(v.varType)" size="mini" class="var-tag">{{ typeLabel(v.varType) }}</el-tag>
+        <el-tag :type="typeColor(v.varType)" size="small" class="var-tag">{{ typeLabel(v.varType) }}</el-tag>
         <span v-if="v.exampleValue" class="var-example">例：{{ v.exampleValue }}</span>
       </div>
     </div>

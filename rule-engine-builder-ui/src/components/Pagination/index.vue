@@ -2,8 +2,8 @@
   <div class="page-container">
     <el-pagination
       :background="background"
-      :current-page.sync="currentPage"
-      :page-size.sync="pageSize"
+      v-model:current-page="currentPage"
+      v-model:page-size="pageSize"
       :layout="layout"
       :page-sizes="pageSizes"
       :total="total"
@@ -90,5 +90,5 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import '~@/styles/index';
+@import '@/styles/index';
 </style>

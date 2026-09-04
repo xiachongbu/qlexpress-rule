@@ -11,17 +11,17 @@
       </el-select>
       <div class="toolbar-right">
         <el-dropdown trigger="click" :disabled="!currentProjectId" @command="handleImportCmd">
-          <el-button type="primary" icon="el-icon-upload2">批量导入 <i class="el-icon-arrow-down el-icon--right" /></el-button>
-          <el-dropdown-menu slot="dropdown">
-            <el-dropdown-item command="java-entity" icon="el-icon-document">导入 Java 实体类</el-dropdown-item>
-            <el-dropdown-item command="json-object" icon="el-icon-tickets">导入 JSON 对象</el-dropdown-item>
-            <el-dropdown-item command="ddl-table" icon="el-icon-s-grid">导入 DDL 建表语句</el-dropdown-item>
-            <el-dropdown-item command="java-const" icon="el-icon-coin" divided>导入 Java 常量类</el-dropdown-item>
-            <el-dropdown-item command="json-const" icon="el-icon-price-tag">导入 JSON 常量</el-dropdown-item>
-          </el-dropdown-menu>
+          <el-button type="primary"><i class="el-icon-upload2" /> 批量导入 <i class="el-icon-arrow-down el-icon--right" /></el-button>
+          <template #dropdown><el-dropdown-menu>
+            <el-dropdown-item command="java-entity"><i class="el-icon-document" /> 导入 Java 实体类</el-dropdown-item>
+            <el-dropdown-item command="json-object"><i class="el-icon-tickets" /> 导入 JSON 对象</el-dropdown-item>
+            <el-dropdown-item command="ddl-table"><i class="el-icon-s-grid" /> 导入 DDL 建表语句</el-dropdown-item>
+            <el-dropdown-item command="java-const" divided><i class="el-icon-coin" /> 导入 Java 常量类</el-dropdown-item>
+            <el-dropdown-item command="json-const"><i class="el-icon-price-tag" /> 导入 JSON 常量</el-dropdown-item>
+          </el-dropdown-menu></template>
         </el-dropdown>
-        <el-button type="primary" icon="el-icon-plus" :disabled="!currentProjectId" @click="handlePrimaryCreate">{{ primaryCreateLabel }}</el-button>
-        <el-button icon="el-icon-video-play" type="success" :disabled="!currentProjectId" :loading="validating" style="margin-left: 0" @click="handleBatchValidate">验证规则</el-button>
+        <el-button type="primary" :disabled="!currentProjectId" @click="handlePrimaryCreate"><i class="el-icon-plus" /> {{ primaryCreateLabel }}</el-button>
+        <el-button type="success" :disabled="!currentProjectId" :loading="validating" style="margin-left: 0" @click="handleBatchValidate"><i class="el-icon-video-play" /> 验证规则</el-button>
       </div>
     </div>
 
@@ -31,10 +31,10 @@
       <!-- Tab 1: Variable List -->
       <el-tab-pane label="变量列表" name="list">
         <div class="tab-filter-row">
-          <el-select v-model="qp.varType" clearable placeholder="数据类型" size="mini" style="width:110px;" @change="handleQuery">
+          <el-select v-model="qp.varType" clearable placeholder="数据类型" size="small" style="width:110px;" @change="handleQuery">
             <el-option v-for="opt in varTypeFilterOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
-          <el-input v-model="qp.keyword" placeholder="搜索编码或名称" size="mini" clearable style="width:180px;" @keyup.enter.native="handleQuery" />
+          <el-input v-model="qp.keyword" placeholder="搜索编码或名称" size="small" clearable style="width:180px;" @keyup.enter="handleQuery" />
           <el-button type="success" @click="handleQuery">查询</el-button>
           <el-button type="primary" @click="resetQuery">重置</el-button>
         </div>
@@ -46,24 +46,24 @@
             <el-table-column prop="varCode" label="变量编码" min-width="130" show-overflow-tooltip />
             <el-table-column prop="varLabel" label="名称（中文）" min-width="120" show-overflow-tooltip />
             <el-table-column label="脚本名称" min-width="130">
-              <template slot-scope="{row}">
-                <el-input v-model="row.scriptName" size="mini" placeholder="脚本名称" @blur="onVarScriptNameChange(row)" />
+              <template #default="{row}">
+                <el-input v-model="row.scriptName" size="small" placeholder="脚本名称" @blur="onVarScriptNameChange(row)" />
               </template>
             </el-table-column>
             <el-table-column prop="varType" label="类型" min-width="80" align="center">
-              <template slot-scope="{ row }"><el-tag size="mini" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
+              <template #default="{ row }"><el-tag size="small" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
             </el-table-column>
             <el-table-column prop="varSource" label="来源" min-width="80" align="center">
-              <template slot-scope="{ row }">
-                <el-tag size="mini" :type="sourceTagColor(row.varSource)">{{ sourceLabel(row.varSource) }}</el-tag>
+              <template #default="{ row }">
+                <el-tag size="small" :type="sourceTagColor(row.varSource)">{{ sourceLabel(row.varSource) }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column prop="defaultValue" label="默认值" min-width="90" show-overflow-tooltip />
             <el-table-column prop="status" label="状态" min-width="60" align="center">
-              <template slot-scope="{ row }"><el-tag :type="row.status===1?'success':'info'" size="mini">{{ row.status===1?'启用':'停用' }}</el-tag></template>
+              <template #default="{ row }"><el-tag :type="row.status===1?'success':'info'" size="small">{{ row.status===1?'启用':'停用' }}</el-tag></template>
             </el-table-column>
             <el-table-column label="操作" min-width="140" align="center">
-              <template slot-scope="{ row }">
+              <template #default="{ row }">
                 <el-button type="text" size="small" @click="handleEdit(row)">编辑</el-button>
                 <el-button v-if="row.varType==='ENUM'" type="text" size="small" @click="handleOptions(row)">选项</el-button>
                 <el-button type="text" size="small" style="color:#F56C6C;" @click="handleDelete(row)">删除</el-button>
@@ -127,33 +127,35 @@
               <i :class="node._expanded ? 'el-icon-arrow-down' : 'el-icon-arrow-right'" class="expand-icon" />
               <span class="var-group-code">{{ node.object.objectCode }}</span>
               <span v-if="node.object.objectLabel && node.object.objectLabel !== node.object.objectCode" class="var-group-label">{{ node.object.objectLabel }}</span>
-              <el-input v-model="node.object.scriptName" size="mini" placeholder="脚本名称" style="width:130px;margin-left:6px;" @blur="onObjectScriptNameChange(node.object)" @click.native.stop />
-              <el-select v-model="node.object.objectType" size="mini" style="width:100px;" @change="onObjectTypeChange(node.object)" @click.native.stop>
+              <el-input v-model="node.object.scriptName" size="small" placeholder="脚本名称" style="width:130px;margin-left:6px;" @blur="onObjectScriptNameChange(node.object)" @click.stop />
+              <el-select v-model="node.object.objectType" size="small" style="width:100px;" @change="onObjectTypeChange(node.object)" @click.stop>
                 <el-option label="输入对象" value="INPUT" /><el-option label="输出对象" value="OUTPUT" /><el-option label="输入输出" value="INOUT" />
               </el-select>
-              <el-tag size="mini" :type="objTypeColor(node.object.objectType)">{{ objTypeLabel(node.object.objectType) }}</el-tag>
-              <el-tag v-if="node.object.sourceType" size="mini" type="info">{{ node.object.sourceType }}</el-tag>
+              <el-tag size="small" :type="objTypeColor(node.object.objectType)">{{ objTypeLabel(node.object.objectType) }}</el-tag>
+              <el-tag v-if="node.object.sourceType" size="small" type="info">{{ node.object.sourceType }}</el-tag>
               <span class="var-group-count">{{ node.variables.length }} 个字段</span>
-              <el-button type="text" size="small" icon="el-icon-plus" style="margin-left:auto;" @click.stop="handleAddObjectField(node)">添加字段</el-button>
-              <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click.stop="handleDeleteObject(node.object)" />
+              <el-button type="text" size="small" style="margin-left:auto;" @click.stop="handleAddObjectField(node)"><i class="el-icon-plus" /> 添加字段</el-button>
+              <el-button type="text" size="small" style="color:#F56C6C;" @click.stop="handleDeleteObject(node.object)" >
+        <i class="el-icon-delete" />
+      </el-button>
             </div>
             <div v-show="node._expanded" class="var-group-body">
-              <el-table :data="node.variables" size="mini" border style="width:100%;">
+              <el-table :data="node.variables" size="small" border style="width:100%;">
                 <el-table-column prop="varCode" label="字段编码" min-width="140" show-overflow-tooltip />
                 <el-table-column prop="varLabel" label="名称" min-width="120" show-overflow-tooltip />
                 <el-table-column label="脚本名称" min-width="140">
-                  <template slot-scope="{row}">
-                    <el-input v-model="row.scriptName" size="mini" placeholder="脚本名称" @blur="onObjectFieldScriptNameBlur(row)" />
+                  <template #default="{row}">
+                    <el-input v-model="row.scriptName" size="small" placeholder="脚本名称" @blur="onObjectFieldScriptNameBlur(row)" />
                   </template>
                 </el-table-column>
                 <el-table-column prop="varType" label="类型" min-width="80" align="center">
-                  <template slot-scope="{row}"><el-tag size="mini" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
+                  <template #default="{row}"><el-tag size="small" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
                 </el-table-column>
                 <el-table-column prop="refObjectCode" label="引用对象" min-width="110" show-overflow-tooltip>
-                  <template slot-scope="{row}"><span v-if="row.refObjectCode" class="badge badge-obj">{{ row.refObjectCode }}</span><span v-else style="color:#ccc;">—</span></template>
+                  <template #default="{row}"><span v-if="row.refObjectCode" class="badge badge-obj">{{ row.refObjectCode }}</span><span v-else style="color:#ccc;">—</span></template>
                 </el-table-column>
                 <el-table-column label="操作" width="140" align="center">
-                  <template slot-scope="{ row }">
+                  <template #default="{ row }">
                     <el-button type="text" size="small" @click="handleEditObjectField(row, node)">编辑</el-button>
                     <el-button v-if="row.varType==='ENUM'" type="text" size="small" @click="handleOptions(row, true)">选项</el-button>
                     <el-button type="text" size="small" style="color:#F56C6C;" @click="handleDeleteObjectField(row)">删除</el-button>
@@ -176,12 +178,12 @@
       <!-- Tab 3: 常量列表（与变量列表相同分页模型，必须有默认值） -->
       <el-tab-pane label="常量列表" name="constants">
         <div v-if="currentProjectId" class="tab-filter-row">
-          <el-select v-model="constQp.varType" clearable placeholder="数据类型" size="mini" style="width:110px;" @change="handleConstQuery">
+          <el-select v-model="constQp.varType" clearable placeholder="数据类型" size="small" style="width:110px;" @change="handleConstQuery">
             <el-option v-for="opt in varTypeFilterOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
-          <el-input v-model="constQp.keyword" placeholder="搜索编码或名称" size="mini" clearable style="width:180px;" @keyup.enter.native="handleConstQuery" />
-          <el-button size="mini" type="primary" @click="handleConstQuery">查询</el-button>
-          <el-button size="mini" @click="resetConstQuery">重置</el-button>
+          <el-input v-model="constQp.keyword" placeholder="搜索编码或名称" size="small" clearable style="width:180px;" @keyup.enter="handleConstQuery" />
+          <el-button size="small" type="primary" @click="handleConstQuery">查询</el-button>
+          <el-button size="small" @click="resetConstQuery">重置</el-button>
         </div>
         <el-empty v-if="!currentProjectId" :image-size="200">
           <template #image>
@@ -204,23 +206,23 @@
             <el-table-column prop="varCode" label="常量编码" min-width="130" show-overflow-tooltip />
             <el-table-column prop="varLabel" label="名称" min-width="120" show-overflow-tooltip />
             <el-table-column label="脚本名称" min-width="130">
-              <template slot-scope="{row}">
-                <el-input v-model="row.scriptName" size="mini" placeholder="脚本名称" @blur="onVarScriptNameChange(row)" />
+              <template #default="{row}">
+                <el-input v-model="row.scriptName" size="small" placeholder="脚本名称" @blur="onVarScriptNameChange(row)" />
               </template>
             </el-table-column>
             <el-table-column prop="varType" label="类型" min-width="80" align="center">
-              <template slot-scope="{ row }"><el-tag size="mini" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
+              <template #default="{ row }"><el-tag size="small" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
             </el-table-column>
             <el-table-column label="常量值（默认）" min-width="160">
-              <template slot-scope="{row}">
-                <el-input v-model="row.defaultValue" size="mini" @blur="onConstDefaultBlur(row)" />
+              <template #default="{row}">
+                <el-input v-model="row.defaultValue" size="small" @blur="onConstDefaultBlur(row)" />
               </template>
             </el-table-column>
             <el-table-column prop="status" label="状态" min-width="60" align="center">
-              <template slot-scope="{ row }"><el-tag :type="row.status===1?'success':'info'" size="mini">{{ row.status===1?'启用':'停用' }}</el-tag></template>
+              <template #default="{ row }"><el-tag :type="row.status===1?'success':'info'" size="small">{{ row.status===1?'启用':'停用' }}</el-tag></template>
             </el-table-column>
             <el-table-column label="操作" min-width="120" align="center">
-              <template slot-scope="{ row }">
+              <template #default="{ row }">
                 <el-button type="text" size="small" @click="handleEdit(row)">编辑</el-button>
                 <el-button type="text" size="small" style="color:#F56C6C;" @click="handleDelete(row)">删除</el-button>
               </template>
@@ -241,7 +243,7 @@
     </el-tabs>
 
     <!-- Create/Edit Variable Dialog -->
-    <el-dialog :title="variableDialogTitle" :visible.sync="dialogVisible" width="510px" :close-on-click-modal="false" custom-class="middleDialog">
+    <el-dialog :title="variableDialogTitle" v-model="dialogVisible" width="510px" :close-on-click-modal="false" custom-class="middleDialog">
       <el-form ref="form" :model="form" :rules="rules" label-width="120px" size="small">
         <el-form-item v-if="!form.id && isObjectField && objectFieldParentId" label="所属数据对象">
           <span class="text-muted">{{ getObjectCode(objectFieldParentId) }}</span>
@@ -275,38 +277,38 @@
         <el-form-item label="状态"><el-switch v-model="form.status" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="停用" /></el-form-item>
         <el-form-item v-if="!isObjectField" label="说明"><el-input v-model="form.description" type="textarea" :rows="2" /></el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button type="primary" @click="dialogVisible=false">取消</el-button>
         <el-button type="success" @click="handleSubmit">确定</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <!-- Enum Options Dialog -->
-    <el-dialog title="枚举选项管理" :visible.sync="optionDialogVisible" width="510px" :close-on-click-modal="false" custom-class="middleDialog">
+    <el-dialog title="枚举选项管理" v-model="optionDialogVisible" width="510px" :close-on-click-modal="false" custom-class="middleDialog">
       <div style="margin-bottom:12px;">
         <span style="font-weight:bold;">{{ currentVar ? currentVar.varLabel : '' }}</span>
         <span style="color:#999;margin-left:8px;">{{ currentVar ? currentVar.varCode : '' }}</span>
       </div>
       <el-table :data="optionList" border size="small" style="width:100%;">
         <el-table-column label="选项值" min-width="160">
-          <template slot-scope="{row}"><el-input v-model="row.optionValue" size="mini" placeholder="选项值" /></template>
+          <template #default="{row}"><el-input v-model="row.optionValue" size="small" placeholder="选项值" /></template>
         </el-table-column>
         <el-table-column label="选项标签（中文）" min-width="180">
-          <template slot-scope="{row}"><el-input v-model="row.optionLabel" size="mini" placeholder="中文标签" /></template>
+          <template #default="{row}"><el-input v-model="row.optionLabel" size="small" placeholder="中文标签" /></template>
         </el-table-column>
         <el-table-column label="操作" width="80" align="center">
-          <template slot-scope="{$index}"><el-button type="text" size="small" style="color:#F56C6C;" @click="optionList.splice($index,1)">移除</el-button></template>
+          <template #default="{$index}"><el-button type="text" size="small" style="color:#F56C6C;" @click="optionList.splice($index,1)">移除</el-button></template>
         </el-table-column>
       </el-table>
-      <el-button type="text" size="small" icon="el-icon-plus" style="margin-top:8px;" @click="optionList.push({optionValue:'',optionLabel:'',sortOrder:optionList.length})">添加选项</el-button>
-      <div slot="footer">
+      <el-button type="text" size="small" style="margin-top:8px;" @click="optionList.push({optionValue:'',optionLabel:'',sortOrder:optionList.length})"><i class="el-icon-plus" /> 添加选项</el-button>
+      <template #footer><div>
         <el-button type="primary" @click="optionDialogVisible=false">取消</el-button>
         <el-button type="success" @click="handleSaveOptions">保存选项</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <!-- Java Entity Import Dialog -->
-    <el-dialog title="导入 Java 实体类" :visible.sync="importJavaEntityVisible" width="700px" :close-on-click-modal="false">
+    <el-dialog title="导入 Java 实体类" v-model="importJavaEntityVisible" width="700px" :close-on-click-modal="false">
       <el-form size="small" label-width="100px">
         <el-form-item label="对象类型">
           <el-radio-group v-model="importForm.objectType">
@@ -318,18 +320,18 @@
         </el-form-item>
         <el-form-item label="或上传文件">
           <el-upload action="" :before-upload="handleJavaFileSelect" :show-file-list="false" accept=".java">
-            <el-button size="small" icon="el-icon-upload">选择 .java 文件</el-button>
+            <el-button size="small"><i class="el-icon-upload" /> 选择 .java 文件</el-button>
           </el-upload>
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button type="primary" @click="importJavaEntityVisible=false">取消</el-button>
         <el-button type="success" :loading="importing" @click="doImportJavaEntity">导入</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <!-- JSON Object Import Dialog -->
-    <el-dialog title="导入 JSON 对象" :visible.sync="importJsonObjectVisible" width="700px" :close-on-click-modal="false">
+    <el-dialog title="导入 JSON 对象" v-model="importJsonObjectVisible" width="700px" :close-on-click-modal="false">
       <el-form size="small" label-width="100px">
         <el-form-item label="对象编码"><el-input v-model="importForm.objectCode" placeholder="如 TaxRequest" /></el-form-item>
         <el-form-item label="对象类型">
@@ -341,14 +343,14 @@
           <el-input v-model="importForm.jsonContent" type="textarea" :rows="14" placeholder="粘贴 JSON 样本数据，如：{&quot;name&quot;:&quot;张三&quot;,&quot;age&quot;:30,&quot;address&quot;:{&quot;city&quot;:&quot;北京&quot;}}" style="font-family:Consolas,monospace;" />
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button type="primary" @click="importJsonObjectVisible=false">取消</el-button>
         <el-button type="success" :loading="importing" @click="doImportJsonObject">导入</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <!-- DDL Import Dialog -->
-    <el-dialog title="导入 DDL 建表语句" :visible.sync="importDdlVisible" width="720px" :close-on-click-modal="false">
+    <el-dialog title="导入 DDL 建表语句" v-model="importDdlVisible" width="720px" :close-on-click-modal="false">
       <el-form size="small" label-width="100px">
         <el-form-item label="对象类型">
           <el-radio-group v-model="importForm.objectType">
@@ -359,73 +361,73 @@
           <el-input v-model="importForm.ddlSource" type="textarea" :rows="14" placeholder="粘贴 CREATE TABLE ... 语句；支持多张表。列 COMMENT 将解析为变量名称（中文名）。" style="font-family:Consolas,monospace;" />
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button type="primary" @click="importDdlVisible=false">取消</el-button>
         <el-button type="success" :loading="importing" @click="doImportDdl">导入</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <!-- Java Constants Import Dialog -->
-    <el-dialog title="导入 Java 常量类" :visible.sync="importJavaConstVisible" width="700px" :close-on-click-modal="false">
+    <el-dialog title="导入 Java 常量类" v-model="importJavaConstVisible" width="700px" :close-on-click-modal="false">
       <el-form size="small" label-width="100px">
         <el-form-item label="Java 源码">
           <el-input v-model="importForm.javaSource" type="textarea" :rows="14" placeholder="粘贴包含 static final 字段的 Java 类源码..." style="font-family:Consolas,monospace;" />
         </el-form-item>
         <el-form-item label="或上传文件">
           <el-upload action="" :before-upload="handleJavaFileSelect" :show-file-list="false" accept=".java">
-            <el-button size="small" icon="el-icon-upload">选择 .java 文件</el-button>
+            <el-button size="small"><i class="el-icon-upload" /> 选择 .java 文件</el-button>
           </el-upload>
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button type="primary" @click="importJavaConstVisible=false">取消</el-button>
         <el-button type="success" :loading="importing" @click="doImportJavaConst">导入</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <!-- JSON Constants Import Dialog -->
-    <el-dialog title="导入 JSON 常量" :visible.sync="importJsonConstVisible" width="700px" :close-on-click-modal="false">
+    <el-dialog title="导入 JSON 常量" v-model="importJsonConstVisible" width="700px" :close-on-click-modal="false">
       <el-form size="small" label-width="100px">
         <el-form-item label="JSON 数据">
           <el-input v-model="importForm.jsonContent" type="textarea" :rows="14" placeholder="扁平 JSON 键值对，如：{&quot;VAT_RATE&quot;:0.13,&quot;TAX_FREE&quot;:5000,&quot;REGION&quot;:&quot;CN&quot;}" style="font-family:Consolas,monospace;" />
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button type="primary" @click="importJsonConstVisible=false">取消</el-button>
         <el-button type="success" :loading="importing" @click="doImportJsonConst">导入</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <!-- Validation Results Dialog -->
-    <el-dialog title="规则验证结果" :visible.sync="validateVisible" width="700px">
+    <el-dialog title="规则验证结果" v-model="validateVisible" width="700px">
       <el-table :data="validateResults" size="small" border>
         <el-table-column prop="ruleName" label="规则名称" min-width="160" show-overflow-tooltip />
         <el-table-column prop="ruleCode" label="规则编码" min-width="120" show-overflow-tooltip />
         <el-table-column prop="modelType" label="模型" min-width="70" align="center" />
         <el-table-column label="编译" min-width="60" align="center">
-          <template slot-scope="{row}"><el-tag :type="row.compileOk?'success':'danger'" size="mini">{{ row.compileOk?'通过':'失败' }}</el-tag></template>
+          <template #default="{row}"><el-tag :type="row.compileOk?'success':'danger'" size="small">{{ row.compileOk?'通过':'失败' }}</el-tag></template>
         </el-table-column>
         <el-table-column label="执行" min-width="60" align="center">
-          <template slot-scope="{row}"><el-tag :type="row.executeOk?'success':'danger'" size="mini">{{ row.executeOk?'通过':'失败' }}</el-tag></template>
+          <template #default="{row}"><el-tag :type="row.executeOk?'success':'danger'" size="small">{{ row.executeOk?'通过':'失败' }}</el-tag></template>
         </el-table-column>
         <el-table-column prop="errorMsg" label="错误信息" min-width="200" show-overflow-tooltip />
       </el-table>
-      <div slot="footer">
-        <el-button type="success" @click="validateVisible=false">关闭</el-button></div>
+      <template #footer><div>
+        <el-button type="success" @click="validateVisible=false">关闭</el-button></div></template>
     </el-dialog>
 
     <!-- Import Result Dialog -->
-    <el-dialog title="导入结果" :visible.sync="importResultVisible" width="500px">
+    <el-dialog title="导入结果" v-model="importResultVisible" width="500px">
       <div class="import-result-body">
         <i class="el-icon-success" style="font-size:48px;color:#67C23A;" />
         <h3>导入完成</h3>
         <p v-if="importResult.objectCount != null">创建/更新 <b>{{ importResult.objectCount }}</b> 个数据对象，<b>{{ importResult.variableCount }}</b> 个变量</p>
         <p v-if="importResult.constantCount != null">创建/更新 <b>{{ importResult.constantCount }}</b> 个常量</p>
       </div>
-      <div slot="footer">
-        <el-button type="warning" icon="el-icon-video-play" @click="importResultVisible=false;handleBatchValidate()">验证项目规则</el-button>
+      <template #footer><div>
+        <el-button type="warning" @click="importResultVisible=false;handleBatchValidate()"><i class="el-icon-video-play" /> 验证项目规则</el-button>
         <el-button type="primary" @click="importResultVisible=false">关闭</el-button>
-      </div>
+      </div></template>
     </el-dialog>
   </div>
 </template>
@@ -604,7 +606,7 @@ export default {
       if (this.activeTab === 'constants') this.loadConstants()
     },
     toggleObjectExpand(node) {
-      this.$set(this.objExpanded, node.object.id, !this.objExpanded[node.object.id])
+      this.objExpanded[node.object.id] = !this.objExpanded[node.object.id]
     },
     handleObjPageChange(p) { this.objPageNum = p },
     async loadData() {

@@ -5,17 +5,17 @@
       <div class="se-title-area">
         <i class="el-icon-edit-outline se-title-icon" />
         <span class="se-title">QL脚本编辑器</span>
-        <el-tag size="mini" type="info" style="margin-left:8px;">{{ lineCount }} 行</el-tag>
+        <el-tag size="small" type="info" style="margin-left:8px;">{{ lineCount }} 行</el-tag>
       </div>
       <div class="se-toolbar">
-        <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <el-button size="small" @click="handleSave"><i class="el-icon-document" /> 保存</el-button>
         <design-version-switcher
           :definition-id="definitionId"
           :scope-comp-id="scopeCompId"
           @apply-model="onApplyDesignSnapshot"
         />
-        <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">验证脚本</el-button>
-        <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
+        <el-button size="small" type="warning" @click="handleCompile"><i class="el-icon-cpu" /> 验证脚本</el-button>
+        <el-button size="small" type="primary" @click="handleTest"><i class="el-icon-video-play" /> 测试</el-button>
       </div>
     </div>
 
@@ -32,7 +32,7 @@
           </div>
           <div v-else-if="varsLoadError" style="text-align:center;padding:20px;color:#F56C6C;">
             <i class="el-icon-warning" /> 加载失败
-            <el-button type="text" size="mini" style="display:block;margin:6px auto 0;" @click="loadProjectVars(definitionId)">重试</el-button>
+            <el-button type="text" size="small" style="display:block;margin:6px auto 0;" @click="loadProjectVars(definitionId)">重试</el-button>
           </div>
           <div v-else-if="varTree.length === 0" style="text-align:center;padding:20px;color:#bbb;">
             <i class="el-icon-folder-opened" /> 暂无项目变量
@@ -42,11 +42,12 @@
             <div class="se-var-search">
               <el-input
                 v-model="varSearchKey"
-                size="mini"
+                size="small"
                 placeholder="搜索变量..."
-                prefix-icon="el-icon-search"
                 clearable
-              />
+              >
+                <template #prefix><i class="el-icon-search" /></template>
+              </el-input>
             </div>
             <!-- 树形分组 -->
             <div v-for="cat in filteredVarTree" :key="cat.key" class="se-cat">
@@ -66,7 +67,7 @@
                     :title="'双击插入: ' + v.varCode"
                     @dblclick="insertVar(v.varCode)"
                   >
-                    <el-tag :type="varTypeColor(v.varType)" size="mini" class="var-type-tag">{{ varTypeLabel(v.varType) }}</el-tag>
+                    <el-tag :type="varTypeColor(v.varType)" size="small" class="var-type-tag">{{ varTypeLabel(v.varType) }}</el-tag>
                     <span class="var-code">{{ v.varCode }}</span>
                     <span class="var-label">{{ v.varLabel }}</span>
                   </div>
@@ -87,7 +88,7 @@
                         :title="'双击插入: ' + v.varCode"
                         @dblclick="insertVar(v.varCode)"
                       >
-                        <el-tag :type="varTypeColor(v.varType)" size="mini" class="var-type-tag">{{ varTypeLabel(v.varType) }}</el-tag>
+                        <el-tag :type="varTypeColor(v.varType)" size="small" class="var-type-tag">{{ varTypeLabel(v.varType) }}</el-tag>
                         <span class="var-code">{{ v.varCode }}</span>
                         <span class="var-label">{{ v.varLabel }}</span>
                       </div>
@@ -123,16 +124,17 @@
             <el-input
               ref="searchInput"
               v-model="searchQuery"
-              size="mini"
+              size="small"
               placeholder="查找"
-              prefix-icon="el-icon-search"
               clearable
               class="se-search-input"
               @input="highlightAll"
-              @keydown.enter.native.prevent="findNext(false)"
-            />
-            <el-button size="mini" @click="findNext(false)">下一个</el-button>
-            <el-button size="mini" @click="highlightAll">全部高亮显示</el-button>
+              @keydown.enter.prevent="findNext(false)"
+            >
+              <template #prefix><i class="el-icon-search" /></template>
+            </el-input>
+            <el-button size="small" @click="findNext(false)">下一个</el-button>
+            <el-button size="small" @click="highlightAll">全部高亮显示</el-button>
             <span class="se-search-spacer" />
             <el-checkbox v-model="showReplace" class="se-search-toggle">替换</el-checkbox>
             <i class="el-icon-close se-search-close" title="关闭 (Esc)" @click="closeSearch" />
@@ -140,13 +142,13 @@
           <div v-show="showReplace" class="se-search-row">
             <el-input
               v-model="replaceQuery"
-              size="mini"
+              size="small"
               placeholder="替换为"
               class="se-search-input"
-              @keydown.enter.native.prevent="replaceCurrent"
+              @keydown.enter.prevent="replaceCurrent"
             />
-            <el-button size="mini" @click="replaceCurrent">替换</el-button>
-            <el-button size="mini" @click="replaceAll">全部替换</el-button>
+            <el-button size="small" @click="replaceCurrent">替换</el-button>
+            <el-button size="small" @click="replaceAll">全部替换</el-button>
           </div>
         </div>
 
@@ -164,15 +166,15 @@
 
     <!-- 测试弹窗 -->
     <test-execute-dialog
-      :visible.sync="testVisible"
+      v-model:visible="testVisible"
       :fields="testFields"
       :params="testParams"
-      :params-json.sync="testParamsJson"
-      :mode.sync="testMode"
+      v-model:paramsJson="testParamsJson"
+      v-model:mode="testMode"
       :result="testResult"
       @execute="doTest"
     >
-      <template slot="result">
+      <template #result>
         <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"
@@ -346,15 +348,15 @@ export default {
       this.resetCmHistoryBaseline()
     }
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.destroyCmEditor()
   },
   methods: {
     toggleCat(key) {
-      this.$set(this.expandedCats, key, !this.expandedCats[key])
+      this.expandedCats[key] = !this.expandedCats[key]
     },
     toggleGroup(key) {
-      this.$set(this.expandedGroups, key, !this.expandedGroups[key])
+      this.expandedGroups[key] = !this.expandedGroups[key]
     },
     /** 统计一级分类下叶子节点总数 */
     countLeaves(cat) {
@@ -669,27 +671,27 @@ $editor-border: #313244;
   display: flex;
   flex-direction: column;
 }
-.se-editor-cm ::v-deep .CodeMirror {
+.se-editor-cm :deep(.CodeMirror ){
   height: 100%;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.6;
 }
 /* 同名变量高亮：光标点到某变量时，所有同名出现处高亮 */
-.se-editor-cm ::v-deep .cm-matchhighlight {
+.se-editor-cm :deep(.cm-matchhighlight ){
   background: rgba(102, 168, 255, 0.30);
   border-radius: 2px;
 }
-.se-editor-cm ::v-deep .CodeMirror-selection-highlight-scrollbar {
+.se-editor-cm :deep(.CodeMirror-selection-highlight-scrollbar ){
   background: #66a8ff;
 }
 /* 查找匹配项高亮（全部高亮显示） */
-.se-editor-cm ::v-deep .cm-search-highlight {
+.se-editor-cm :deep(.cm-search-highlight ){
   background: rgba(255, 170, 0, 0.40);
   border-radius: 2px;
 }
 /* 匹配的花括号/括号对：高亮加粗 + 背景 + 下划线，便于快速识别配对关系 */
-.se-editor-cm ::v-deep .CodeMirror-matchingbracket {
+.se-editor-cm :deep(.CodeMirror-matchingbracket ){
   color: #ffd166 !important;
   font-weight: 700;
   background: rgba(255, 209, 102, 0.28);
@@ -697,7 +699,7 @@ $editor-border: #313244;
   border-radius: 2px;
 }
 /* 未找到匹配的括号：红色告警 */
-.se-editor-cm ::v-deep .CodeMirror-nonmatchingbracket {
+.se-editor-cm :deep(.CodeMirror-nonmatchingbracket ){
   color: #fff !important;
   font-weight: 700;
   background: rgba(255, 107, 107, 0.55);

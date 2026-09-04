@@ -5,14 +5,14 @@ import com.bjjw.rule.client.log.ExecutionLogReporter;
 import com.bjjw.rule.client.log.KafkaLogReporter;
 import com.bjjw.rule.core.function.HttpBuiltinFunctions;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
-import org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,9 +27,12 @@ import org.springframework.util.StringUtils;
  * （或 {@link StringRedisTemplate}）用于 L1/L2 缓存。若存在 {@link KafkaTemplate}，则执行日志走 Kafka 上报，
  * 否则回退为 HTTP 上报。</p>
  */
-@Configuration
+@AutoConfiguration
 @ConditionalOnProperty(prefix = "rule-engine.client", name = "server-url")
-@AutoConfigureAfter({RedisAutoConfiguration.class, KafkaAutoConfiguration.class})
+@AutoConfigureAfter(
+        value = DataRedisAutoConfiguration.class,
+        name = "org.springframework.boot.kafka.autoconfigure.KafkaAutoConfiguration"
+)
 public class RuleEngineAutoConfiguration {
 
     @Bean

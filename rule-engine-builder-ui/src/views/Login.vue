@@ -38,7 +38,7 @@
           :model="form"
           :rules="rules"
           label-position="top"
-          @submit.native.prevent="submit"
+          @submit.prevent="submit"
         >
           <el-form-item label="用户名" prop="username">
             <el-input
@@ -46,7 +46,7 @@
               autocomplete="username"
               clearable
               placeholder="请输入用户名"
-              @keyup.enter.native="submit"
+              @keyup.enter="submit"
             />
           </el-form-item>
           <el-form-item label="密码" prop="password">
@@ -56,7 +56,7 @@
               autocomplete="current-password"
               show-password
               placeholder="请输入密码"
-              @keyup.enter.native="submit"
+              @keyup.enter="submit"
             />
           </el-form-item>
           <el-form-item class="login-form__actions">
@@ -319,11 +319,11 @@ $login-primary-soft: rgba(179, 0, 0, 0.12);
 /**
  * Element 表单：圆角输入、清晰 focus 环、标签层次。
  */
-::v-deep .login-form .el-form-item {
+:deep(.login-form .el-form-item ){
   margin-bottom: 20px;
 }
 
-::v-deep .login-form .el-form-item__label {
+:deep(.login-form .el-form-item__label ){
   padding: 0 0 8px;
   line-height: 1.3;
   font-weight: 600;
@@ -331,26 +331,29 @@ $login-primary-soft: rgba(179, 0, 0, 0.12);
   color: $login-text;
 }
 
-::v-deep .login-form .el-input__inner {
+:deep(.login-form .el-input__inner ){
   height: 44px;
   line-height: 44px;
-  border-radius: 12px;
-  border: 1px solid $login-border;
   font-size: 15px;
   color: $login-text;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-::v-deep .login-form .el-input__inner:hover {
-  border-color: #cbd5e1;
+/* element-plus 边框在 wrapper 上以 inset box-shadow 实现 */
+:deep(.login-form .el-input__wrapper ){
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px $login-border inset;
+  transition: box-shadow 0.2s ease;
 }
 
-::v-deep .login-form .el-input__inner:focus {
-  border-color: $login-primary;
-  box-shadow: 0 0 0 3px $login-primary-soft;
+:deep(.login-form .el-input__wrapper:hover ){
+  box-shadow: 0 0 0 1px #cbd5e1 inset;
 }
 
-::v-deep .login-form .el-input__inner::placeholder {
+:deep(.login-form .el-input__wrapper.is-focus ){
+  box-shadow: 0 0 0 1px $login-primary inset, 0 0 0 3px $login-primary-soft;
+}
+
+:deep(.login-form .el-input__inner::placeholder ){
   color: #94a3b8;
 }
 

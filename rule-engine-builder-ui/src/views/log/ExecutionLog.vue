@@ -54,30 +54,30 @@
     </div>
     <el-table v-loading="loading" :data="list" border row-class-name="uiueTable" header-row-class-name="uiueTableHeader" style="width: 100%;margin-top: 8px">
       <el-table-column prop="projectCode" label="项目" min-width="100" show-overflow-tooltip sortable>
-        <template slot-scope="{row}">{{ projectMap[row.projectCode] || row.projectCode || '-' }}</template>
+        <template #default="{row}">{{ projectMap[row.projectCode] || row.projectCode || '-' }}</template>
       </el-table-column>
       <el-table-column prop="ruleCode" label="规则编码" min-width="140" show-overflow-tooltip sortable>
-        <template slot-scope="{row}">
-          <template v-if="row.modelType === 'RULE_SET'"><el-tag size="mini" type="warning" style="margin-right:4px">集</el-tag>{{ ruleSetMap[row.ruleCode] || row.ruleCode }}</template>
+        <template #default="{row}">
+          <template v-if="row.modelType === 'RULE_SET'"><el-tag size="small" type="warning" style="margin-right:4px">集</el-tag>{{ ruleSetMap[row.ruleCode] || row.ruleCode }}</template>
           <template v-else>{{ ruleMap[row.ruleCode] || row.ruleCode }}</template>
         </template>
       </el-table-column>
       <el-table-column prop="modelType" label="模型类型" min-width="80" align="center" sortable>
-        <template slot-scope="{row}">{{ modelTypeMap[row.modelType] || row.modelType }}</template>
+        <template #default="{row}">{{ modelTypeMap[row.modelType] || row.modelType }}</template>
       </el-table-column>
       <el-table-column prop="source" label="来源" min-width="80" align="center" sortable>
-        <template slot-scope="{row}"><el-tag :type="row.source==='SERVER'?'':'success'" size="mini">{{ row.source==='SERVER'?'服务端':'客户端' }}</el-tag></template>
+        <template #default="{row}"><el-tag :type="row.source==='SERVER'?'':'success'" size="small">{{ row.source==='SERVER'?'服务端':'客户端' }}</el-tag></template>
       </el-table-column>
       <el-table-column prop="success" label="结果" min-width="70" align="center" sortable>
-        <template slot-scope="{row}"><el-tag :type="row.success===1?'success':'danger'" size="mini">{{ row.success===1?'成功':'失败' }}</el-tag></template>
+        <template #default="{row}"><el-tag :type="row.success===1?'success':'danger'" size="small">{{ row.success===1?'成功':'失败' }}</el-tag></template>
       </el-table-column>
       <el-table-column prop="executeTimeMs" label="耗时(ms)" min-width="80" align="center" sortable />
       <el-table-column prop="clientAppName" label="客户端" min-width="110" show-overflow-tooltip sortable />
       <el-table-column prop="createTime" label="执行时间" min-width="150" sortable>
-        <template slot-scope="{row}">{{ formatTime(row.createTime) }}</template>
+        <template #default="{row}">{{ formatTime(row.createTime) }}</template>
       </el-table-column>
       <el-table-column label="操作" width="80">
-        <template slot-scope="{row}">
+        <template #default="{row}">
           <span class="tableOperateBtn" @click="showDetail(row)">详情</span>
         </template>
       </el-table-column>
@@ -92,17 +92,17 @@
       @current-change="p=>{qp.pageNum=p;load()}"
       @size-change="s=>{qp.pageSize=s;qp.pageNum=1;load()}"
     />
-    <el-drawer title="日志详情" :visible.sync="detailVis" size="92%" @opened="onDetailDrawerOpened">
+    <el-drawer title="日志详情" v-model="detailVis" size="92%" @opened="onDetailDrawerOpened">
       <div v-if="detail" style="padding:16px">
         <!-- 汇总条：结论前置（成功/失败、耗时、模型、版本、来源、业务ID、执行时间） -->
         <div class="log-summary-bar">
           <el-tag :type="detail.success === 1 ? 'success' : 'danger'" size="small">{{ detail.success === 1 ? '执行成功' : '执行失败' }}</el-tag>
           <span class="log-summary-cost"><i class="el-icon-timer" /> {{ detail.executeTimeMs != null ? detail.executeTimeMs : '-' }}<small> ms</small></span>
-          <span class="log-summary-item"><span class="lbl">模型</span><el-tag size="mini">{{ modelTypeMap[detail.modelType] || detail.modelType || '-' }}</el-tag></span>
+          <span class="log-summary-item"><span class="lbl">模型</span><el-tag size="small">{{ modelTypeMap[detail.modelType] || detail.modelType || '-' }}</el-tag></span>
           <span v-if="detail.ruleVersion != null" class="log-summary-item"><span class="lbl">版本</span><span class="val">v{{ detail.ruleVersion }}</span></span>
           <span class="log-summary-item">
             <span class="lbl">来源</span>
-            <el-tag :type="detail.source === 'SERVER' ? '' : 'success'" size="mini">{{ detail.source === 'SERVER' ? '服务端' : '客户端' }}</el-tag>
+            <el-tag :type="detail.source === 'SERVER' ? '' : 'success'" size="small">{{ detail.source === 'SERVER' ? '服务端' : '客户端' }}</el-tag>
             <span v-if="detail.clientAppName" class="val mono">{{ detail.clientAppName }}</span>
           </span>
           <span v-if="detail.businessId" class="log-summary-item">
@@ -133,10 +133,10 @@
             </div>
           </el-tab-pane>
           <el-tab-pane name="trace" :disabled="!detail.traceInfo">
-            <span slot="label">
+            <template #label><span>
               <i class="el-icon-connection" /> 表达式追踪树
               <el-badge v-if="detail.traceInfo" is-dot class="trace-badge" />
-            </span>
+            </span></template>
             <template v-if="detail.modelType === 'FLOW' && detail.traceInfo">
               <flow-trace-logic-flow
                 ref="flowTraceLf"
@@ -174,7 +174,7 @@
             />
           </el-tab-pane>
           <el-tab-pane v-if="detail && detail.modelType === 'RULE_SET'" name="setTrace">
-            <span slot="label"><i class="el-icon-sort" /> 规则集追踪</span>
+            <template #label><span><i class="el-icon-sort" /> 规则集追踪</span></template>
             <div v-if="ruleSetSteps.length" class="rs-trace">
               <div v-for="(step, idx) in ruleSetSteps" :key="idx" class="rs-step">
                 <div v-if="idx > 0" class="rs-connector"><div class="rs-conn-line" /></div>
@@ -185,7 +185,7 @@
                       <span class="rs-step-title">{{ ruleMap[step.ruleCode] || step.ruleCode }}</span>
                       <code class="rs-step-code">{{ step.ruleCode }}</code>
                       <span v-if="step.executeTimeMs != null" class="rs-step-cost" style="margin-left:auto">{{ step.executeTimeMs }} ms</span>
-                      <el-tag :type="step.success ? 'success' : 'danger'" size="mini" :style="step.executeTimeMs != null ? 'margin-left:8px' : 'margin-left:auto'">{{ step.success ? '成功' : '失败' }}</el-tag>
+                      <el-tag :type="step.success ? 'success' : 'danger'" size="small" :style="step.executeTimeMs != null ? 'margin-left:8px' : 'margin-left:auto'">{{ step.success ? '成功' : '失败' }}</el-tag>
                     </div>
                     <div v-if="step.result !== undefined && step.result !== null" class="rs-step-body">
                       <pre class="log-pre" style="max-height:120px">{{ formatStepResult(step.result) }}</pre>
@@ -614,7 +614,7 @@ export default {
 .trace-badge {
   margin-left: 4px;
 }
-::v-deep .trace-badge .el-badge__content {
+:deep(.trace-badge .el-badge__content ){
   background-color: #1890ff;
 }
 /* ═══════ 规则集追踪 ═══════ */

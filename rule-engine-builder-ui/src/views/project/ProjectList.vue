@@ -3,7 +3,7 @@
     <div class="uiue-search-container">
       <el-form :inline="true" size="small">
         <el-form-item label="关键字">
-          <el-input v-model="queryParams.keyword" placeholder="项目编码或名称" clearable @keyup.enter.native="handleQuery" />
+          <el-input v-model="queryParams.keyword" placeholder="项目编码或名称" clearable @keyup.enter="handleQuery" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleQuery">查询</el-button>
@@ -13,7 +13,7 @@
     </div>
     <div class="uiue-btn-bar">
       <div class="btn-right">
-        <el-button type="primary" size="small" icon="el-icon-plus" @click="handleCreate">新建项目</el-button>
+        <el-button type="primary" size="small" @click="handleCreate"><i class="el-icon-plus" /> 新建项目</el-button>
       </div>
     </div>
     <el-table :data="tableData" border size="small" v-loading="loading" style="width: 100%;">
@@ -21,19 +21,21 @@
       <el-table-column prop="projectName" label="项目名称" min-width="180" show-overflow-tooltip />
       <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
       <el-table-column prop="status" label="状态" min-width="70" align="center">
-        <template slot-scope="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'info'" size="mini">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
+        <template #default="{ row }">
+          <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="访问令牌" min-width="160">
-        <template slot-scope="{ row }">
+        <template #default="{ row }">
           <span v-if="row.maskedToken" style="font-family: monospace;">{{ row.maskedToken }}</span>
           <span v-else style="color: #909399;">未生成</span>
         </template>
       </el-table-column>
-      <el-table-column prop="createTime" label="创建时间" min-width="160" />
+      <el-table-column prop="createTime" label="创建时间" min-width="160">
+        <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
+      </el-table-column>
       <el-table-column label="操作" min-width="160" align="center">
-        <template slot-scope="{ row }">
+        <template #default="{ row }">
           <el-button type="text" size="small" @click="handleEdit(row)">编辑</el-button>
           <el-button type="text" size="small" @click="$router.push('/project/' + row.id)">进入</el-button>
           <el-button type="text" size="small" style="color: #F56C6C;" @click="handleDelete(row)">删除</el-button>
@@ -43,30 +45,30 @@
     <el-pagination style="margin-top:16px;text-align:right;" :current-page="queryParams.pageNum" :page-size="queryParams.pageSize" :total="total"
       layout="total,sizes,prev,pager,next" :page-sizes="[10,30,50,100,200,500]"
       @current-change="p => { queryParams.pageNum = p; loadData() }" @size-change="s => { queryParams.pageSize = s; queryParams.pageNum = 1; loadData() }" />
-    <el-dialog :title="form.id ? '编辑项目' : '新建项目'" :visible.sync="dialogVisible" width="500px">
+    <el-dialog :title="form.id ? '编辑项目' : '新建项目'" v-model="dialogVisible" width="500px">
       <el-form ref="form" :model="form" :rules="rules" label-width="100px" size="small">
         <el-form-item label="项目编码" prop="projectCode"><el-input v-model="form.projectCode" :disabled="!!form.id" /></el-form-item>
         <el-form-item label="项目名称" prop="projectName"><el-input v-model="form.projectName" /></el-form-item>
         <el-form-item label="描述"><el-input v-model="form.description" type="textarea" :rows="3" /></el-form-item>
         <el-form-item label="状态"><el-switch v-model="form.status" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="停用" /></el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button size="small" @click="dialogVisible = false">取消</el-button>
         <el-button size="small" type="primary" @click="handleSubmit">确定</el-button>
-      </div>
+      </div></template>
     </el-dialog>
     <!-- Token显示对话框 -->
-    <el-dialog title="AccessToken" :visible.sync="tokenDialogVisible" width="500px">
+    <el-dialog title="AccessToken" v-model="tokenDialogVisible" width="500px">
       <div style="padding: 20px; background: #f5f7fa; border-radius: 4px;">
         <p style="margin: 0; font-family: monospace; word-break: break-all;">{{ fullToken }}</p>
       </div>
       <div style="margin-top: 10px; color: #909399; font-size: 12px;">
         <i class="el-icon-warning"></i> 请妥善保管Token，不要泄露给他人
       </div>
-      <div slot="footer">
+      <template #footer><div>
         <el-button size="small" @click="copyToken">复制</el-button>
         <el-button size="small" type="primary" @click="tokenDialogVisible = false">关闭</el-button>
-      </div>
+      </div></template>
     </el-dialog>
   </div>
 </template>
@@ -90,6 +92,13 @@ export default {
   },
   created() { this.loadData() },
   methods: {
+    formatDateTime(time) {
+      if (time == null || time === '') return '-'
+      const d = new Date(time)
+      if (isNaN(d.getTime())) return typeof time === 'string' ? time : '-'
+      const pad = n => String(n).padStart(2, '0')
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+    },
     async loadData() {
       this.loading = true
       try {
@@ -101,7 +110,7 @@ export default {
           try {
             const tokenRes = await getMaskedToken(row.id)
             if (tokenRes.code === 200 && tokenRes.data) {
-              this.$set(row, 'maskedToken', tokenRes.data)
+              row['maskedToken'] = tokenRes.data
             }
           } catch (e) {
             // ignore

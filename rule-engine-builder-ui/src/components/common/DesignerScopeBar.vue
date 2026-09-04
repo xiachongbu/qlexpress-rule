@@ -17,8 +17,8 @@
         :value="o.value"
       />
     </el-select>
-    <el-tag v-if="configured" size="mini" type="success" class="scope-tag">已配置</el-tag>
-    <el-tag v-else size="mini" type="warning" class="scope-tag">首次保存将创建该作用域</el-tag>
+    <el-tag v-if="configured" size="small" type="success" class="scope-tag">已配置</el-tag>
+    <el-tag v-else size="small" type="warning" class="scope-tag">首次保存将创建该作用域</el-tag>
   </div>
 </template>
 

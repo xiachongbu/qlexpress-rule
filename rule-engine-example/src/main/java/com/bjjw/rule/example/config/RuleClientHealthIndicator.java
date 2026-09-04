@@ -2,11 +2,11 @@ package com.bjjw.rule.example.config;
 
 import com.bjjw.rule.client.RuleEngineClient;
 import com.bjjw.rule.client.cache.CachedRule;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * 规则引擎客户端健康检查

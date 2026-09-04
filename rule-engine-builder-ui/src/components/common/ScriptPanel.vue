@@ -6,10 +6,10 @@
       <div class="sp-header-left">
         <i class="el-icon-s-promotion sp-icon" />
         <span class="sp-title">脚本预览 / 编辑</span>
-        <el-tag :type="statusTag.type" size="mini" class="sp-status-tag">{{ statusTag.text }}</el-tag>
+        <el-tag :type="statusTag.type" size="small" class="sp-status-tag">{{ statusTag.text }}</el-tag>
       </div>
       <div class="sp-header-right" @click.stop>
-        <el-radio-group v-model="mode" size="mini" @change="onModeChange">
+        <el-radio-group v-model="mode" size="small" @change="onModeChange">
           <el-radio-button label="visual">
             <i class="el-icon-view" /> 可视化
           </el-radio-button>
@@ -18,7 +18,7 @@
           </el-radio-button>
         </el-radio-group>
         <el-tooltip :content="expanded ? '收起脚本面板' : '展开脚本面板'" placement="top">
-          <el-button size="mini" circle :icon="expanded ? 'el-icon-arrow-down' : 'el-icon-arrow-up'" class="sp-toggle-btn" @click.stop="toggleExpand" />
+          <el-button size="small" circle :icon="expanded ? 'el-icon-arrow-down' : 'el-icon-arrow-up'" class="sp-toggle-btn" @click.stop="toggleExpand" />
         </el-tooltip>
       </div>
     </div>
@@ -31,7 +31,7 @@
         <div v-if="isScriptMode" class="sp-script-warning">
           <i class="el-icon-warning" />
           <span>当前为<strong>脚本覆盖模式</strong>：下方脚本将直接用于执行，可视化配置不再生效。保存脚本后，「编译」操作将被跳过。</span>
-          <el-button type="text" size="mini" @click="switchToVisual">退出脚本模式</el-button>
+          <el-button type="text" size="small" @click="switchToVisual">退出脚本模式</el-button>
         </div>
 
         <!-- 状态栏 -->
@@ -47,24 +47,24 @@
           </span>
           <div class="sp-statusbar-spacer" />
           <el-button-group>
-            <el-button size="mini" icon="el-icon-magic-stick" title="格式化 (Ctrl+Alt+L)" @click="formatScript">格式化</el-button>
-            <el-button size="mini" icon="el-icon-chat-line-square" title="注释/取消注释 (Ctrl+/)" @click="toggleComment">注释</el-button>
-            <el-button size="mini" icon="el-icon-search" title="查找/替换 (Ctrl+F)" @click="openSearch">查找</el-button>
+            <el-button size="small" title="格式化 (Ctrl+Alt+L)" @click="formatScript"><i class="el-icon-magic-stick" /> 格式化</el-button>
+            <el-button size="small" title="注释/取消注释 (Ctrl+/)" @click="toggleComment"><i class="el-icon-chat-line-square" /> 注释</el-button>
+            <el-button size="small" title="查找/替换 (Ctrl+F)" @click="openSearch"><i class="el-icon-search" /> 查找</el-button>
           </el-button-group>
           <el-button-group>
-            <el-button size="mini" icon="el-icon-refresh" :loading="compiling" @click="handleCompile">
+            <el-button size="small" :loading="compiling" @click="handleCompile"><i class="el-icon-refresh" /> 
               {{ isScriptMode ? '验证脚本' : '编译并刷新' }}
             </el-button>
-            <el-button size="mini" icon="el-icon-document-copy" @click="copyScript">复制</el-button>
+            <el-button size="small" @click="copyScript"><i class="el-icon-document-copy" /> 复制</el-button>
           </el-button-group>
           <el-button
             v-if="isScriptMode"
-            size="mini"
+            size="small"
             type="primary"
-            icon="el-icon-check"
+           
             :loading="saving"
             @click="handleSaveScript"
-          >保存脚本</el-button>
+          ><i class="el-icon-check" /> 保存脚本</el-button>
         </div>
 
         <!-- 查找 / 替换面板：ESC 在面板根节点统一拦截（stop 阻止冒泡），避免触发 el-drawer 的 ESC 关闭整个设计器抽屉 -->
@@ -73,16 +73,17 @@
             <el-input
               ref="searchInput"
               v-model="searchQuery"
-              size="mini"
+              size="small"
               placeholder="查找"
-              prefix-icon="el-icon-search"
               clearable
               class="sp-search-input"
               @input="highlightAll"
-              @keydown.enter.native.prevent="findNext(false)"
-            />
-            <el-button size="mini" @click="findNext(false)">下一个</el-button>
-            <el-button size="mini" @click="highlightAll">全部高亮</el-button>
+              @keydown.enter.prevent="findNext(false)"
+            >
+              <template #prefix><i class="el-icon-search" /></template>
+            </el-input>
+            <el-button size="small" @click="findNext(false)">下一个</el-button>
+            <el-button size="small" @click="highlightAll">全部高亮</el-button>
             <span class="sp-search-spacer" />
             <el-checkbox v-model="showReplace" class="sp-search-toggle">替换</el-checkbox>
             <i class="el-icon-close sp-search-close" title="关闭 (Esc)" @click="closeSearch" />
@@ -90,13 +91,13 @@
           <div v-show="showReplace" class="sp-search-row">
             <el-input
               v-model="replaceQuery"
-              size="mini"
+              size="small"
               placeholder="替换为"
               class="sp-search-input"
-              @keydown.enter.native.prevent="replaceCurrent"
+              @keydown.enter.prevent="replaceCurrent"
             />
-            <el-button size="mini" @click="replaceCurrent">替换</el-button>
-            <el-button size="mini" @click="replaceAll">全部替换</el-button>
+            <el-button size="small" @click="replaceCurrent">替换</el-button>
+            <el-button size="small" @click="replaceAll">全部替换</el-button>
           </div>
         </div>
 
@@ -551,28 +552,28 @@ $warning-bg: #fffbe6;
   min-height: 220px;
   overflow: hidden;
 }
-.sp-editor-cm ::v-deep .CodeMirror {
+.sp-editor-cm :deep(.CodeMirror ){
   height: 320px;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.6;
 }
-.sp-editor-cm ::v-deep .cm-matchhighlight {
+.sp-editor-cm :deep(.cm-matchhighlight ){
   background: rgba(102, 168, 255, 0.30);
   border-radius: 2px;
 }
-.sp-editor-cm ::v-deep .cm-search-highlight {
+.sp-editor-cm :deep(.cm-search-highlight ){
   background: rgba(255, 170, 0, 0.40);
   border-radius: 2px;
 }
-.sp-editor-cm ::v-deep .CodeMirror-matchingbracket {
+.sp-editor-cm :deep(.CodeMirror-matchingbracket ){
   color: #ffd166 !important;
   font-weight: 700;
   background: rgba(255, 209, 102, 0.28);
   border-bottom: 2px solid #ffd166;
   border-radius: 2px;
 }
-.sp-editor-cm ::v-deep .CodeMirror-nonmatchingbracket {
+.sp-editor-cm :deep(.CodeMirror-nonmatchingbracket ){
   color: #fff !important;
   font-weight: 700;
   background: rgba(255, 107, 107, 0.55);
@@ -627,7 +628,7 @@ $warning-bg: #fffbe6;
   flex: 1 1 auto;
   min-height: 0;
 }
-.script-panel.sp-fullscreen .sp-editor-cm ::v-deep .CodeMirror {
+.script-panel.sp-fullscreen .sp-editor-cm :deep(.CodeMirror ){
   height: 100%;
 }
 
@@ -653,7 +654,7 @@ $warning-bg: #fffbe6;
 }
 
 /* 全局 el-radio-button 在深色背景下样式微调 */
-.sp-header-right ::v-deep .el-radio-button__inner {
+.sp-header-right :deep(.el-radio-button__inner ){
   padding: 4px 10px;
   font-size: 12px;
 }

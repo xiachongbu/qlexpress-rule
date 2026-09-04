@@ -6,7 +6,9 @@
     <template v-if="!collapsed">
       <div class="panel-header">节点面板</div>
       <div class="panel-search">
-        <el-input v-model="searchKey" size="mini" placeholder="搜索节点" prefix-icon="el-icon-search" clearable />
+        <el-input v-model="searchKey" size="small" placeholder="搜索节点" clearable>
+          <template #prefix><i class="el-icon-search" /></template>
+        </el-input>
       </div>
       <div class="node-groups">
         <div v-for="group in filteredGroups" :key="group.group" class="node-group">

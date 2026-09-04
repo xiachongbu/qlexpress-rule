@@ -5,24 +5,24 @@
       <div class="ct-title-area">
         <i class="el-icon-data-analysis ct-title-icon" />
         <span class="ct-title">交叉表设计器</span>
-        <el-tag size="mini" type="info" style="margin-left:8px;">
+        <el-tag size="small" type="info" style="margin-left:8px;">
           {{ model.rowHeaders.length }} 行 × {{ model.colHeaders.length }} 列
         </el-tag>
       </div>
       <div class="ct-toolbar">
         <el-button-group>
-          <el-button size="small" icon="el-icon-plus" @click="addRow">添加行</el-button>
-          <el-button size="small" icon="el-icon-plus" @click="addColumn">添加列</el-button>
+          <el-button size="small" @click="addRow"><i class="el-icon-plus" /> 添加行</el-button>
+          <el-button size="small" @click="addColumn"><i class="el-icon-plus" /> 添加列</el-button>
         </el-button-group>
         <el-divider direction="vertical" />
-        <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <el-button size="small" @click="handleSave"><i class="el-icon-document" /> 保存</el-button>
         <design-version-switcher
           :definition-id="definitionId"
           :scope-comp-id="scopeCompId"
           @apply-model="onApplyDesignSnapshot"
         />
-        <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">编译</el-button>
-        <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
+        <el-button size="small" type="warning" @click="handleCompile"><i class="el-icon-cpu" /> 编译</el-button>
+        <el-button size="small" type="primary" @click="handleTest"><i class="el-icon-video-play" /> 测试</el-button>
       </div>
     </div>
 
@@ -98,24 +98,28 @@
                 <div class="header-cell-inner">
                   <el-input
                     v-model="model.colHeaders[ci]"
-                    size="mini"
+                    size="small"
                     placeholder="列值"
                     class="header-input"
                   />
                   <el-tooltip content="删除此列" placement="top">
                     <el-button
                       type="text"
-                      size="mini"
-                      icon="el-icon-close"
+                      size="small"
+                     
                       class="delete-col-btn"
                       @click="removeColumn(ci)"
-                    />
+                    >
+        <i class="el-icon-close" />
+      </el-button>
                   </el-tooltip>
                 </div>
               </th>
               <!-- 添加列按钮 -->
               <th class="add-col-cell">
-                <el-button type="text" size="mini" icon="el-icon-plus" style="color:#1890ff;" @click="addColumn" />
+                <el-button type="text" size="small" style="color:#1890ff;" @click="addColumn" >
+        <i class="el-icon-plus" />
+      </el-button>
               </th>
             </tr>
           </thead>
@@ -126,18 +130,20 @@
                 <div class="row-header-inner">
                   <el-input
                     v-model="model.rowHeaders[ri]"
-                    size="mini"
+                    size="small"
                     placeholder="行值"
                     class="header-input"
                   />
                   <el-tooltip content="删除此行" placement="right">
                     <el-button
                       type="text"
-                      size="mini"
-                      icon="el-icon-close"
+                      size="small"
+                     
                       class="delete-row-btn"
                       @click="removeRow(ri)"
-                    />
+                    >
+        <i class="el-icon-close" />
+      </el-button>
                   </el-tooltip>
                 </div>
               </td>
@@ -149,7 +155,7 @@
               >
                 <el-input
                   v-model="model.cells[ri][ci]"
-                  size="mini"
+                  size="small"
                   :placeholder="model.resultVar.varType === 'NUMBER' ? '0' : ''"
                   class="cell-input"
                   @focus="focusedCell = ri + '_' + ci"
@@ -162,7 +168,7 @@
             <!-- 添加行按钮行 -->
             <tr>
               <td class="add-row-trigger" @click="addRow">
-                <el-button type="text" size="mini" icon="el-icon-plus" style="color:#1890ff;">添加行</el-button>
+                <el-button type="text" size="small" style="color:#1890ff;"><i class="el-icon-plus" /> 添加行</el-button>
               </td>
               <td v-for="(col, ci) in model.colHeaders" :key="'add-' + ci" class="add-row-trigger" @click="addRow" />
               <td class="add-row-trigger" />
@@ -193,16 +199,16 @@
 
     <!-- 测试执行弹窗 -->
     <test-execute-dialog
-      :visible.sync="testVisible"
+      v-model:visible="testVisible"
       :fields="testFields"
       :params="testParams"
-      :params-json.sync="testParamsJson"
-      :mode.sync="testMode"
+      v-model:paramsJson="testParamsJson"
+      v-model:mode="testMode"
       :result="testResult"
       width="750px"
       @execute="doTest"
     >
-      <template slot="result">
+      <template #result>
         <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"
@@ -367,12 +373,12 @@ export default {
       if (changed) this.$forceUpdate()
     },
     normalizeModel() {
-      if (!this.model.rowVar) this.$set(this.model, 'rowVar', { varCode: '', varLabel: '', varType: 'STRING' })
-      if (!this.model.colVar) this.$set(this.model, 'colVar', { varCode: '', varLabel: '', varType: 'STRING' })
-      if (!this.model.resultVar) this.$set(this.model, 'resultVar', { varCode: '', varLabel: '', varType: 'NUMBER' })
-      if (!this.model.rowHeaders) this.$set(this.model, 'rowHeaders', [''])
-      if (!this.model.colHeaders) this.$set(this.model, 'colHeaders', [''])
-      if (!this.model.cells) this.$set(this.model, 'cells', [['']])
+      if (!this.model.rowVar) this.model['rowVar'] = { varCode: '', varLabel: '', varType: 'STRING' }
+      if (!this.model.colVar) this.model['colVar'] = { varCode: '', varLabel: '', varType: 'STRING' }
+      if (!this.model.resultVar) this.model['resultVar'] = { varCode: '', varLabel: '', varType: 'NUMBER' }
+      if (!this.model.rowHeaders) this.model['rowHeaders'] = ['']
+      if (!this.model.colHeaders) this.model['colHeaders'] = ['']
+      if (!this.model.cells) this.model['cells'] = [['']]
       const rows = this.model.rowHeaders.length
       const cols = this.model.colHeaders.length
       while (this.model.cells.length < rows) {
@@ -675,7 +681,7 @@ export default {
   }
   &:hover { background: #f5f5f5; }
 }
-.cell-input ::v-deep input {
+.cell-input :deep(input){
   text-align: center;
   font-weight: 500;
 }

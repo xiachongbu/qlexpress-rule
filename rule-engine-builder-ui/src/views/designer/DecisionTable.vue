@@ -5,19 +5,19 @@
       <div class="dt-title-area">
         <i class="el-icon-s-grid dt-title-icon" />
         <span class="dt-title">决策表配置</span>
-        <el-tag size="mini" type="info" style="margin-left:8px;">共 {{ model.rules.length }} 条规则</el-tag>
+        <el-tag size="small" type="info" style="margin-left:8px;">共 {{ model.rules.length }} 条规则</el-tag>
       </div>
       <div class="dt-toolbar">
-        <el-button size="small" icon="el-icon-plus" @click="addRule">添加行</el-button>
+        <el-button size="small" @click="addRule"><i class="el-icon-plus" /> 添加行</el-button>
         <el-divider direction="vertical" />
-        <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <el-button size="small" @click="handleSave"><i class="el-icon-document" /> 保存</el-button>
         <design-version-switcher
           :definition-id="definitionId"
           :scope-comp-id="scopeCompId"
           @apply-model="onApplyDesignSnapshot"
         />
-        <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">编译</el-button>
-        <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
+        <el-button size="small" type="warning" @click="handleCompile"><i class="el-icon-cpu" /> 编译</el-button>
+        <el-button size="small" type="primary" @click="handleTest"><i class="el-icon-video-play" /> 测试</el-button>
         <el-divider direction="vertical" />
         <span class="toolbar-label">命中策略</span>
         <el-select v-model="model.hitPolicy" size="small" style="width:110px;">
@@ -49,8 +49,8 @@
         >
           <div class="dt-rule-toolbar">
             <span class="dt-rule-no">#{{ ri + 1 }}</span>
-            <el-button type="text" size="mini" @click="copyRule(ri)">复制</el-button>
-            <el-button type="text" size="mini" class="btn-del" @click="removeRule(ri)">删除</el-button>
+            <el-button type="text" size="small" @click="copyRule(ri)">复制</el-button>
+            <el-button type="text" size="small" class="btn-del" @click="removeRule(ri)">删除</el-button>
           </div>
           <div class="dt-rule-grid">
             <div class="dt-cond-panel">
@@ -65,7 +65,7 @@
               <div class="dt-act-panel-head">
                 <span class="dt-act-panel-title">动作 (THEN)</span>
                 <span class="dt-act-panel-hint">本条规则独立配置，可与其它行不同</span>
-                <el-button type="primary" size="mini" plain icon="el-icon-plus" @click="addRuleAction(ri)">添加动作</el-button>
+                <el-button type="primary" size="small" plain @click="addRuleAction(ri)"><i class="el-icon-plus" /> 添加动作</el-button>
               </div>
               <div class="dt-act-rows">
                 <div
@@ -90,7 +90,7 @@
                       v-if="act.varType === 'ENUM' && getEnumOptions(act).length"
                       v-model="act.value"
                       :disabled="isConstAction(act)"
-                      size="mini"
+                      size="small"
                       class="dt-act-value-ctl"
                       clearable
                     >
@@ -100,7 +100,7 @@
                       v-else-if="act.varType === 'BOOLEAN'"
                       v-model="act.value"
                       :disabled="isConstAction(act)"
-                      size="mini"
+                      size="small"
                       class="dt-act-value-ctl"
                     >
                       <el-option label="true" value="true" />
@@ -115,7 +115,7 @@
                       >
                         <el-input
                           v-model="act.value"
-                          size="mini"
+                          size="small"
                           class="dt-act-value-ctl"
                           disabled
                           placeholder="常量默认值（只读）"
@@ -125,10 +125,10 @@
                       <el-input
                         v-else
                         :value="act.value || ''"
-                        size="mini"
+                        size="small"
                         class="dt-act-value-ctl"
                         placeholder="赋值"
-                        @input="$set(act, 'value', $event)"
+                        @input="act.value = $event"
                       />
                     </template>
                   </div>
@@ -154,7 +154,7 @@
     <!-- 列配置弹窗（仅动作列） -->
     <el-dialog
       :title="colConfigTitle"
-      :visible.sync="colConfigVisible"
+      v-model="colConfigVisible"
       width="520px"
       append-to-body
       destroy-on-close
@@ -192,7 +192,7 @@
           <el-input v-model="activeColDef.enumOptions" placeholder="逗号分隔，如：普通，免税，优惠" />
         </el-form-item>
       </el-form>
-      <template slot="footer">
+      <template #footer>
         <el-button size="small" @click="colConfigVisible = false">关闭</el-button>
       </template>
     </el-dialog>
@@ -215,15 +215,15 @@
 
     <!-- 测试执行弹窗 -->
     <test-execute-dialog
-      :visible.sync="testVisible"
+      v-model:visible="testVisible"
       :fields="testFields"
       :params="testParams"
-      :params-json.sync="testParamsJson"
-      :mode.sync="testMode"
+      v-model:paramsJson="testParamsJson"
+      v-model:mode="testMode"
       :result="testResult"
       @execute="doTest"
     >
-      <template slot="result">
+      <template #result>
         <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"
@@ -387,7 +387,7 @@ export default {
         if (ref && ref.category === 'constant' && ref.varObj && ref.varObj.defaultValue != null) {
           const dv = String(ref.varObj.defaultValue).trim()
           if (dv && act.value !== dv) {
-            this.$set(act, 'value', dv)
+            act['value'] = dv
           }
         }
       })
@@ -418,23 +418,23 @@ export default {
           _varId: def._varId,
           value: acts[i] && acts[i].value !== undefined ? acts[i].value : ''
         }))
-        this.$set(rule, 'actions', merged)
+        rule['actions'] = merged
       } else if (!full) {
-        this.$set(rule, 'actions', (acts.length ? acts : [{}]).map(a => ({
+        rule['actions'] = (acts.length ? acts : [{}]).map(a => ({
           varCode: '',
           varLabel: '',
           varType: 'STRING',
           enumOptions: '',
           value: a && a.value !== undefined ? a.value : ''
-        })))
+        }))
       }
       acts = rule.actions || []
       if (!acts.length) {
-        this.$set(rule, 'actions', [createEmptyActionItem()])
+        rule['actions'] = [createEmptyActionItem()]
         acts = rule.actions
       }
       acts.forEach(a => {
-        if (a.enumOptions === undefined) this.$set(a, 'enumOptions', '')
+        if (a.enumOptions === undefined) a['enumOptions'] = ''
       })
     },
 
@@ -454,7 +454,7 @@ export default {
         const hasTree = r.conditionRoot && r.conditionRoot.type === 'group' && Array.isArray(r.conditionRoot.children)
         if (!hasTree) {
           const migrated = migrateRuleConditionsToTree(r.conditions || [], legacyCols)
-          this.$set(r, 'conditionRoot', migrated)
+          r['conditionRoot'] = migrated
         }
         if (r.conditions !== undefined) delete r.conditions
       })
@@ -491,7 +491,7 @@ export default {
         if (ref && ref.category === 'constant' && ref.varObj && ref.varObj.defaultValue != null) {
           const dv = String(ref.varObj.defaultValue).trim()
           if (dv && act.value !== dv) {
-            this.$set(act, 'value', dv)
+            act['value'] = dv
           }
         }
       } else if (act && !act.varCode) {
@@ -500,7 +500,7 @@ export default {
           const ref = this.findRefByVarId(act._varId)
           if (ref && ref.category === 'constant' && ref.varObj && ref.varObj.defaultValue != null) {
             const dv = String(ref.varObj.defaultValue).trim()
-            this.$set(act, 'value', dv)
+            act['value'] = dv
           }
         }
       }
@@ -543,24 +543,24 @@ export default {
       if (!act) return
       const varLabel = (variable.varObj && variable.varObj.varLabel) || variable.varLabel || variable.varCode
       const _varId = variable.varObj && variable.varObj.id ? variable.varObj.id : null
-      this.$set(act, 'varCode', variable.varCode)
-      this.$set(act, 'varLabel', varLabel)
-      this.$set(act, '_varId', _varId)
-      this.$set(act, 'varType', variable.varType)
-      this.$set(act, 'enumOptions', variable.varType === 'ENUM'
+      act['varCode'] = variable.varCode
+      act['varLabel'] = varLabel
+      act['_varId'] = _varId
+      act['varType'] = variable.varType
+      act['enumOptions'] = variable.varType === 'ENUM'
         ? this.getVarOptions(variable.varCode).map(o => o.value || o.optionValue).join(',')
-        : '')
+        : ''
       // 常量回填最新默认值（defaultValue 在选项的 varObj 上，非顶层字段）
       if (this.isConstRef(variable)) {
         const raw = variable.varObj && variable.varObj.defaultValue != null
           ? variable.varObj.defaultValue
           : variable.defaultValue
         const dv = raw != null ? String(raw) : ''
-        this.$set(act, 'value', dv)
+        act['value'] = dv
         this.$message.warning('「' + varLabel + '」是常量，已自动填入其默认值；如需修改常量值请到常量配置管理中修改后重新发布')
       } else {
         // 非常量清空值（因为新选的是普通变量，不是之前的常量）
-        this.$set(act, 'value', '')
+        act['value'] = ''
       }
     },
 
@@ -569,7 +569,7 @@ export default {
      */
     onColDefVarTypeChange(type) {
       if (!this.activeColDef || type === 'ENUM') return
-      this.$set(this.activeColDef, 'enumOptions', '')
+      this.activeColDef['enumOptions'] = ''
     },
 
     /**
@@ -578,7 +578,7 @@ export default {
     addRuleAction(ruleIndex) {
       const r = this.model.rules[ruleIndex]
       if (!r) return
-      if (!r.actions) this.$set(r, 'actions', [])
+      if (!r.actions) r['actions'] = []
       r.actions.push(createEmptyActionItem())
     },
 

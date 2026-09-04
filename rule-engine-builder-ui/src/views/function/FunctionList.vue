@@ -9,7 +9,7 @@
         <el-option v-for="p in projects" :key="p.id" :label="p.projectName" :value="p.id" />
       </el-select>
       <div class="toolbar-right">
-        <el-button icon="el-icon-plus" type="success" :disabled="!currentProjectId" @click="handleCreate">新建函数</el-button>
+        <el-button type="success" :disabled="!currentProjectId" @click="handleCreate"><i class="el-icon-plus" /> 新建函数</el-button>
       </div>
     </div>
 
@@ -17,19 +17,19 @@
       <el-table-column prop="funcCode" label="函数编码" min-width="90" show-overflow-tooltip sortable />
       <el-table-column prop="funcName" label="函数名称" min-width="90" show-overflow-tooltip sortable />
       <el-table-column prop="returnType" label="返回类型" width="90" align="center" show-overflow-tooltip sortable>
-        <template slot-scope="{ row }">
-          <el-tag size="mini">{{ typeLabel(row.returnType) }}</el-tag>
+        <template #default="{ row }">
+          <el-tag size="small">{{ typeLabel(row.returnType) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="implType" label="实现方式" width="110" align="center" show-overflow-tooltip sortable>
-        <template slot-scope="{ row }">
-          <el-tag :type="implTypeTagType(row.implType)" size="mini">{{ implTypeLabel(row.implType) }}</el-tag>
+        <template #default="{ row }">
+          <el-tag :type="implTypeTagType(row.implType)" size="small">{{ implTypeLabel(row.implType) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="参数" min-width="150" sortable>
-        <template slot-scope="{ row }">
+        <template #default="{ row }">
           <span v-if="row.paramsJson">
-            <el-tag v-for="(p, pi) in parseParams(row.paramsJson)" :key="pi" size="mini" type="info" style="margin:1px 2px;">
+            <el-tag v-for="(p, pi) in parseParams(row.paramsJson)" :key="pi" size="small" type="info" style="margin:1px 2px;">
               {{ p.name }}: {{ typeLabel(p.type) }}
             </el-tag>
           </span>
@@ -37,12 +37,12 @@
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" width="70" align="center" sortable>
-        <template slot-scope="{ row }">
-          <el-tag :type="row.status===1?'success':'info'" size="mini">{{ row.status===1?'启用':'停用' }}</el-tag>
+        <template #default="{ row }">
+          <el-tag :type="row.status===1?'success':'info'" size="small">{{ row.status===1?'启用':'停用' }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="操作" width="190" align="center">
-        <template slot-scope="{ row }">
+        <template #default="{ row }">
           <el-button type="text" size="small" @click="handleEdit(row)">编辑</el-button>
           <el-button type="text" size="small" style="color:#F56C6C;" @click="handleDelete(row)">删除</el-button>
         </template>
@@ -60,10 +60,10 @@
         </el-empty>
       </template>
     </el-table>
-    <pagination v-show="total>0" :total="total" :page.sync="listQuery.pageNum" :limit.sync="listQuery.pageSize" @pagination="loadFunctions" />
+    <pagination v-show="total>0" :total="total" v-model:page="listQuery.pageNum" v-model:limit="listQuery.pageSize" @pagination="loadFunctions" />
 
     <!-- 新建/编辑弹窗 -->
-    <el-dialog :title="editForm.id ? '编辑函数' : '新建函数'" :visible.sync="dialogVisible" width="600px" append-to-body>
+    <el-dialog :title="editForm.id ? '编辑函数' : '新建函数'" v-model="dialogVisible" width="600px" append-to-body>
       <el-form :model="editForm" label-width="90px" size="small">
         <el-form-item label="函数编码" required>
           <el-input v-model="editForm.funcCode" placeholder="如 calcTax（QLExpress 脚本中的调用名）" />
@@ -81,14 +81,16 @@
         </el-form-item>
         <el-form-item label="参数列表">
           <div v-for="(p, pi) in editParams" :key="pi" style="display:flex;gap:4px;margin-bottom:4px;">
-            <el-input v-model="p.name" size="mini" placeholder="参数名" style="width:100px" />
-            <el-select v-model="p.type" size="mini" style="width:150px" popper-append-to-body>
+            <el-input v-model="p.name" size="small" placeholder="参数名" style="width:100px" />
+            <el-select v-model="p.type" size="small" style="width:150px" popper-append-to-body>
               <el-option v-for="opt in varTypeFormOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
             </el-select>
-            <el-input v-model="p.label" size="mini" placeholder="中文名" style="flex:1" />
-            <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C" @click="editParams.splice(pi, 1)" />
+            <el-input v-model="p.label" size="small" placeholder="中文名" style="flex:1" />
+            <el-button type="text" size="small" style="color:#F56C6C" @click="editParams.splice(pi, 1)" >
+        <i class="el-icon-delete" />
+      </el-button>
           </div>
-          <el-button size="mini" icon="el-icon-plus" @click="editParams.push({name:'',type:'STRING',label:''})">添加参数</el-button>
+          <el-button size="small" @click="editParams.push({name:'',type:'STRING',label:''})"><i class="el-icon-plus" /> 添加参数</el-button>
         </el-form-item>
         <el-form-item label="实现方式">
           <el-radio-group v-model="editForm.implType">
@@ -113,7 +115,7 @@
           <el-input v-model="editForm.implMethod" placeholder="Bean 上的方法名，如 calculateVAT（不填则默认使用函数编码）" />
         </el-form-item>
       </el-form>
-      <template slot="footer">
+      <template #footer>
         <el-button type="primary" @click="dialogVisible = false">取消</el-button>
         <el-button type="success" @click="handleSave">保存</el-button>
       </template>
@@ -230,5 +232,5 @@ export default {
 .linkage-hint { font-size: 13px; color: #909399; margin-bottom: 12px; background: #fafafa; padding: 8px 12px; border-radius: 4px; }
 .var-toolbar { display: flex; align-items: center; justify-content: space-between; }
 .toolbar-right { display: flex; gap: 8px; }
-.mono-input ::v-deep textarea { font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; }
+.mono-input :deep(textarea){ font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; }
 </style>

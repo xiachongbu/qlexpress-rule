@@ -52,7 +52,7 @@
     </el-container>
     <!-- 规则引擎设计器抽屉（全局挂载，由 Vuex designerDrawer 模块控制显隐；从右侧滑出） -->
     <el-drawer
-      :visible.sync="designerDrawerSync"
+      v-model="designerDrawerSync"
       direction="rtl"
       size="92%"
       :with-header="false"
@@ -68,7 +68,14 @@
 </template>
 
 <script>
-import variables from '@/styles/variables.scss'
+// ICSS :export 在 vite 下不可用，改用 JS 常量（与 styles/variables.scss 保持一致）
+const variables = {
+  sideBarWidth: '210px',
+  menuBg: '#E9EBF0',
+  menuText: '#161617',
+  menuActiveText: '#B30000',
+  menuHover: '#F4F5F7'
+}
 import { mapState } from 'vuex'
 import { getConsoleAuthConfig, consoleLogout, getConsoleMe } from '@/api/auth'
 import DesignerDrawerHost from '@/components/common/DesignerDrawerHost.vue'
@@ -105,6 +112,14 @@ export default {
   },
   async mounted() {
     await this.refreshAuthBar()
+  },
+  watch: {
+    // 浏览器后退/前进离开设计器抽屉时关闭它，避免残留遮挡页面
+    '$route'() {
+      if (this.$store.state.designerDrawer.visible) {
+        this.$store.commit('designerDrawer/CLOSE')
+      }
+    }
   },
   methods: {
     /**

@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     title="保存 — 版本说明"
-    :visible.sync="innerVisible"
+    v-model="innerVisible"
     width="480px"
     append-to-body
     @close="onDialogClose"
@@ -14,10 +14,10 @@
       show-word-limit
       placeholder="可选填写本次保存说明，便于日后在版本历史中辨认"
     />
-    <span slot="footer" class="dialog-footer">
+    <template #footer><span class="dialog-footer">
       <el-button @click="cancel">取 消</el-button>
       <el-button type="primary" @click="confirm">保 存</el-button>
-    </span>
+    </span></template>
   </el-dialog>
 </template>
 

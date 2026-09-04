@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     title="选择发布作用域"
-    :visible.sync="innerVisible"
+    v-model="innerVisible"
     width="520px"
     append-to-body
     @closed="onClosed"
@@ -21,7 +21,7 @@
         <span>{{ skippedSummary }}</span>
       </div>
     </template>
-    <div slot="footer">
+    <template #footer><div>
       <el-button size="small" @click="innerVisible = false">取消</el-button>
       <el-button
         size="small"
@@ -32,7 +32,7 @@
       >
         确定发布
       </el-button>
-    </div>
+    </div></template>
   </el-dialog>
 </template>
 

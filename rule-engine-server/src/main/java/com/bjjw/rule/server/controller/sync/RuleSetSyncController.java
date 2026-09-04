@@ -6,8 +6,8 @@ import com.bjjw.rule.server.common.R;
 import com.bjjw.rule.server.service.PublishedRuleResolveService;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 

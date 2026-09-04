@@ -7,7 +7,7 @@
 
     <!-- 连线属性 -->
     <template v-if="isEdge">
-      <el-form size="mini" label-width="70px" class="prop-form">
+      <el-form size="small" label-width="70px" class="prop-form">
         <el-form-item label="连线ID">
           <el-input :value="activeElement.id" disabled />
         </el-form-item>
@@ -28,7 +28,7 @@
 
     <!-- 节点属性 -->
     <template v-else>
-      <el-form size="mini" label-width="70px" class="prop-form">
+      <el-form size="small" label-width="70px" class="prop-form">
         <el-form-item label="节点ID">
           <el-input :value="activeElement.id" disabled />
         </el-form-item>
@@ -46,7 +46,7 @@
       <!-- 排他网关额外属性 -->
       <template v-if="activeElement.type === 'exclusive-gateway'">
         <el-divider content-position="left">排他网关配置</el-divider>
-        <el-form size="mini" label-width="70px" class="prop-form">
+        <el-form size="small" label-width="70px" class="prop-form">
           <el-form-item label="网关方向">
             <el-select v-model="nodeProps.gatewayDirection" style="width:100%;" @change="onNodeChange">
               <el-option label="Diverging（分支）" value="Diverging" />
@@ -75,7 +75,7 @@
           <div v-for="edge in outEdges" :key="edge.id" class="edge-item" @click="$emit('select-edge', edge.id)">
             <span class="edge-arrow">→</span>
             <span class="edge-label">{{ edgeLabel(edge) }}</span>
-            <el-tag v-if="edge.id === nodeProps.defaultBranch" size="mini" type="warning">默认</el-tag>
+            <el-tag v-if="edge.id === nodeProps.defaultBranch" size="small" type="warning">默认</el-tag>
           </div>
           <div v-if="outEdges.length === 0" class="hint-text" style="padding: 8px 0;">暂无出口连线</div>
         </div>
@@ -84,7 +84,7 @@
       <!-- 聚合节点额外属性 -->
       <template v-if="activeElement.type === 'join-gateway'">
         <el-divider content-position="left">聚合配置</el-divider>
-        <el-form size="mini" label-width="70px" class="prop-form">
+        <el-form size="small" label-width="70px" class="prop-form">
           <el-form-item>
             <div class="hint-text">
               <i class="el-icon-info" /> 聚合节点用于多条分支汇合，所有入边的分支都到达后，继续向下执行
@@ -96,9 +96,9 @@
       <!-- 脚本任务额外属性 -->
       <template v-if="activeElement.type === 'script-task'">
         <el-divider content-position="left">脚本任务配置</el-divider>
-        <el-form size="mini" label-width="70px" class="prop-form">
+        <el-form size="small" label-width="70px" class="prop-form">
           <el-form-item label="脚本模式">
-            <el-radio-group v-model="nodeProps.scriptMode" size="mini" @change="onNodeChange">
+            <el-radio-group v-model="nodeProps.scriptMode" size="small" @change="onNodeChange">
               <el-radio-button label="visual">可视化配置</el-radio-button>
               <el-radio-button label="script">脚本模式</el-radio-button>
             </el-radio-group>
@@ -118,7 +118,7 @@
           <el-divider content-position="left">动作配置</el-divider>
           <div class="action-list">
             <div v-for="(action, idx) in nodeProps.actions" :key="idx" class="action-item">
-              <el-select v-model="action.variable" size="mini" placeholder="变量" style="width: 140px;" filterable @change="onNodeChange">
+              <el-select v-model="action.variable" size="small" placeholder="变量" style="width: 140px;" filterable @change="onNodeChange">
                 <!-- 项目变量库（优先） -->
                 <el-option-group v-if="projectVars.length" label="项目变量">
                   <el-option
@@ -134,10 +134,12 @@
                 </el-option-group>
               </el-select>
               <span class="action-eq">=</span>
-              <el-input v-model="action.value" size="mini" placeholder="值" style="flex:1;" @change="onNodeChange" />
-              <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C;" @click="removeAction(idx)" />
+              <el-input v-model="action.value" size="small" placeholder="值" style="flex:1;" @change="onNodeChange" />
+              <el-button type="text" size="small" style="color:#F56C6C;" @click="removeAction(idx)" >
+        <i class="el-icon-delete" />
+      </el-button>
             </div>
-            <el-button type="primary" size="mini" plain icon="el-icon-plus" style="width:100%;margin-top:8px;" @click="addAction">
+            <el-button type="primary" size="small" plain style="width:100%;margin-top:8px;" @click="addAction"><i class="el-icon-plus" /> 
               添加动作
             </el-button>
           </div>
@@ -153,11 +155,11 @@
               <el-tag
                 v-for="v in projectVars"
                 :key="v.varCode"
-                size="mini"
+                size="small"
                 :type="varTagType(v.varType)"
                 style="cursor:pointer;margin:2px;"
                 :title="v.varLabel + ' [' + v.varType + ']'"
-                @click.native="copyVarCode(v.varCode)"
+                @click="copyVarCode(v.varCode)"
               >{{ v.varCode }}</el-tag>
             </div>
             <div class="script-lang">QLExpress 脚本</div>
@@ -405,7 +407,7 @@ export default {
   color: #999;
   flex-shrink: 0;
 }
-.mono-textarea ::v-deep textarea {
+.mono-textarea :deep(textarea){
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.5;
@@ -413,7 +415,7 @@ export default {
 .el-divider {
   margin: 12px 0 4px;
 }
-.el-divider ::v-deep .el-divider__text {
+.el-divider :deep(.el-divider__text ){
   font-size: 13px;
   font-weight: bold;
   color: #333;

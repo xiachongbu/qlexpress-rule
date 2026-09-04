@@ -1,7 +1,7 @@
 package com.bjjw.rule.server.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.bjjw.rule.model.dto.RuleSysDictItemDTO;
 import com.bjjw.rule.model.entity.RuleSysDict;
 import com.bjjw.rule.server.mapper.RuleSysDictMapper;

@@ -5,19 +5,19 @@
       <div class="asc-title-area">
         <i class="el-icon-data-line asc-title-icon" />
         <span class="asc-title">复杂评分卡设计器</span>
-        <el-tag size="mini" type="info" style="margin-left:8px;">{{ totalDimensions }} 个评分维度</el-tag>
+        <el-tag size="small" type="info" style="margin-left:8px;">{{ totalDimensions }} 个评分维度</el-tag>
       </div>
       <div class="asc-toolbar">
-        <el-button size="small" icon="el-icon-plus" @click="addGroup">添加维度组</el-button>
+        <el-button size="small" @click="addGroup"><i class="el-icon-plus" /> 添加维度组</el-button>
         <el-divider direction="vertical" />
-        <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <el-button size="small" @click="handleSave"><i class="el-icon-document" /> 保存</el-button>
         <design-version-switcher
           :definition-id="definitionId"
           :scope-comp-id="scopeCompId"
           @apply-model="onApplyDesignSnapshot"
         />
-        <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">编译</el-button>
-        <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
+        <el-button size="small" type="warning" @click="handleCompile"><i class="el-icon-cpu" /> 编译</el-button>
+        <el-button size="small" type="primary" @click="handleTest"><i class="el-icon-video-play" /> 测试</el-button>
       </div>
     </div>
 
@@ -64,9 +64,9 @@
               size="small"
               placeholder="维度组名称（如 客户基础信息）"
               class="group-label-input"
-              @click.native.stop
+              @click.stop
             />
-            <el-tag size="mini" type="info">{{ (group.dimensions || []).length }} 维度</el-tag>
+            <el-tag size="small" type="info">{{ (group.dimensions || []).length }} 维度</el-tag>
             <div class="group-weight-summary" @click.stop>
               <span class="weight-label">组权重</span>
               <el-input-number
@@ -75,7 +75,7 @@
                 :max="2"
                 :step="0.1"
                 :precision="2"
-                size="mini"
+                size="small"
                 controls-position="right"
                 style="width:100px;"
               />
@@ -83,7 +83,9 @@
           </div>
           <div class="asc-group-right">
             <el-button size="small" @click="addDimension(gi)">添加维度</el-button>
-            <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="removeGroup(gi)" />
+            <el-button type="text" size="small" style="color:#F56C6C;" @click="removeGroup(gi)" >
+        <i class="el-icon-delete" />
+      </el-button>
           </div>
         </div>
 
@@ -114,13 +116,15 @@
                   :max="2"
                   :step="0.05"
                   :precision="2"
-                  size="mini"
+                  size="small"
                   controls-position="right"
                   style="width:90px;"
                 />
               </div>
-              <el-button size="mini" @click="addRule(gi, di)">添加规则</el-button>
-              <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C;" @click="removeDimension(gi, di)" />
+              <el-button size="small" @click="addRule(gi, di)">添加规则</el-button>
+              <el-button type="text" size="small" style="color:#F56C6C;" @click="removeDimension(gi, di)" >
+        <i class="el-icon-delete" />
+      </el-button>
             </div>
 
             <!-- 规则表格 -->
@@ -152,8 +156,8 @@
                         :exclude-constants="true"
                         @select="v => { cond.varCode = v.varCode }"
                       />
-                      <el-input v-else v-model="cond.varCode" size="mini" placeholder="变量" class="cond-var" />
-                      <el-select v-model="cond.operator" size="mini" class="cond-op">
+                      <el-input v-else v-model="cond.varCode" size="small" placeholder="变量" class="cond-var" />
+                      <el-select v-model="cond.operator" size="small" class="cond-op">
                         <el-option label="等于" value="==" />
                         <el-option label="不等于" value="!=" />
                         <el-option label="大于" value=">" />
@@ -165,24 +169,28 @@
                         <el-option label="前匹配" value="startsWith" />
                         <el-option label="后匹配" value="endsWith" />
                       </el-select>
-                      <el-input v-model="cond.value" size="mini" placeholder="值" class="cond-val" />
+                      <el-input v-model="cond.value" size="small" placeholder="值" class="cond-val" />
                       <el-button
                         v-if="rule.conditions.length > 1"
                         type="text"
-                        size="mini"
-                        icon="el-icon-close"
+                        size="small"
+                       
                         style="color:#ccc;"
                         @click="rule.conditions.splice(ci, 1)"
-                      />
+                      >
+        <i class="el-icon-close" />
+      </el-button>
                       <span v-if="ci < rule.conditions.length - 1" class="cond-and">且</span>
                     </div>
-                    <el-button type="text" size="mini" icon="el-icon-plus" @click="addCondition(rule)">添加条件</el-button>
+                    <el-button type="text" size="small" @click="addCondition(rule)"><i class="el-icon-plus" /> 添加条件</el-button>
                   </td>
                   <td class="col-score">
-                    <el-input-number v-model="rule.score" size="mini" :min="-9999" :max="9999" class="score-input" />
+                    <el-input-number v-model="rule.score" size="small" :min="-9999" :max="9999" class="score-input" />
                   </td>
                   <td class="col-action">
-                    <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C;" @click="dim.rules.splice(ri, 1)" />
+                    <el-button type="text" size="small" style="color:#F56C6C;" @click="dim.rules.splice(ri, 1)" >
+        <i class="el-icon-delete" />
+      </el-button>
                   </td>
                 </tr>
               </tbody>
@@ -212,8 +220,8 @@
               <code>{{ model.initialScore }}</code>
               <span class="op"> + </span>
             </span>
-            <template v-for="(group, gi) in model.dimensionGroups">
-              <span :key="'g-' + gi" class="formula-group">
+            <template v-for="(group, gi) in model.dimensionGroups" :key="'g-' + gi">
+              <span class="formula-group">
                 <span class="formula-group-label">{{ group.groupLabel || '维度组' + (gi + 1) }}</span>
                 <template v-if="group.weight != null && group.weight !== 1">
                   <span class="op"> × </span>
@@ -221,19 +229,19 @@
                 </template>
                 <span class="formula-dims">
                   (
-                  <template v-for="(dim, di) in (group.dimensions || [])">
-                    <span :key="'d-' + di" class="formula-term">
+                  <template v-for="(dim, di) in (group.dimensions || [])" :key="'d-' + di">
+                    <span class="formula-term">
                       {{ dim.varLabel || dim.varCode || '维度' + (di + 1) }}
                       <template v-if="dim.weight != null && dim.weight !== 1">
                         <span class="op">×</span>{{ (dim.weight || 0).toFixed(2) }}
                       </template>
                     </span>
-                    <span v-if="di < (group.dimensions || []).length - 1" :key="'dop-' + di" class="op"> + </span>
+                    <span v-if="di < (group.dimensions || []).length - 1" class="op"> + </span>
                   </template>
                   )
                 </span>
               </span>
-              <span v-if="gi < model.dimensionGroups.length - 1" :key="'gop-' + gi" class="op"> + </span>
+              <span v-if="gi < model.dimensionGroups.length - 1" class="op"> + </span>
             </template>
           </div>
         </div>
@@ -259,9 +267,9 @@
             <span class="weight-detail-name">{{ group.groupLabel || '维度组' + (gi + 1) }}</span>
             <span class="weight-detail-val">组权重 {{ (group.weight || 1).toFixed(2) }}</span>
             <span class="weight-detail-dims">
-              × ( <template v-for="(dim, di) in (group.dimensions || [])">
-                <span :key="di">{{ dim.varLabel || '维度' }}:{{ (dim.weight || 1).toFixed(2) }}</span>
-                <span v-if="di < (group.dimensions || []).length - 1" :key="'s-' + di">, </span>
+              × ( <template v-for="(dim, di) in (group.dimensions || [])" :key="'d-' + di">
+                <span>{{ dim.varLabel || '维度' }}:{{ (dim.weight || 1).toFixed(2) }}</span>
+                <span v-if="di < (group.dimensions || []).length - 1">, </span>
               </template> )
             </span>
           </div>
@@ -272,7 +280,7 @@
       <div class="asc-card">
         <div class="asc-card-title asc-card-title-row">
           <span><i class="el-icon-medal" /> 分数等级配置</span>
-          <el-button size="small" icon="el-icon-plus" @click="addThreshold">添加等级</el-button>
+          <el-button size="small" @click="addThreshold"><i class="el-icon-plus" /> 添加等级</el-button>
         </div>
         <div class="threshold-list">
           <div v-for="(thresh, ti) in model.thresholds" :key="ti" class="threshold-item">
@@ -288,7 +296,9 @@
             <el-tag :color="thresholdColor(ti)" effect="dark" size="small" class="thresh-badge">
               {{ thresh.result || '等级 ' + (ti + 1) }}
             </el-tag>
-            <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="model.thresholds.splice(ti, 1)" />
+            <el-button type="text" size="small" style="color:#F56C6C;" @click="model.thresholds.splice(ti, 1)" >
+        <i class="el-icon-delete" />
+      </el-button>
           </div>
           <div v-if="model.thresholds.length === 0" class="group-empty">
             暂未配置等级，点击「添加等级」
@@ -309,15 +319,15 @@
 
     <!-- 测试弹窗 -->
     <test-execute-dialog
-      :visible.sync="testVisible"
+      v-model:visible="testVisible"
       :fields="testFields"
       :params="testParams"
-      :params-json.sync="testParamsJson"
-      :mode.sync="testMode"
+      v-model:paramsJson="testParamsJson"
+      v-model:mode="testMode"
       :result="testResult"
       @execute="doTest"
     >
-      <template slot="result">
+      <template #result>
         <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"
@@ -423,23 +433,23 @@ export default {
       }
     },
     normalizeModel() {
-      if (this.model.initialScore == null) this.$set(this.model, 'initialScore', 100)
-      if (!this.model.resultVar) this.$set(this.model, 'resultVar', { varCode: '', varLabel: '' })
-      if (!this.model.dimensionGroups) this.$set(this.model, 'dimensionGroups', [])
-      if (!this.model.thresholds) this.$set(this.model, 'thresholds', [])
+      if (this.model.initialScore == null) this.model['initialScore'] = 100
+      if (!this.model.resultVar) this.model['resultVar'] = { varCode: '', varLabel: '' }
+      if (!this.model.dimensionGroups) this.model['dimensionGroups'] = []
+      if (!this.model.thresholds) this.model['thresholds'] = []
       this.model.dimensionGroups.forEach(g => {
-        if (g.weight == null) this.$set(g, 'weight', 1.0)
+        if (g.weight == null) g['weight'] = 1.0
         ;(g.dimensions || []).forEach(d => {
-          if (d.weight == null) this.$set(d, 'weight', 1.0)
+          if (d.weight == null) d['weight'] = 1.0
         })
       })
     },
     onResultVarSelect(v) {
       if (!v) return
-      this.$set(this.model, 'resultVar', {
+      this.model['resultVar'] = {
         varCode: v.varCode,
         varLabel: (v.varObj && v.varObj.varLabel) || v.varLabel || v.varCode
-      })
+      }
     },
     onDimVarSelect(gi, di, v) {
       if (!v) return
@@ -452,7 +462,7 @@ export default {
     },
     toggleGroup(gi) {
       const g = this.model.dimensionGroups[gi]
-      this.$set(g, '_collapsed', !g._collapsed)
+      g['_collapsed'] = !g._collapsed
     },
     addGroup() {
       this.model.dimensionGroups.push({ groupLabel: '', dimensions: [], weight: 1.0, _collapsed: false })

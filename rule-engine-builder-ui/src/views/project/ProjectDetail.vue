@@ -2,11 +2,11 @@
   <div class="uiue-list-page">
     <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
       <h2 style="margin:0;">{{ project ? project.projectName : '加载中...' }}</h2>
-      <el-button size="small" icon="el-icon-back" @click="$router.back()">返回</el-button>
+      <el-button size="small" @click="$router.back()"><i class="el-icon-back" /> 返回</el-button>
     </div>
     <div class="uiue-search-container">
       <el-form :inline="true" size="small">
-        <el-form-item label="关键字"><el-input v-model="qp.keyword" clearable @keyup.enter.native="handleQuery" /></el-form-item>
+        <el-form-item label="关键字"><el-input v-model="qp.keyword" clearable @keyup.enter="handleQuery" /></el-form-item>
         <el-form-item label="模型类型">
           <el-select v-model="qp.modelType" clearable>
             <el-option label="决策表" value="TABLE" /><el-option label="决策树" value="TREE" /><el-option label="决策流" value="FLOW" /><el-option label="交叉表" value="CROSS" /><el-option label="评分卡" value="SCORE" /><el-option label="复杂交叉表" value="CROSS_ADV" /><el-option label="复杂评分卡" value="SCORE_ADV" /><el-option label="QL脚本" value="SCRIPT" />
@@ -20,26 +20,26 @@
       <el-table-column prop="ruleName" label="规则名称" min-width="180" show-overflow-tooltip sortable />
       <el-table-column prop="ruleCode" label="规则编码" min-width="150" show-overflow-tooltip sortable />
       <el-table-column label="省份" min-width="120" show-overflow-tooltip sortable>
-        <template slot-scope="{ row }">{{ row._province }}</template>
+        <template #default="{ row }">{{ row._province }}</template>
       </el-table-column>
       <el-table-column prop="modelType" label="模型类型" min-width="90" align="center" show-overflow-tooltip sortable>
-        <template slot-scope="{ row }">
-          <el-tag size="mini">{{ mtl(row.modelType) }}</el-tag>
+        <template #default="{ row }">
+          <el-tag size="small">{{ mtl(row.modelType) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" min-width="70" align="center" sortable>
-        <template slot-scope="{ row }">
-          <el-tag :type="{ 0: 'info', 1: 'success', 2: 'warning' }[row.status]" size="mini">
+        <template #default="{ row }">
+          <el-tag :type="{ 0: 'info', 1: 'success', 2: 'warning' }[row.status]" size="small">
             {{ ['草稿', '已发布', '已下线'][row.status] }}
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="description" label="说明" min-width="160" show-overflow-tooltip sortable />
       <el-table-column label="创建时间" min-width="160" align="center">
-        <template slot-scope="{ row }">{{ formatDateTime(row.createTime) }}</template>
+        <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
       </el-table-column>
       <el-table-column label="操作" min-width="250" align="center" class-name="rule-ops-col">
-        <template slot-scope="{ row }">
+        <template #default="{ row }">
           <div style="white-space:nowrap">
             <el-button type="text" size="small" @click="go(row)">设计</el-button>
             <el-button type="text" size="small" @click="openEditDlg(row)">修改</el-button>
@@ -61,7 +61,7 @@
       @current-change="p=>{qp.pageNum=p;load()}"
       @size-change="s=>{qp.pageSize=s;qp.pageNum=1;load()}"
     />
-    <el-dialog title="新建规则" :visible.sync="dlgVis" width="500px">
+    <el-dialog title="新建规则" v-model="dlgVis" width="500px">
       <el-form ref="f" :model="fm" :rules="{ruleCode:[{required:true,message:'必填',trigger:'blur'}],ruleName:[{required:true,message:'必填',trigger:'blur'}],modelType:[{required:true,message:'必选',trigger:'change'}]}" label-width="100px" size="small">
         <el-form-item label="规则编码" prop="ruleCode"><el-input v-model="fm.ruleCode" /></el-form-item>
         <el-form-item label="规则名称" prop="ruleName"><el-input v-model="fm.ruleName" /></el-form-item>
@@ -87,17 +87,17 @@
         </el-form-item>
         <el-form-item label="描述"><el-input v-model="fm.description" type="textarea" :rows="2" /></el-form-item>
       </el-form>
-      <div slot="footer"><el-button size="small" @click="dlgVis=false">取消</el-button><el-button size="small" type="primary" @click="submit">确定</el-button></div>
+      <template #footer><div><el-button size="small" @click="dlgVis=false">取消</el-button><el-button size="small" type="primary" @click="submit">确定</el-button></div></template>
     </el-dialog>
     <publish-scope-dialog
-      :visible.sync="publishDlgVis"
+      v-model:visible="publishDlgVis"
       :definition-id="publishDefinitionId"
       :comp-scope-options="compScopeOptions"
       @published="load"
     />
 
     <!-- 修改省份/说明弹窗 -->
-    <el-dialog title="修改规则" :visible.sync="editDlgVis" width="500px">
+    <el-dialog title="修改规则" v-model="editDlgVis" width="500px">
       <el-form label-width="100px" size="small">
         <el-form-item label="省份">
           <el-select v-model="editForm.compId" filterable style="width:100%">
@@ -108,14 +108,14 @@
           <el-input v-model="editForm.description" type="textarea" :rows="3" />
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button size="small" @click="editDlgVis = false">取消</el-button>
         <el-button size="small" type="primary" :loading="editLoading" @click="submitEdit">确定</el-button>
-      </div>
+      </div></template>
     </el-dialog>
 
     <!-- 复制到省份弹窗 -->
-    <el-dialog title="复制规则到其他省份" :visible.sync="copyDlgVis" width="560px">
+    <el-dialog title="复制规则到其他省份" v-model="copyDlgVis" width="560px">
       <p style="margin:0 0 12px;color:#606266;font-size:13px;">选择要复制到的目标省份，规则内容将被复制到选中的省份作用域下。</p>
       <el-form label-width="100px" size="small">
         <el-form-item label="当前规则">
@@ -130,21 +130,21 @@
           </div>
         </el-form-item>
         <el-form-item v-if="copyTargetScopes.length" label="目标省份">
-          <el-table :data="copyTargetScopeRows" border size="mini" style="width:100%">
+          <el-table :data="copyTargetScopeRows" border size="small" style="width:100%">
             <el-table-column type="index" label="#" width="50" />
             <el-table-column prop="label" label="省份 / 组织" />
             <el-table-column label="操作" width="80" align="center">
-              <template slot-scope="{ $index }">
-                <el-button type="text" size="mini" style="color:#F56C6C" @click="removeCopyScope($index)">删除</el-button>
+              <template #default="{ $index }">
+                <el-button type="text" size="small" style="color:#F56C6C" @click="removeCopyScope($index)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button size="small" @click="copyDlgVis = false">取消</el-button>
         <el-button size="small" type="primary" :loading="copyLoading" @click="submitCopy">确定复制</el-button>
-      </div>
+      </div></template>
     </el-dialog>
   </div>
 </template>

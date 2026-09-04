@@ -167,9 +167,9 @@ export default {
         const api = varObj.objectField ? getDataObjectFieldOptions : getVariableOptions
         const res = await api(varObj.id)
         const opts = (res && res.data ? res.data : res) || []
-        this.$set(this.varOptionsByCode, refCode, opts)
+        this.varOptionsByCode[refCode] = opts
       } catch (e) {
-        this.$set(this.varOptionsByCode, refCode, [])
+        this.varOptionsByCode[refCode] = []
       }
     },
 

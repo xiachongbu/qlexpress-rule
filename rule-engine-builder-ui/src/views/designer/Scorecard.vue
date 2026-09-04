@@ -5,20 +5,20 @@
       <div class="sc-title-area">
         <i class="el-icon-data-line sc-title-icon" />
         <span class="sc-title">评分卡设计器</span>
-        <el-tag size="mini" type="info" style="margin-left:8px;">{{ model.scoreItems.length }} 个评分项</el-tag>
+        <el-tag size="small" type="info" style="margin-left:8px;">{{ model.scoreItems.length }} 个评分项</el-tag>
       </div>
       <div class="sc-toolbar">
-        <el-button size="small" icon="el-icon-plus" @click="addScoreItem">添加评分项</el-button>
-        <el-button size="small" icon="el-icon-plus" @click="addThreshold">添加等级</el-button>
+        <el-button size="small" @click="addScoreItem"><i class="el-icon-plus" /> 添加评分项</el-button>
+        <el-button size="small" @click="addThreshold"><i class="el-icon-plus" /> 添加等级</el-button>
         <el-divider direction="vertical" />
-        <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <el-button size="small" @click="handleSave"><i class="el-icon-document" /> 保存</el-button>
         <design-version-switcher
           :definition-id="definitionId"
           :scope-comp-id="scopeCompId"
           @apply-model="onApplyDesignSnapshot"
         />
-        <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">编译</el-button>
-        <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
+        <el-button size="small" type="warning" @click="handleCompile"><i class="el-icon-cpu" /> 编译</el-button>
+        <el-button size="small" type="primary" @click="handleTest"><i class="el-icon-video-play" /> 测试</el-button>
       </div>
     </div>
 
@@ -86,10 +86,12 @@
               <el-button
                 type="text"
                 size="small"
-                icon="el-icon-delete"
+               
                 style="color:#F56C6C;"
                 @click="removeScoreItem(idx)"
-              />
+              >
+        <i class="el-icon-delete" />
+      </el-button>
             </div>
 
             <div class="score-item-body">
@@ -180,8 +182,8 @@
               <code>{{ model.initialScore }}</code>
               <span class="op"> + </span>
             </span>
-            <template v-for="(item, idx) in model.scoreItems">
-              <span :key="idx" class="formula-term">
+            <template v-for="(item, idx) in model.scoreItems" :key="idx">
+              <span class="formula-term">
                 <span class="formula-cond">IF({{ item.conditionLabel || item.condVar || '条件' + (idx + 1) }} {{ item.condOperator }} {{ item.condValue }})</span>
                 <span class="op"> × </span>
                 <code>{{ item.score }}</code>
@@ -190,7 +192,7 @@
                   <code>{{ item.weight.toFixed(2) }}</code>
                 </template>
               </span>
-              <span v-if="idx < model.scoreItems.length - 1" :key="'op-' + idx" class="op"> + </span>
+              <span v-if="idx < model.scoreItems.length - 1" class="op"> + </span>
             </template>
             <span v-if="model.scoreItems.length === 0" class="formula-empty">（暂未配置评分项）</span>
           </div>
@@ -230,7 +232,9 @@
             <el-tag :color="thresholdColor(ti)" effect="dark" size="small" class="thresh-badge">
               {{ thresh.result || '等级 ' + (ti + 1) }}
             </el-tag>
-            <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="removeThreshold(ti)" />
+            <el-button type="text" size="small" style="color:#F56C6C;" @click="removeThreshold(ti)" >
+        <i class="el-icon-delete" />
+      </el-button>
           </div>
           <div v-if="model.thresholds.length === 0" class="sc-empty">
             暂未配置等级，点击「添加等级」设置分数区间
@@ -271,15 +275,15 @@
 
     <!-- 测试执行弹窗 -->
     <test-execute-dialog
-      :visible.sync="testVisible"
+      v-model:visible="testVisible"
       :fields="testFields"
       :params="testParams"
-      :params-json.sync="testParamsJson"
-      :mode.sync="testMode"
+      v-model:paramsJson="testParamsJson"
+      v-model:mode="testMode"
       :result="testResult"
       @execute="doTest"
     >
-      <template slot="result">
+      <template #result>
         <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"
@@ -391,20 +395,20 @@ export default {
       }
     },
     normalizeModel() {
-      if (this.model.initialScore == null) this.$set(this.model, 'initialScore', 0)
-      if (!this.model.scoreItems) this.$set(this.model, 'scoreItems', [])
-      if (!this.model.resultVar) this.$set(this.model, 'resultVar', { varCode: '', varLabel: '' })
-      if (!this.model.thresholds) this.$set(this.model, 'thresholds', [])
+      if (this.model.initialScore == null) this.model['initialScore'] = 0
+      if (!this.model.scoreItems) this.model['scoreItems'] = []
+      if (!this.model.resultVar) this.model['resultVar'] = { varCode: '', varLabel: '' }
+      if (!this.model.thresholds) this.model['thresholds'] = []
       this.model.scoreItems.forEach(item => {
-        if (item.score == null) this.$set(item, 'score', 1)
-        if (item.weight == null) this.$set(item, 'weight', 1.0)
+        if (item.score == null) item['score'] = 1
+        if (item.weight == null) item['weight'] = 1.0
         if (!item.condVar && item.condition) {
           this.parseCondition(item)
         }
-        if (item.condVar == null) this.$set(item, 'condVar', '')
-        if (item.condOperator == null) this.$set(item, 'condOperator', '==')
-        if (item.condValue == null) this.$set(item, 'condValue', '')
-        if (item.condVarType == null) this.$set(item, 'condVarType', 'STRING')
+        if (item.condVar == null) item['condVar'] = ''
+        if (item.condOperator == null) item['condOperator'] = '=='
+        if (item.condValue == null) item['condValue'] = ''
+        if (item.condVarType == null) item['condVarType'] = 'STRING'
       })
     },
     /** 从已有 condition 字符串反解出结构化字段 */
@@ -442,12 +446,12 @@ export default {
       if (!v) return
       const varLabel = (v.varObj && v.varObj.varLabel) || v.varLabel || v.varCode
       const _varId = v.varObj && v.varObj.id ? v.varObj.id : null
-      this.$set(this.model, 'resultVar', {
+      this.model['resultVar'] = {
         ...this.model.resultVar,
         varCode: v.varCode,
         varLabel,
         _varId
-      })
+      }
     },
     addScoreItem() {
       this.model.scoreItems.push({ condVar: '', condOperator: '==', condValue: '', condVarType: 'STRING', condition: '', conditionLabel: '', score: 1, weight: 1.0 })
