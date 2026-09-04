@@ -47,24 +47,24 @@
           </span>
           <div class="sp-statusbar-spacer" />
           <el-button-group>
-            <el-button size="small" icon="el-icon-magic-stick" title="格式化 (Ctrl+Alt+L)" @click="formatScript">格式化</el-button>
-            <el-button size="small" icon="el-icon-chat-line-square" title="注释/取消注释 (Ctrl+/)" @click="toggleComment">注释</el-button>
-            <el-button size="small" icon="el-icon-search" title="查找/替换 (Ctrl+F)" @click="openSearch">查找</el-button>
+            <el-button size="small" title="格式化 (Ctrl+Alt+L)" @click="formatScript"><i class="el-icon-magic-stick" /> 格式化</el-button>
+            <el-button size="small" title="注释/取消注释 (Ctrl+/)" @click="toggleComment"><i class="el-icon-chat-line-square" /> 注释</el-button>
+            <el-button size="small" title="查找/替换 (Ctrl+F)" @click="openSearch"><i class="el-icon-search" /> 查找</el-button>
           </el-button-group>
           <el-button-group>
-            <el-button size="small" icon="el-icon-refresh" :loading="compiling" @click="handleCompile">
+            <el-button size="small" :loading="compiling" @click="handleCompile"><i class="el-icon-refresh" /> 
               {{ isScriptMode ? '验证脚本' : '编译并刷新' }}
             </el-button>
-            <el-button size="small" icon="el-icon-document-copy" @click="copyScript">复制</el-button>
+            <el-button size="small" @click="copyScript"><i class="el-icon-document-copy" /> 复制</el-button>
           </el-button-group>
           <el-button
             v-if="isScriptMode"
             size="small"
             type="primary"
-            icon="el-icon-check"
+           
             :loading="saving"
             @click="handleSaveScript"
-          >保存脚本</el-button>
+          ><i class="el-icon-check" /> 保存脚本</el-button>
         </div>
 
         <!-- 查找 / 替换面板：ESC 在面板根节点统一拦截（stop 阻止冒泡），避免触发 el-drawer 的 ESC 关闭整个设计器抽屉 -->
@@ -75,12 +75,13 @@
               v-model="searchQuery"
               size="small"
               placeholder="查找"
-              prefix-icon="el-icon-search"
               clearable
               class="sp-search-input"
               @input="highlightAll"
-              @keydown.enter.native.prevent="findNext(false)"
-            />
+              @keydown.enter.prevent="findNext(false)"
+            >
+              <template #prefix><i class="el-icon-search" /></template>
+            </el-input>
             <el-button size="small" @click="findNext(false)">下一个</el-button>
             <el-button size="small" @click="highlightAll">全部高亮</el-button>
             <span class="sp-search-spacer" />
@@ -93,7 +94,7 @@
               size="small"
               placeholder="替换为"
               class="sp-search-input"
-              @keydown.enter.native.prevent="replaceCurrent"
+              @keydown.enter.prevent="replaceCurrent"
             />
             <el-button size="small" @click="replaceCurrent">替换</el-button>
             <el-button size="small" @click="replaceAll">全部替换</el-button>

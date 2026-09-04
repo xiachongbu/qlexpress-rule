@@ -6,7 +6,7 @@
     append-to-body
   >
     <div class="test-mode-bar">
-      <el-radio-group :value="mode" size="small" @input="onModeChange">
+      <el-radio-group :value="mode" size="small" @change="onModeChange">
         <el-radio-button label="form">表单</el-radio-button>
         <el-radio-button label="json">JSON</el-radio-button>
       </el-radio-group>
@@ -74,9 +74,9 @@
       placeholder="{}"
     />
 
-    <template #footer">
+    <template #footer>
       <el-button size="small" @click="innerVisible = false">取消</el-button>
-      <el-button size="small" type="primary" icon="el-icon-video-play" @click="$emit('execute')">执行</el-button>
+      <el-button size="small" type="primary" @click="$emit('execute')"><i class="el-icon-video-play" /> 执行</el-button>
     </template>
 
     <div v-if="result" class="test-result">

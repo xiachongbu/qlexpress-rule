@@ -11,17 +11,17 @@
       </el-select>
       <div class="toolbar-right">
         <el-dropdown trigger="click" :disabled="!currentProjectId" @command="handleImportCmd">
-          <el-button type="primary" icon="el-icon-upload2">批量导入 <i class="el-icon-arrow-down el-icon--right" /></el-button>
+          <el-button type="primary"><i class="el-icon-upload2" /> 批量导入 <i class="el-icon-arrow-down el-icon--right" /></el-button>
           <template #dropdown><el-dropdown-menu>
-            <el-dropdown-item command="java-entity" icon="el-icon-document">导入 Java 实体类</el-dropdown-item>
-            <el-dropdown-item command="json-object" icon="el-icon-tickets">导入 JSON 对象</el-dropdown-item>
-            <el-dropdown-item command="ddl-table" icon="el-icon-s-grid">导入 DDL 建表语句</el-dropdown-item>
-            <el-dropdown-item command="java-const" icon="el-icon-coin" divided>导入 Java 常量类</el-dropdown-item>
-            <el-dropdown-item command="json-const" icon="el-icon-price-tag">导入 JSON 常量</el-dropdown-item>
+            <el-dropdown-item command="java-entity"><i class="el-icon-document" /> 导入 Java 实体类</el-dropdown-item>
+            <el-dropdown-item command="json-object"><i class="el-icon-tickets" /> 导入 JSON 对象</el-dropdown-item>
+            <el-dropdown-item command="ddl-table"><i class="el-icon-s-grid" /> 导入 DDL 建表语句</el-dropdown-item>
+            <el-dropdown-item command="java-const" divided><i class="el-icon-coin" /> 导入 Java 常量类</el-dropdown-item>
+            <el-dropdown-item command="json-const"><i class="el-icon-price-tag" /> 导入 JSON 常量</el-dropdown-item>
           </el-dropdown-menu></template>
         </el-dropdown>
-        <el-button type="primary" icon="el-icon-plus" :disabled="!currentProjectId" @click="handlePrimaryCreate">{{ primaryCreateLabel }}</el-button>
-        <el-button icon="el-icon-video-play" type="success" :disabled="!currentProjectId" :loading="validating" style="margin-left: 0" @click="handleBatchValidate">验证规则</el-button>
+        <el-button type="primary" :disabled="!currentProjectId" @click="handlePrimaryCreate"><i class="el-icon-plus" /> {{ primaryCreateLabel }}</el-button>
+        <el-button type="success" :disabled="!currentProjectId" :loading="validating" style="margin-left: 0" @click="handleBatchValidate"><i class="el-icon-video-play" /> 验证规则</el-button>
       </div>
     </div>
 
@@ -34,7 +34,7 @@
           <el-select v-model="qp.varType" clearable placeholder="数据类型" size="small" style="width:110px;" @change="handleQuery">
             <el-option v-for="opt in varTypeFilterOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
-          <el-input v-model="qp.keyword" placeholder="搜索编码或名称" size="small" clearable style="width:180px;" @keyup.enter.native="handleQuery" />
+          <el-input v-model="qp.keyword" placeholder="搜索编码或名称" size="small" clearable style="width:180px;" @keyup.enter="handleQuery" />
           <el-button type="success" @click="handleQuery">查询</el-button>
           <el-button type="primary" @click="resetQuery">重置</el-button>
         </div>
@@ -127,15 +127,17 @@
               <i :class="node._expanded ? 'el-icon-arrow-down' : 'el-icon-arrow-right'" class="expand-icon" />
               <span class="var-group-code">{{ node.object.objectCode }}</span>
               <span v-if="node.object.objectLabel && node.object.objectLabel !== node.object.objectCode" class="var-group-label">{{ node.object.objectLabel }}</span>
-              <el-input v-model="node.object.scriptName" size="small" placeholder="脚本名称" style="width:130px;margin-left:6px;" @blur="onObjectScriptNameChange(node.object)" @click.native.stop />
-              <el-select v-model="node.object.objectType" size="small" style="width:100px;" @change="onObjectTypeChange(node.object)" @click.native.stop>
+              <el-input v-model="node.object.scriptName" size="small" placeholder="脚本名称" style="width:130px;margin-left:6px;" @blur="onObjectScriptNameChange(node.object)" @click.stop />
+              <el-select v-model="node.object.objectType" size="small" style="width:100px;" @change="onObjectTypeChange(node.object)" @click.stop>
                 <el-option label="输入对象" value="INPUT" /><el-option label="输出对象" value="OUTPUT" /><el-option label="输入输出" value="INOUT" />
               </el-select>
               <el-tag size="small" :type="objTypeColor(node.object.objectType)">{{ objTypeLabel(node.object.objectType) }}</el-tag>
               <el-tag v-if="node.object.sourceType" size="small" type="info">{{ node.object.sourceType }}</el-tag>
               <span class="var-group-count">{{ node.variables.length }} 个字段</span>
-              <el-button type="text" size="small" icon="el-icon-plus" style="margin-left:auto;" @click.stop="handleAddObjectField(node)">添加字段</el-button>
-              <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click.stop="handleDeleteObject(node.object)" />
+              <el-button type="text" size="small" style="margin-left:auto;" @click.stop="handleAddObjectField(node)"><i class="el-icon-plus" /> 添加字段</el-button>
+              <el-button type="text" size="small" style="color:#F56C6C;" @click.stop="handleDeleteObject(node.object)" >
+        <i class="el-icon-delete" />
+      </el-button>
             </div>
             <div v-show="node._expanded" class="var-group-body">
               <el-table :data="node.variables" size="small" border style="width:100%;">
@@ -179,7 +181,7 @@
           <el-select v-model="constQp.varType" clearable placeholder="数据类型" size="small" style="width:110px;" @change="handleConstQuery">
             <el-option v-for="opt in varTypeFilterOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
-          <el-input v-model="constQp.keyword" placeholder="搜索编码或名称" size="small" clearable style="width:180px;" @keyup.enter.native="handleConstQuery" />
+          <el-input v-model="constQp.keyword" placeholder="搜索编码或名称" size="small" clearable style="width:180px;" @keyup.enter="handleConstQuery" />
           <el-button size="small" type="primary" @click="handleConstQuery">查询</el-button>
           <el-button size="small" @click="resetConstQuery">重置</el-button>
         </div>
@@ -298,7 +300,7 @@
           <template #default="{$index}"><el-button type="text" size="small" style="color:#F56C6C;" @click="optionList.splice($index,1)">移除</el-button></template>
         </el-table-column>
       </el-table>
-      <el-button type="text" size="small" icon="el-icon-plus" style="margin-top:8px;" @click="optionList.push({optionValue:'',optionLabel:'',sortOrder:optionList.length})">添加选项</el-button>
+      <el-button type="text" size="small" style="margin-top:8px;" @click="optionList.push({optionValue:'',optionLabel:'',sortOrder:optionList.length})"><i class="el-icon-plus" /> 添加选项</el-button>
       <template #footer><div>
         <el-button type="primary" @click="optionDialogVisible=false">取消</el-button>
         <el-button type="success" @click="handleSaveOptions">保存选项</el-button>
@@ -318,7 +320,7 @@
         </el-form-item>
         <el-form-item label="或上传文件">
           <el-upload action="" :before-upload="handleJavaFileSelect" :show-file-list="false" accept=".java">
-            <el-button size="small" icon="el-icon-upload">选择 .java 文件</el-button>
+            <el-button size="small"><i class="el-icon-upload" /> 选择 .java 文件</el-button>
           </el-upload>
         </el-form-item>
       </el-form>
@@ -373,7 +375,7 @@
         </el-form-item>
         <el-form-item label="或上传文件">
           <el-upload action="" :before-upload="handleJavaFileSelect" :show-file-list="false" accept=".java">
-            <el-button size="small" icon="el-icon-upload">选择 .java 文件</el-button>
+            <el-button size="small"><i class="el-icon-upload" /> 选择 .java 文件</el-button>
           </el-upload>
         </el-form-item>
       </el-form>
@@ -423,7 +425,7 @@
         <p v-if="importResult.constantCount != null">创建/更新 <b>{{ importResult.constantCount }}</b> 个常量</p>
       </div>
       <template #footer><div>
-        <el-button type="warning" icon="el-icon-video-play" @click="importResultVisible=false;handleBatchValidate()">验证项目规则</el-button>
+        <el-button type="warning" @click="importResultVisible=false;handleBatchValidate()"><i class="el-icon-video-play" /> 验证项目规则</el-button>
         <el-button type="primary" @click="importResultVisible=false">关闭</el-button>
       </div></template>
     </el-dialog>

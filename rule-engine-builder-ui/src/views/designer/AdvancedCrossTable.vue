@@ -10,14 +10,14 @@
         </el-tag>
       </div>
       <div class="act-toolbar">
-        <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <el-button size="small" @click="handleSave"><i class="el-icon-document" /> 保存</el-button>
         <design-version-switcher
           :definition-id="definitionId"
           :scope-comp-id="scopeCompId"
           @apply-model="onApplyDesignSnapshot"
         />
-        <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">编译</el-button>
-        <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
+        <el-button size="small" type="warning" @click="handleCompile"><i class="el-icon-cpu" /> 编译</el-button>
+        <el-button size="small" type="primary" @click="handleTest"><i class="el-icon-video-play" /> 测试</el-button>
       </div>
     </div>
 
@@ -28,7 +28,7 @@
         <div class="act-dim-panel">
           <div class="dim-panel-header">
             <i class="el-icon-s-unfold" style="color:#1890ff;" /> 行维度
-            <el-button size="small" icon="el-icon-plus" @click="addDimension('row')">添加行维度</el-button>
+            <el-button size="small" @click="addDimension('row')"><i class="el-icon-plus" /> 添加行维度</el-button>
           </div>
           <div v-for="(dim, di) in model.rowDimensions" :key="'rd-' + di" class="dim-config-card">
             <div class="dim-config-header">
@@ -46,7 +46,9 @@
               <el-select v-model="dim.varType" size="small" class="dim-field-type" popper-append-to-body>
                 <el-option v-for="opt in varTypeFormOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
               </el-select>
-              <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="removeDimension('row', di)" />
+              <el-button type="text" size="small" style="color:#F56C6C;" @click="removeDimension('row', di)" >
+        <i class="el-icon-delete" />
+      </el-button>
             </div>
             <div class="segments-area">
               <div v-for="(seg, si) in dim.segments" :key="si" class="segment-row">
@@ -67,9 +69,11 @@
                 </template>
                 <el-input v-else v-model="seg.value" size="small" placeholder="值" class="seg-val" />
                 <el-input v-model="seg.label" size="small" placeholder="标签" class="seg-label" />
-                <el-button type="text" size="small" icon="el-icon-close" style="color:#ccc;" @click="dim.segments.splice(si, 1)" />
+                <el-button type="text" size="small" style="color:#ccc;" @click="dim.segments.splice(si, 1)" >
+        <i class="el-icon-close" />
+      </el-button>
               </div>
-              <el-button type="text" size="small" icon="el-icon-plus" @click="addSegment(dim)">添加分段</el-button>
+              <el-button type="text" size="small" @click="addSegment(dim)"><i class="el-icon-plus" /> 添加分段</el-button>
             </div>
           </div>
         </div>
@@ -78,7 +82,7 @@
         <div class="act-dim-panel">
           <div class="dim-panel-header">
             <i class="el-icon-s-fold" style="color:#52c41a;" /> 列维度
-            <el-button size="small" icon="el-icon-plus" @click="addDimension('col')">添加列维度</el-button>
+            <el-button size="small" @click="addDimension('col')"><i class="el-icon-plus" /> 添加列维度</el-button>
           </div>
           <div v-for="(dim, di) in model.colDimensions" :key="'cd-' + di" class="dim-config-card">
             <div class="dim-config-header">
@@ -96,7 +100,9 @@
               <el-select v-model="dim.varType" size="small" class="dim-field-type" popper-append-to-body>
                 <el-option v-for="opt in varTypeFormOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
               </el-select>
-              <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="removeDimension('col', di)" />
+              <el-button type="text" size="small" style="color:#F56C6C;" @click="removeDimension('col', di)" >
+        <i class="el-icon-delete" />
+      </el-button>
             </div>
             <div class="segments-area">
               <div v-for="(seg, si) in dim.segments" :key="si" class="segment-row">
@@ -117,9 +123,11 @@
                 </template>
                 <el-input v-else v-model="seg.value" size="small" placeholder="值" class="seg-val" />
                 <el-input v-model="seg.label" size="small" placeholder="标签" class="seg-label" />
-                <el-button type="text" size="small" icon="el-icon-close" style="color:#ccc;" @click="dim.segments.splice(si, 1)" />
+                <el-button type="text" size="small" style="color:#ccc;" @click="dim.segments.splice(si, 1)" >
+        <i class="el-icon-close" />
+      </el-button>
               </div>
-              <el-button type="text" size="small" icon="el-icon-plus" @click="addSegment(dim)">添加分段</el-button>
+              <el-button type="text" size="small" @click="addSegment(dim)"><i class="el-icon-plus" /> 添加分段</el-button>
             </div>
           </div>
         </div>
@@ -231,7 +239,7 @@
       :result="testResult"
       @execute="doTest"
     >
-      <template #result">
+      <template #result>
         <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"

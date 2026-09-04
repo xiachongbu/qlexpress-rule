@@ -9,7 +9,7 @@
         <el-option v-for="p in projects" :key="p.id" :label="p.projectName" :value="p.id" />
       </el-select>
       <div class="toolbar-right">
-        <el-button icon="el-icon-plus" type="success" :disabled="!currentProjectId" @click="handleCreate">新建函数</el-button>
+        <el-button type="success" :disabled="!currentProjectId" @click="handleCreate"><i class="el-icon-plus" /> 新建函数</el-button>
       </div>
     </div>
 
@@ -86,9 +86,11 @@
               <el-option v-for="opt in varTypeFormOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
             </el-select>
             <el-input v-model="p.label" size="small" placeholder="中文名" style="flex:1" />
-            <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C" @click="editParams.splice(pi, 1)" />
+            <el-button type="text" size="small" style="color:#F56C6C" @click="editParams.splice(pi, 1)" >
+        <i class="el-icon-delete" />
+      </el-button>
           </div>
-          <el-button size="small" icon="el-icon-plus" @click="editParams.push({name:'',type:'STRING',label:''})">添加参数</el-button>
+          <el-button size="small" @click="editParams.push({name:'',type:'STRING',label:''})"><i class="el-icon-plus" /> 添加参数</el-button>
         </el-form-item>
         <el-form-item label="实现方式">
           <el-radio-group v-model="editForm.implType">
@@ -113,7 +115,7 @@
           <el-input v-model="editForm.implMethod" placeholder="Bean 上的方法名，如 calculateVAT（不填则默认使用函数编码）" />
         </el-form-item>
       </el-form>
-      <template #footer">
+      <template #footer>
         <el-button type="primary" @click="dialogVisible = false">取消</el-button>
         <el-button type="success" @click="handleSave">保存</el-button>
       </template>

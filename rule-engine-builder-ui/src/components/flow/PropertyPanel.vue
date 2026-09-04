@@ -135,9 +135,11 @@
               </el-select>
               <span class="action-eq">=</span>
               <el-input v-model="action.value" size="small" placeholder="值" style="flex:1;" @change="onNodeChange" />
-              <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="removeAction(idx)" />
+              <el-button type="text" size="small" style="color:#F56C6C;" @click="removeAction(idx)" >
+        <i class="el-icon-delete" />
+      </el-button>
             </div>
-            <el-button type="primary" size="small" plain icon="el-icon-plus" style="width:100%;margin-top:8px;" @click="addAction">
+            <el-button type="primary" size="small" plain style="width:100%;margin-top:8px;" @click="addAction"><i class="el-icon-plus" /> 
               添加动作
             </el-button>
           </div>
@@ -157,7 +159,7 @@
                 :type="varTagType(v.varType)"
                 style="cursor:pointer;margin:2px;"
                 :title="v.varLabel + ' [' + v.varType + ']'"
-                @click.native="copyVarCode(v.varCode)"
+                @click="copyVarCode(v.varCode)"
               >{{ v.varCode }}</el-tag>
             </div>
             <div class="script-lang">QLExpress 脚本</div>

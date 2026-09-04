@@ -2,11 +2,11 @@
   <div class="uiue-list-page">
     <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
       <h2 style="margin:0;">{{ project ? project.projectName : '加载中...' }}</h2>
-      <el-button size="small" icon="el-icon-back" @click="$router.back()">返回</el-button>
+      <el-button size="small" @click="$router.back()"><i class="el-icon-back" /> 返回</el-button>
     </div>
     <div class="uiue-search-container">
       <el-form :inline="true" size="small">
-        <el-form-item label="关键字"><el-input v-model="qp.keyword" clearable @keyup.enter.native="handleQuery" /></el-form-item>
+        <el-form-item label="关键字"><el-input v-model="qp.keyword" clearable @keyup.enter="handleQuery" /></el-form-item>
         <el-form-item label="模型类型">
           <el-select v-model="qp.modelType" clearable>
             <el-option label="决策表" value="TABLE" /><el-option label="决策树" value="TREE" /><el-option label="决策流" value="FLOW" /><el-option label="交叉表" value="CROSS" /><el-option label="评分卡" value="SCORE" /><el-option label="复杂交叉表" value="CROSS_ADV" /><el-option label="复杂评分卡" value="SCORE_ADV" /><el-option label="QL脚本" value="SCRIPT" />

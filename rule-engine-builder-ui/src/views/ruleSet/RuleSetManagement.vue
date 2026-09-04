@@ -21,7 +21,7 @@
         </el-form-item>
         <template v-if="selectedProjectId">
           <el-form-item label="关键字">
-            <el-input v-model="listQuery.keyword" clearable placeholder="集编码或名称" style="width: 200px;" @keyup.enter.native="handleQuery" />
+            <el-input v-model="listQuery.keyword" clearable placeholder="集编码或名称" style="width: 200px;" @keyup.enter="handleQuery" />
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleQuery">查询</el-button>

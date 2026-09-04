@@ -8,14 +8,14 @@
         <el-tag size="small" type="info" style="margin-left:8px;">{{ lineCount }} 行</el-tag>
       </div>
       <div class="se-toolbar">
-        <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <el-button size="small" @click="handleSave"><i class="el-icon-document" /> 保存</el-button>
         <design-version-switcher
           :definition-id="definitionId"
           :scope-comp-id="scopeCompId"
           @apply-model="onApplyDesignSnapshot"
         />
-        <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">验证脚本</el-button>
-        <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
+        <el-button size="small" type="warning" @click="handleCompile"><i class="el-icon-cpu" /> 验证脚本</el-button>
+        <el-button size="small" type="primary" @click="handleTest"><i class="el-icon-video-play" /> 测试</el-button>
       </div>
     </div>
 
@@ -44,9 +44,10 @@
                 v-model="varSearchKey"
                 size="small"
                 placeholder="搜索变量..."
-                prefix-icon="el-icon-search"
                 clearable
-              />
+              >
+                <template #prefix><i class="el-icon-search" /></template>
+              </el-input>
             </div>
             <!-- 树形分组 -->
             <div v-for="cat in filteredVarTree" :key="cat.key" class="se-cat">
@@ -125,12 +126,13 @@
               v-model="searchQuery"
               size="small"
               placeholder="查找"
-              prefix-icon="el-icon-search"
               clearable
               class="se-search-input"
               @input="highlightAll"
-              @keydown.enter.native.prevent="findNext(false)"
-            />
+              @keydown.enter.prevent="findNext(false)"
+            >
+              <template #prefix><i class="el-icon-search" /></template>
+            </el-input>
             <el-button size="small" @click="findNext(false)">下一个</el-button>
             <el-button size="small" @click="highlightAll">全部高亮显示</el-button>
             <span class="se-search-spacer" />
@@ -143,7 +145,7 @@
               size="small"
               placeholder="替换为"
               class="se-search-input"
-              @keydown.enter.native.prevent="replaceCurrent"
+              @keydown.enter.prevent="replaceCurrent"
             />
             <el-button size="small" @click="replaceCurrent">替换</el-button>
             <el-button size="small" @click="replaceAll">全部替换</el-button>
@@ -172,7 +174,7 @@
       :result="testResult"
       @execute="doTest"
     >
-      <template #result">
+      <template #result>
         <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"

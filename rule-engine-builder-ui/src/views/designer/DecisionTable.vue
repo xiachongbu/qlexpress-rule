@@ -8,16 +8,16 @@
         <el-tag size="small" type="info" style="margin-left:8px;">共 {{ model.rules.length }} 条规则</el-tag>
       </div>
       <div class="dt-toolbar">
-        <el-button size="small" icon="el-icon-plus" @click="addRule">添加行</el-button>
+        <el-button size="small" @click="addRule"><i class="el-icon-plus" /> 添加行</el-button>
         <el-divider direction="vertical" />
-        <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <el-button size="small" @click="handleSave"><i class="el-icon-document" /> 保存</el-button>
         <design-version-switcher
           :definition-id="definitionId"
           :scope-comp-id="scopeCompId"
           @apply-model="onApplyDesignSnapshot"
         />
-        <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">编译</el-button>
-        <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
+        <el-button size="small" type="warning" @click="handleCompile"><i class="el-icon-cpu" /> 编译</el-button>
+        <el-button size="small" type="primary" @click="handleTest"><i class="el-icon-video-play" /> 测试</el-button>
         <el-divider direction="vertical" />
         <span class="toolbar-label">命中策略</span>
         <el-select v-model="model.hitPolicy" size="small" style="width:110px;">
@@ -65,7 +65,7 @@
               <div class="dt-act-panel-head">
                 <span class="dt-act-panel-title">动作 (THEN)</span>
                 <span class="dt-act-panel-hint">本条规则独立配置，可与其它行不同</span>
-                <el-button type="primary" size="small" plain icon="el-icon-plus" @click="addRuleAction(ri)">添加动作</el-button>
+                <el-button type="primary" size="small" plain @click="addRuleAction(ri)"><i class="el-icon-plus" /> 添加动作</el-button>
               </div>
               <div class="dt-act-rows">
                 <div
@@ -192,7 +192,7 @@
           <el-input v-model="activeColDef.enumOptions" placeholder="逗号分隔，如：普通，免税，优惠" />
         </el-form-item>
       </el-form>
-      <template #footer">
+      <template #footer>
         <el-button size="small" @click="colConfigVisible = false">关闭</el-button>
       </template>
     </el-dialog>
@@ -223,7 +223,7 @@
       :result="testResult"
       @execute="doTest"
     >
-      <template #result">
+      <template #result>
         <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"

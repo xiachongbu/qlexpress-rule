@@ -11,18 +11,18 @@
       </div>
       <div class="ct-toolbar">
         <el-button-group>
-          <el-button size="small" icon="el-icon-plus" @click="addRow">添加行</el-button>
-          <el-button size="small" icon="el-icon-plus" @click="addColumn">添加列</el-button>
+          <el-button size="small" @click="addRow"><i class="el-icon-plus" /> 添加行</el-button>
+          <el-button size="small" @click="addColumn"><i class="el-icon-plus" /> 添加列</el-button>
         </el-button-group>
         <el-divider direction="vertical" />
-        <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <el-button size="small" @click="handleSave"><i class="el-icon-document" /> 保存</el-button>
         <design-version-switcher
           :definition-id="definitionId"
           :scope-comp-id="scopeCompId"
           @apply-model="onApplyDesignSnapshot"
         />
-        <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">编译</el-button>
-        <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
+        <el-button size="small" type="warning" @click="handleCompile"><i class="el-icon-cpu" /> 编译</el-button>
+        <el-button size="small" type="primary" @click="handleTest"><i class="el-icon-video-play" /> 测试</el-button>
       </div>
     </div>
 
@@ -106,16 +106,20 @@
                     <el-button
                       type="text"
                       size="small"
-                      icon="el-icon-close"
+                     
                       class="delete-col-btn"
                       @click="removeColumn(ci)"
-                    />
+                    >
+        <i class="el-icon-close" />
+      </el-button>
                   </el-tooltip>
                 </div>
               </th>
               <!-- 添加列按钮 -->
               <th class="add-col-cell">
-                <el-button type="text" size="small" icon="el-icon-plus" style="color:#1890ff;" @click="addColumn" />
+                <el-button type="text" size="small" style="color:#1890ff;" @click="addColumn" >
+        <i class="el-icon-plus" />
+      </el-button>
               </th>
             </tr>
           </thead>
@@ -134,10 +138,12 @@
                     <el-button
                       type="text"
                       size="small"
-                      icon="el-icon-close"
+                     
                       class="delete-row-btn"
                       @click="removeRow(ri)"
-                    />
+                    >
+        <i class="el-icon-close" />
+      </el-button>
                   </el-tooltip>
                 </div>
               </td>
@@ -162,7 +168,7 @@
             <!-- 添加行按钮行 -->
             <tr>
               <td class="add-row-trigger" @click="addRow">
-                <el-button type="text" size="small" icon="el-icon-plus" style="color:#1890ff;">添加行</el-button>
+                <el-button type="text" size="small" style="color:#1890ff;"><i class="el-icon-plus" /> 添加行</el-button>
               </td>
               <td v-for="(col, ci) in model.colHeaders" :key="'add-' + ci" class="add-row-trigger" @click="addRow" />
               <td class="add-row-trigger" />
@@ -202,7 +208,7 @@
       width="750px"
       @execute="doTest"
     >
-      <template #result">
+      <template #result>
         <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"

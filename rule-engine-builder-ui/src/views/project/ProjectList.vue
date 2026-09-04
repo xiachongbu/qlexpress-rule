@@ -3,7 +3,7 @@
     <div class="uiue-search-container">
       <el-form :inline="true" size="small">
         <el-form-item label="关键字">
-          <el-input v-model="queryParams.keyword" placeholder="项目编码或名称" clearable @keyup.enter.native="handleQuery" />
+          <el-input v-model="queryParams.keyword" placeholder="项目编码或名称" clearable @keyup.enter="handleQuery" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleQuery">查询</el-button>
@@ -13,7 +13,7 @@
     </div>
     <div class="uiue-btn-bar">
       <div class="btn-right">
-        <el-button type="primary" size="small" icon="el-icon-plus" @click="handleCreate">新建项目</el-button>
+        <el-button type="primary" size="small" @click="handleCreate"><i class="el-icon-plus" /> 新建项目</el-button>
       </div>
     </div>
     <el-table :data="tableData" border size="small" v-loading="loading" style="width: 100%;">

@@ -27,15 +27,21 @@
         </el-button>
         <el-divider direction="vertical" />
         <el-button-group>
-          <el-button size="small" icon="el-icon-delete" :disabled="!hasSelection" @click="deleteSelected">删除</el-button>
-          <el-button size="small" icon="el-icon-refresh-left" @click="undo">撤销</el-button>
-          <el-button size="small" icon="el-icon-refresh-right" @click="redo">重做</el-button>
+          <el-button size="small" :disabled="!hasSelection" @click="deleteSelected"><i class="el-icon-delete" /> 删除</el-button>
+          <el-button size="small" @click="undo"><i class="el-icon-refresh-left" /> 撤销</el-button>
+          <el-button size="small" @click="redo"><i class="el-icon-refresh-right" /> 重做</el-button>
         </el-button-group>
         <el-divider direction="vertical" />
         <el-button-group>
-          <el-button size="small" icon="el-icon-zoom-in" @click="zoomIn" />
-          <el-button size="small" icon="el-icon-zoom-out" @click="zoomOut" />
-          <el-button size="small" icon="el-icon-rank" @click="resetZoom" />
+          <el-button size="small" @click="zoomIn" >
+        <i class="el-icon-zoom-in" />
+      </el-button>
+          <el-button size="small" @click="zoomOut" >
+        <i class="el-icon-zoom-out" />
+      </el-button>
+          <el-button size="small" @click="resetZoom" >
+        <i class="el-icon-rank" />
+      </el-button>
         </el-button-group>
         <span class="zoom-text">{{ zoomPercent }}%</span>
         <el-divider direction="vertical" />
@@ -52,16 +58,16 @@
         </el-select>
       </div>
       <div class="toolbar-right">
-        <el-button size="small" icon="el-icon-circle-check" @click="handleValidate">验证</el-button>
-        <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <el-button size="small" @click="handleValidate"><i class="el-icon-circle-check" /> 验证</el-button>
+        <el-button size="small" @click="handleSave"><i class="el-icon-document" /> 保存</el-button>
         <design-version-switcher
           select-size="small"
           :definition-id="definitionId"
           :scope-comp-id="scopeCompId"
           @apply-model="onApplyDesignSnapshot"
         />
-        <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">编译</el-button>
-        <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
+        <el-button size="small" type="warning" @click="handleCompile"><i class="el-icon-cpu" /> 编译</el-button>
+        <el-button size="small" type="primary" @click="handleTest"><i class="el-icon-video-play" /> 测试</el-button>
       </div>
     </div>
 
@@ -155,7 +161,7 @@
                     @select="v => onEdgeCondVarSelect(v, 'right')"
                   />
                 </div>
-                <el-button type="primary" size="small" icon="el-icon-check" style="width:100%;margin-top:8px;" @click="applyEdgeCondVisual">
+                <el-button type="primary" size="small" style="width:100%;margin-top:8px;" @click="applyEdgeCondVisual"><i class="el-icon-check" /> 
                   生成表达式
                 </el-button>
                 <div v-if="edgeProps.conditionExpr" class="generated-expr">
@@ -193,7 +199,7 @@
                 <div class="hint-box" style="margin-top:6px;">
                   <i class="el-icon-warning-outline" /> 该连线已配置的条件不会生效，且会导致编译失败，请清除
                 </div>
-                <el-button type="warning" size="small" icon="el-icon-delete" style="width:100%;margin-top:8px;" @click="clearInvalidEdgeCond">
+                <el-button type="warning" size="small" style="width:100%;margin-top:8px;" @click="clearInvalidEdgeCond"><i class="el-icon-delete" /> 
                   清除条件
                 </el-button>
               </template>
@@ -281,7 +287,7 @@
 
             <!-- 操作按钮 -->
             <div class="prop-section" style="padding-top:4px;">
-              <el-button type="danger" size="small" plain icon="el-icon-delete" style="width:100%;" @click="deleteCurrentNode">
+              <el-button type="danger" size="small" plain style="width:100%;" @click="deleteCurrentNode"><i class="el-icon-delete" /> 
                 删除此节点
               </el-button>
             </div>
@@ -318,7 +324,7 @@
       :result="testResult"
       @execute="doTest"
     >
-      <template #result">
+      <template #result>
         <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"

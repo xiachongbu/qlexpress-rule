@@ -8,16 +8,16 @@
         <el-tag size="small" type="info" style="margin-left:8px;">{{ totalDimensions }} 个评分维度</el-tag>
       </div>
       <div class="asc-toolbar">
-        <el-button size="small" icon="el-icon-plus" @click="addGroup">添加维度组</el-button>
+        <el-button size="small" @click="addGroup"><i class="el-icon-plus" /> 添加维度组</el-button>
         <el-divider direction="vertical" />
-        <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <el-button size="small" @click="handleSave"><i class="el-icon-document" /> 保存</el-button>
         <design-version-switcher
           :definition-id="definitionId"
           :scope-comp-id="scopeCompId"
           @apply-model="onApplyDesignSnapshot"
         />
-        <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">编译</el-button>
-        <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
+        <el-button size="small" type="warning" @click="handleCompile"><i class="el-icon-cpu" /> 编译</el-button>
+        <el-button size="small" type="primary" @click="handleTest"><i class="el-icon-video-play" /> 测试</el-button>
       </div>
     </div>
 
@@ -64,7 +64,7 @@
               size="small"
               placeholder="维度组名称（如 客户基础信息）"
               class="group-label-input"
-              @click.native.stop
+              @click.stop
             />
             <el-tag size="small" type="info">{{ (group.dimensions || []).length }} 维度</el-tag>
             <div class="group-weight-summary" @click.stop>
@@ -83,7 +83,9 @@
           </div>
           <div class="asc-group-right">
             <el-button size="small" @click="addDimension(gi)">添加维度</el-button>
-            <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="removeGroup(gi)" />
+            <el-button type="text" size="small" style="color:#F56C6C;" @click="removeGroup(gi)" >
+        <i class="el-icon-delete" />
+      </el-button>
           </div>
         </div>
 
@@ -120,7 +122,9 @@
                 />
               </div>
               <el-button size="small" @click="addRule(gi, di)">添加规则</el-button>
-              <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="removeDimension(gi, di)" />
+              <el-button type="text" size="small" style="color:#F56C6C;" @click="removeDimension(gi, di)" >
+        <i class="el-icon-delete" />
+      </el-button>
             </div>
 
             <!-- 规则表格 -->
@@ -170,19 +174,23 @@
                         v-if="rule.conditions.length > 1"
                         type="text"
                         size="small"
-                        icon="el-icon-close"
+                       
                         style="color:#ccc;"
                         @click="rule.conditions.splice(ci, 1)"
-                      />
+                      >
+        <i class="el-icon-close" />
+      </el-button>
                       <span v-if="ci < rule.conditions.length - 1" class="cond-and">且</span>
                     </div>
-                    <el-button type="text" size="small" icon="el-icon-plus" @click="addCondition(rule)">添加条件</el-button>
+                    <el-button type="text" size="small" @click="addCondition(rule)"><i class="el-icon-plus" /> 添加条件</el-button>
                   </td>
                   <td class="col-score">
                     <el-input-number v-model="rule.score" size="small" :min="-9999" :max="9999" class="score-input" />
                   </td>
                   <td class="col-action">
-                    <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="dim.rules.splice(ri, 1)" />
+                    <el-button type="text" size="small" style="color:#F56C6C;" @click="dim.rules.splice(ri, 1)" >
+        <i class="el-icon-delete" />
+      </el-button>
                   </td>
                 </tr>
               </tbody>
@@ -272,7 +280,7 @@
       <div class="asc-card">
         <div class="asc-card-title asc-card-title-row">
           <span><i class="el-icon-medal" /> 分数等级配置</span>
-          <el-button size="small" icon="el-icon-plus" @click="addThreshold">添加等级</el-button>
+          <el-button size="small" @click="addThreshold"><i class="el-icon-plus" /> 添加等级</el-button>
         </div>
         <div class="threshold-list">
           <div v-for="(thresh, ti) in model.thresholds" :key="ti" class="threshold-item">
@@ -288,7 +296,9 @@
             <el-tag :color="thresholdColor(ti)" effect="dark" size="small" class="thresh-badge">
               {{ thresh.result || '等级 ' + (ti + 1) }}
             </el-tag>
-            <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="model.thresholds.splice(ti, 1)" />
+            <el-button type="text" size="small" style="color:#F56C6C;" @click="model.thresholds.splice(ti, 1)" >
+        <i class="el-icon-delete" />
+      </el-button>
           </div>
           <div v-if="model.thresholds.length === 0" class="group-empty">
             暂未配置等级，点击「添加等级」
@@ -317,7 +327,7 @@
       :result="testResult"
       @execute="doTest"
     >
-      <template #result">
+      <template #result>
         <div v-if="testResult">
         <el-alert
           :title="testResult.success ? '执行成功' : '执行失败'"

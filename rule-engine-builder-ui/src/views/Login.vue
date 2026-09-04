@@ -38,7 +38,7 @@
           :model="form"
           :rules="rules"
           label-position="top"
-          @submit.native.prevent="submit"
+          @submit.prevent="submit"
         >
           <el-form-item label="用户名" prop="username">
             <el-input
@@ -46,7 +46,7 @@
               autocomplete="username"
               clearable
               placeholder="请输入用户名"
-              @keyup.enter.native="submit"
+              @keyup.enter="submit"
             />
           </el-form-item>
           <el-form-item label="密码" prop="password">
@@ -56,7 +56,7 @@
               autocomplete="current-password"
               show-password
               placeholder="请输入密码"
-              @keyup.enter.native="submit"
+              @keyup.enter="submit"
             />
           </el-form-item>
           <el-form-item class="login-form__actions">
