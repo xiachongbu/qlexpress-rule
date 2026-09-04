@@ -22,7 +22,7 @@
       <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
       <el-table-column prop="status" label="状态" min-width="70" align="center">
         <template #default="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'info'" size="mini">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
+          <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="访问令牌" min-width="160">
@@ -31,7 +31,9 @@
           <span v-else style="color: #909399;">未生成</span>
         </template>
       </el-table-column>
-      <el-table-column prop="createTime" label="创建时间" min-width="160" />
+      <el-table-column prop="createTime" label="创建时间" min-width="160">
+        <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
+      </el-table-column>
       <el-table-column label="操作" min-width="160" align="center">
         <template #default="{ row }">
           <el-button type="text" size="small" @click="handleEdit(row)">编辑</el-button>
@@ -90,6 +92,13 @@ export default {
   },
   created() { this.loadData() },
   methods: {
+    formatDateTime(time) {
+      if (time == null || time === '') return '-'
+      const d = new Date(time)
+      if (isNaN(d.getTime())) return typeof time === 'string' ? time : '-'
+      const pad = n => String(n).padStart(2, '0')
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+    },
     async loadData() {
       this.loading = true
       try {

@@ -18,14 +18,14 @@
             </el-form-item>
           </el-form>
           <div v-if="selectedRule" class="rule-info">
-            <el-descriptions :column="2" size="mini" border>
+            <el-descriptions :column="2" size="small" border>
               <el-descriptions-item label="规则编码">{{ selectedRule.ruleCode }}</el-descriptions-item>
               <el-descriptions-item label="模型类型">
-                <el-tag size="mini">{{ mtl(selectedRule.modelType) }}</el-tag>
+                <el-tag size="small">{{ mtl(selectedRule.modelType) }}</el-tag>
               </el-descriptions-item>
               <el-descriptions-item label="当前版本">v{{ selectedRule.currentVersion }}</el-descriptions-item>
               <el-descriptions-item label="状态">
-                <el-tag :type="{ 0: 'info', 1: 'success', 2: 'warning' }[selectedRule.status]" size="mini">
+                <el-tag :type="{ 0: 'info', 1: 'success', 2: 'warning' }[selectedRule.status]" size="small">
                   {{ ['草稿', '已发布', '已下线'][selectedRule.status] }}
                 </el-tag>
               </el-descriptions-item>

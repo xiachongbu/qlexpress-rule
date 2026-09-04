@@ -5,7 +5,7 @@
       <div class="asc-title-area">
         <i class="el-icon-data-line asc-title-icon" />
         <span class="asc-title">复杂评分卡设计器</span>
-        <el-tag size="mini" type="info" style="margin-left:8px;">{{ totalDimensions }} 个评分维度</el-tag>
+        <el-tag size="small" type="info" style="margin-left:8px;">{{ totalDimensions }} 个评分维度</el-tag>
       </div>
       <div class="asc-toolbar">
         <el-button size="small" icon="el-icon-plus" @click="addGroup">添加维度组</el-button>
@@ -66,7 +66,7 @@
               class="group-label-input"
               @click.native.stop
             />
-            <el-tag size="mini" type="info">{{ (group.dimensions || []).length }} 维度</el-tag>
+            <el-tag size="small" type="info">{{ (group.dimensions || []).length }} 维度</el-tag>
             <div class="group-weight-summary" @click.stop>
               <span class="weight-label">组权重</span>
               <el-input-number
@@ -75,7 +75,7 @@
                 :max="2"
                 :step="0.1"
                 :precision="2"
-                size="mini"
+                size="small"
                 controls-position="right"
                 style="width:100px;"
               />
@@ -114,13 +114,13 @@
                   :max="2"
                   :step="0.05"
                   :precision="2"
-                  size="mini"
+                  size="small"
                   controls-position="right"
                   style="width:90px;"
                 />
               </div>
-              <el-button size="mini" @click="addRule(gi, di)">添加规则</el-button>
-              <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C;" @click="removeDimension(gi, di)" />
+              <el-button size="small" @click="addRule(gi, di)">添加规则</el-button>
+              <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="removeDimension(gi, di)" />
             </div>
 
             <!-- 规则表格 -->
@@ -152,8 +152,8 @@
                         :exclude-constants="true"
                         @select="v => { cond.varCode = v.varCode }"
                       />
-                      <el-input v-else v-model="cond.varCode" size="mini" placeholder="变量" class="cond-var" />
-                      <el-select v-model="cond.operator" size="mini" class="cond-op">
+                      <el-input v-else v-model="cond.varCode" size="small" placeholder="变量" class="cond-var" />
+                      <el-select v-model="cond.operator" size="small" class="cond-op">
                         <el-option label="等于" value="==" />
                         <el-option label="不等于" value="!=" />
                         <el-option label="大于" value=">" />
@@ -165,24 +165,24 @@
                         <el-option label="前匹配" value="startsWith" />
                         <el-option label="后匹配" value="endsWith" />
                       </el-select>
-                      <el-input v-model="cond.value" size="mini" placeholder="值" class="cond-val" />
+                      <el-input v-model="cond.value" size="small" placeholder="值" class="cond-val" />
                       <el-button
                         v-if="rule.conditions.length > 1"
                         type="text"
-                        size="mini"
+                        size="small"
                         icon="el-icon-close"
                         style="color:#ccc;"
                         @click="rule.conditions.splice(ci, 1)"
                       />
                       <span v-if="ci < rule.conditions.length - 1" class="cond-and">且</span>
                     </div>
-                    <el-button type="text" size="mini" icon="el-icon-plus" @click="addCondition(rule)">添加条件</el-button>
+                    <el-button type="text" size="small" icon="el-icon-plus" @click="addCondition(rule)">添加条件</el-button>
                   </td>
                   <td class="col-score">
-                    <el-input-number v-model="rule.score" size="mini" :min="-9999" :max="9999" class="score-input" />
+                    <el-input-number v-model="rule.score" size="small" :min="-9999" :max="9999" class="score-input" />
                   </td>
                   <td class="col-action">
-                    <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C;" @click="dim.rules.splice(ri, 1)" />
+                    <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="dim.rules.splice(ri, 1)" />
                   </td>
                 </tr>
               </tbody>

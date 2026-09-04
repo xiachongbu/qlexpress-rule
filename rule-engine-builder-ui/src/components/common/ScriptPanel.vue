@@ -6,10 +6,10 @@
       <div class="sp-header-left">
         <i class="el-icon-s-promotion sp-icon" />
         <span class="sp-title">脚本预览 / 编辑</span>
-        <el-tag :type="statusTag.type" size="mini" class="sp-status-tag">{{ statusTag.text }}</el-tag>
+        <el-tag :type="statusTag.type" size="small" class="sp-status-tag">{{ statusTag.text }}</el-tag>
       </div>
       <div class="sp-header-right" @click.stop>
-        <el-radio-group v-model="mode" size="mini" @change="onModeChange">
+        <el-radio-group v-model="mode" size="small" @change="onModeChange">
           <el-radio-button label="visual">
             <i class="el-icon-view" /> 可视化
           </el-radio-button>
@@ -18,7 +18,7 @@
           </el-radio-button>
         </el-radio-group>
         <el-tooltip :content="expanded ? '收起脚本面板' : '展开脚本面板'" placement="top">
-          <el-button size="mini" circle :icon="expanded ? 'el-icon-arrow-down' : 'el-icon-arrow-up'" class="sp-toggle-btn" @click.stop="toggleExpand" />
+          <el-button size="small" circle :icon="expanded ? 'el-icon-arrow-down' : 'el-icon-arrow-up'" class="sp-toggle-btn" @click.stop="toggleExpand" />
         </el-tooltip>
       </div>
     </div>
@@ -31,7 +31,7 @@
         <div v-if="isScriptMode" class="sp-script-warning">
           <i class="el-icon-warning" />
           <span>当前为<strong>脚本覆盖模式</strong>：下方脚本将直接用于执行，可视化配置不再生效。保存脚本后，「编译」操作将被跳过。</span>
-          <el-button type="text" size="mini" @click="switchToVisual">退出脚本模式</el-button>
+          <el-button type="text" size="small" @click="switchToVisual">退出脚本模式</el-button>
         </div>
 
         <!-- 状态栏 -->
@@ -47,19 +47,19 @@
           </span>
           <div class="sp-statusbar-spacer" />
           <el-button-group>
-            <el-button size="mini" icon="el-icon-magic-stick" title="格式化 (Ctrl+Alt+L)" @click="formatScript">格式化</el-button>
-            <el-button size="mini" icon="el-icon-chat-line-square" title="注释/取消注释 (Ctrl+/)" @click="toggleComment">注释</el-button>
-            <el-button size="mini" icon="el-icon-search" title="查找/替换 (Ctrl+F)" @click="openSearch">查找</el-button>
+            <el-button size="small" icon="el-icon-magic-stick" title="格式化 (Ctrl+Alt+L)" @click="formatScript">格式化</el-button>
+            <el-button size="small" icon="el-icon-chat-line-square" title="注释/取消注释 (Ctrl+/)" @click="toggleComment">注释</el-button>
+            <el-button size="small" icon="el-icon-search" title="查找/替换 (Ctrl+F)" @click="openSearch">查找</el-button>
           </el-button-group>
           <el-button-group>
-            <el-button size="mini" icon="el-icon-refresh" :loading="compiling" @click="handleCompile">
+            <el-button size="small" icon="el-icon-refresh" :loading="compiling" @click="handleCompile">
               {{ isScriptMode ? '验证脚本' : '编译并刷新' }}
             </el-button>
-            <el-button size="mini" icon="el-icon-document-copy" @click="copyScript">复制</el-button>
+            <el-button size="small" icon="el-icon-document-copy" @click="copyScript">复制</el-button>
           </el-button-group>
           <el-button
             v-if="isScriptMode"
-            size="mini"
+            size="small"
             type="primary"
             icon="el-icon-check"
             :loading="saving"
@@ -73,7 +73,7 @@
             <el-input
               ref="searchInput"
               v-model="searchQuery"
-              size="mini"
+              size="small"
               placeholder="查找"
               prefix-icon="el-icon-search"
               clearable
@@ -81,8 +81,8 @@
               @input="highlightAll"
               @keydown.enter.native.prevent="findNext(false)"
             />
-            <el-button size="mini" @click="findNext(false)">下一个</el-button>
-            <el-button size="mini" @click="highlightAll">全部高亮</el-button>
+            <el-button size="small" @click="findNext(false)">下一个</el-button>
+            <el-button size="small" @click="highlightAll">全部高亮</el-button>
             <span class="sp-search-spacer" />
             <el-checkbox v-model="showReplace" class="sp-search-toggle">替换</el-checkbox>
             <i class="el-icon-close sp-search-close" title="关闭 (Esc)" @click="closeSearch" />
@@ -90,13 +90,13 @@
           <div v-show="showReplace" class="sp-search-row">
             <el-input
               v-model="replaceQuery"
-              size="mini"
+              size="small"
               placeholder="替换为"
               class="sp-search-input"
               @keydown.enter.native.prevent="replaceCurrent"
             />
-            <el-button size="mini" @click="replaceCurrent">替换</el-button>
-            <el-button size="mini" @click="replaceAll">全部替换</el-button>
+            <el-button size="small" @click="replaceCurrent">替换</el-button>
+            <el-button size="small" @click="replaceAll">全部替换</el-button>
           </div>
         </div>
 

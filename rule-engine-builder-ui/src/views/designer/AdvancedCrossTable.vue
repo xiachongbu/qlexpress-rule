@@ -5,7 +5,7 @@
       <div class="act-title-area">
         <i class="el-icon-data-analysis act-title-icon" />
         <span class="act-title">复杂交叉表设计器</span>
-        <el-tag size="mini" type="info" style="margin-left:8px;">
+        <el-tag size="small" type="info" style="margin-left:8px;">
           {{ totalRowCount }} 行 × {{ totalColCount }} 列
         </el-tag>
       </div>
@@ -28,7 +28,7 @@
         <div class="act-dim-panel">
           <div class="dim-panel-header">
             <i class="el-icon-s-unfold" style="color:#1890ff;" /> 行维度
-            <el-button size="mini" icon="el-icon-plus" @click="addDimension('row')">添加行维度</el-button>
+            <el-button size="small" icon="el-icon-plus" @click="addDimension('row')">添加行维度</el-button>
           </div>
           <div v-for="(dim, di) in model.rowDimensions" :key="'rd-' + di" class="dim-config-card">
             <div class="dim-config-header">
@@ -41,16 +41,16 @@
                 class="dim-field-var"
                 @select="v => applyVarToDim(v, 'rowDimensions', di)"
               />
-              <el-input v-else v-model="dim.varCode" size="mini" placeholder="变量编码" class="dim-field-var" />
-              <el-input v-model="dim.varLabel" size="mini" placeholder="维度名称" class="dim-field-label" />
-              <el-select v-model="dim.varType" size="mini" class="dim-field-type" popper-append-to-body>
+              <el-input v-else v-model="dim.varCode" size="small" placeholder="变量编码" class="dim-field-var" />
+              <el-input v-model="dim.varLabel" size="small" placeholder="维度名称" class="dim-field-label" />
+              <el-select v-model="dim.varType" size="small" class="dim-field-type" popper-append-to-body>
                 <el-option v-for="opt in varTypeFormOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
               </el-select>
-              <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C;" @click="removeDimension('row', di)" />
+              <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="removeDimension('row', di)" />
             </div>
             <div class="segments-area">
               <div v-for="(seg, si) in dim.segments" :key="si" class="segment-row">
-                <el-select v-model="seg.operator" size="mini" class="seg-op">
+                <el-select v-model="seg.operator" size="small" class="seg-op">
                   <el-option label="等于" value="==" /><el-option label="不等于" value="!=" />
                   <el-option label="大于" value=">" /><el-option label="大于等于" value=">=" />
                   <el-option label="小于" value="<" /><el-option label="小于等于" value="<=" />
@@ -61,15 +61,15 @@
                   <el-option label="区间" value="range" />
                 </el-select>
                 <template v-if="seg.operator === 'range'">
-                  <el-input v-model="seg.min" size="mini" placeholder="最小值(含)" class="seg-val" />
+                  <el-input v-model="seg.min" size="small" placeholder="最小值(含)" class="seg-val" />
                   <span class="seg-sep">~</span>
-                  <el-input v-model="seg.max" size="mini" placeholder="最大值(不含)" class="seg-val" />
+                  <el-input v-model="seg.max" size="small" placeholder="最大值(不含)" class="seg-val" />
                 </template>
-                <el-input v-else v-model="seg.value" size="mini" placeholder="值" class="seg-val" />
-                <el-input v-model="seg.label" size="mini" placeholder="标签" class="seg-label" />
-                <el-button type="text" size="mini" icon="el-icon-close" style="color:#ccc;" @click="dim.segments.splice(si, 1)" />
+                <el-input v-else v-model="seg.value" size="small" placeholder="值" class="seg-val" />
+                <el-input v-model="seg.label" size="small" placeholder="标签" class="seg-label" />
+                <el-button type="text" size="small" icon="el-icon-close" style="color:#ccc;" @click="dim.segments.splice(si, 1)" />
               </div>
-              <el-button type="text" size="mini" icon="el-icon-plus" @click="addSegment(dim)">添加分段</el-button>
+              <el-button type="text" size="small" icon="el-icon-plus" @click="addSegment(dim)">添加分段</el-button>
             </div>
           </div>
         </div>
@@ -78,7 +78,7 @@
         <div class="act-dim-panel">
           <div class="dim-panel-header">
             <i class="el-icon-s-fold" style="color:#52c41a;" /> 列维度
-            <el-button size="mini" icon="el-icon-plus" @click="addDimension('col')">添加列维度</el-button>
+            <el-button size="small" icon="el-icon-plus" @click="addDimension('col')">添加列维度</el-button>
           </div>
           <div v-for="(dim, di) in model.colDimensions" :key="'cd-' + di" class="dim-config-card">
             <div class="dim-config-header">
@@ -91,16 +91,16 @@
                 class="dim-field-var"
                 @select="v => applyVarToDim(v, 'colDimensions', di)"
               />
-              <el-input v-else v-model="dim.varCode" size="mini" placeholder="变量编码" class="dim-field-var" />
-              <el-input v-model="dim.varLabel" size="mini" placeholder="维度名称" class="dim-field-label" />
-              <el-select v-model="dim.varType" size="mini" class="dim-field-type" popper-append-to-body>
+              <el-input v-else v-model="dim.varCode" size="small" placeholder="变量编码" class="dim-field-var" />
+              <el-input v-model="dim.varLabel" size="small" placeholder="维度名称" class="dim-field-label" />
+              <el-select v-model="dim.varType" size="small" class="dim-field-type" popper-append-to-body>
                 <el-option v-for="opt in varTypeFormOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
               </el-select>
-              <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C;" @click="removeDimension('col', di)" />
+              <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click="removeDimension('col', di)" />
             </div>
             <div class="segments-area">
               <div v-for="(seg, si) in dim.segments" :key="si" class="segment-row">
-                <el-select v-model="seg.operator" size="mini" class="seg-op">
+                <el-select v-model="seg.operator" size="small" class="seg-op">
                   <el-option label="等于" value="==" /><el-option label="不等于" value="!=" />
                   <el-option label="大于" value=">" /><el-option label="大于等于" value=">=" />
                   <el-option label="小于" value="<" /><el-option label="小于等于" value="<=" />
@@ -111,15 +111,15 @@
                   <el-option label="区间" value="range" />
                 </el-select>
                 <template v-if="seg.operator === 'range'">
-                  <el-input v-model="seg.min" size="mini" placeholder="最小值(含)" class="seg-val" />
+                  <el-input v-model="seg.min" size="small" placeholder="最小值(含)" class="seg-val" />
                   <span class="seg-sep">~</span>
-                  <el-input v-model="seg.max" size="mini" placeholder="最大值(不含)" class="seg-val" />
+                  <el-input v-model="seg.max" size="small" placeholder="最大值(不含)" class="seg-val" />
                 </template>
-                <el-input v-else v-model="seg.value" size="mini" placeholder="值" class="seg-val" />
-                <el-input v-model="seg.label" size="mini" placeholder="标签" class="seg-label" />
-                <el-button type="text" size="mini" icon="el-icon-close" style="color:#ccc;" @click="dim.segments.splice(si, 1)" />
+                <el-input v-else v-model="seg.value" size="small" placeholder="值" class="seg-val" />
+                <el-input v-model="seg.label" size="small" placeholder="标签" class="seg-label" />
+                <el-button type="text" size="small" icon="el-icon-close" style="color:#ccc;" @click="dim.segments.splice(si, 1)" />
               </div>
-              <el-button type="text" size="mini" icon="el-icon-plus" @click="addSegment(dim)">添加分段</el-button>
+              <el-button type="text" size="small" icon="el-icon-plus" @click="addSegment(dim)">添加分段</el-button>
             </div>
           </div>
         </div>
@@ -140,9 +140,9 @@
             class="result-field-var"
             @select="v => { model.resultVar.varCode = v.varCode; model.resultVar.varLabel = (v.varObj && v.varObj.varLabel) || v.varCode }"
           />
-          <el-input v-else v-model="model.resultVar.varCode" size="mini" placeholder="变量编码" class="result-field-var" />
-          <el-input v-model="model.resultVar.varLabel" size="mini" placeholder="结果名称" class="result-field-label" />
-          <el-select v-model="model.resultVar.varType" size="mini" class="result-field-type" popper-append-to-body>
+          <el-input v-else v-model="model.resultVar.varCode" size="small" placeholder="变量编码" class="result-field-var" />
+          <el-input v-model="model.resultVar.varLabel" size="small" placeholder="结果名称" class="result-field-label" />
+          <el-select v-model="model.resultVar.varType" size="small" class="result-field-type" popper-append-to-body>
             <el-option v-for="opt in varTypeFormOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
         </div>
@@ -199,7 +199,7 @@
                 >
                   <el-input
                     v-model="cellData[ri][ci]"
-                    size="mini"
+                    size="small"
                     :placeholder="model.resultVar.varType === 'NUMBER' ? '0' : ''"
                     class="cell-input"
                   />

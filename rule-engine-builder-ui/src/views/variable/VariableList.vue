@@ -31,10 +31,10 @@
       <!-- Tab 1: Variable List -->
       <el-tab-pane label="变量列表" name="list">
         <div class="tab-filter-row">
-          <el-select v-model="qp.varType" clearable placeholder="数据类型" size="mini" style="width:110px;" @change="handleQuery">
+          <el-select v-model="qp.varType" clearable placeholder="数据类型" size="small" style="width:110px;" @change="handleQuery">
             <el-option v-for="opt in varTypeFilterOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
-          <el-input v-model="qp.keyword" placeholder="搜索编码或名称" size="mini" clearable style="width:180px;" @keyup.enter.native="handleQuery" />
+          <el-input v-model="qp.keyword" placeholder="搜索编码或名称" size="small" clearable style="width:180px;" @keyup.enter.native="handleQuery" />
           <el-button type="success" @click="handleQuery">查询</el-button>
           <el-button type="primary" @click="resetQuery">重置</el-button>
         </div>
@@ -47,20 +47,20 @@
             <el-table-column prop="varLabel" label="名称（中文）" min-width="120" show-overflow-tooltip />
             <el-table-column label="脚本名称" min-width="130">
               <template #default="{row}">
-                <el-input v-model="row.scriptName" size="mini" placeholder="脚本名称" @blur="onVarScriptNameChange(row)" />
+                <el-input v-model="row.scriptName" size="small" placeholder="脚本名称" @blur="onVarScriptNameChange(row)" />
               </template>
             </el-table-column>
             <el-table-column prop="varType" label="类型" min-width="80" align="center">
-              <template #default="{ row }"><el-tag size="mini" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
+              <template #default="{ row }"><el-tag size="small" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
             </el-table-column>
             <el-table-column prop="varSource" label="来源" min-width="80" align="center">
               <template #default="{ row }">
-                <el-tag size="mini" :type="sourceTagColor(row.varSource)">{{ sourceLabel(row.varSource) }}</el-tag>
+                <el-tag size="small" :type="sourceTagColor(row.varSource)">{{ sourceLabel(row.varSource) }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column prop="defaultValue" label="默认值" min-width="90" show-overflow-tooltip />
             <el-table-column prop="status" label="状态" min-width="60" align="center">
-              <template #default="{ row }"><el-tag :type="row.status===1?'success':'info'" size="mini">{{ row.status===1?'启用':'停用' }}</el-tag></template>
+              <template #default="{ row }"><el-tag :type="row.status===1?'success':'info'" size="small">{{ row.status===1?'启用':'停用' }}</el-tag></template>
             </el-table-column>
             <el-table-column label="操作" min-width="140" align="center">
               <template #default="{ row }">
@@ -127,27 +127,27 @@
               <i :class="node._expanded ? 'el-icon-arrow-down' : 'el-icon-arrow-right'" class="expand-icon" />
               <span class="var-group-code">{{ node.object.objectCode }}</span>
               <span v-if="node.object.objectLabel && node.object.objectLabel !== node.object.objectCode" class="var-group-label">{{ node.object.objectLabel }}</span>
-              <el-input v-model="node.object.scriptName" size="mini" placeholder="脚本名称" style="width:130px;margin-left:6px;" @blur="onObjectScriptNameChange(node.object)" @click.native.stop />
-              <el-select v-model="node.object.objectType" size="mini" style="width:100px;" @change="onObjectTypeChange(node.object)" @click.native.stop>
+              <el-input v-model="node.object.scriptName" size="small" placeholder="脚本名称" style="width:130px;margin-left:6px;" @blur="onObjectScriptNameChange(node.object)" @click.native.stop />
+              <el-select v-model="node.object.objectType" size="small" style="width:100px;" @change="onObjectTypeChange(node.object)" @click.native.stop>
                 <el-option label="输入对象" value="INPUT" /><el-option label="输出对象" value="OUTPUT" /><el-option label="输入输出" value="INOUT" />
               </el-select>
-              <el-tag size="mini" :type="objTypeColor(node.object.objectType)">{{ objTypeLabel(node.object.objectType) }}</el-tag>
-              <el-tag v-if="node.object.sourceType" size="mini" type="info">{{ node.object.sourceType }}</el-tag>
+              <el-tag size="small" :type="objTypeColor(node.object.objectType)">{{ objTypeLabel(node.object.objectType) }}</el-tag>
+              <el-tag v-if="node.object.sourceType" size="small" type="info">{{ node.object.sourceType }}</el-tag>
               <span class="var-group-count">{{ node.variables.length }} 个字段</span>
               <el-button type="text" size="small" icon="el-icon-plus" style="margin-left:auto;" @click.stop="handleAddObjectField(node)">添加字段</el-button>
               <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C;" @click.stop="handleDeleteObject(node.object)" />
             </div>
             <div v-show="node._expanded" class="var-group-body">
-              <el-table :data="node.variables" size="mini" border style="width:100%;">
+              <el-table :data="node.variables" size="small" border style="width:100%;">
                 <el-table-column prop="varCode" label="字段编码" min-width="140" show-overflow-tooltip />
                 <el-table-column prop="varLabel" label="名称" min-width="120" show-overflow-tooltip />
                 <el-table-column label="脚本名称" min-width="140">
                   <template #default="{row}">
-                    <el-input v-model="row.scriptName" size="mini" placeholder="脚本名称" @blur="onObjectFieldScriptNameBlur(row)" />
+                    <el-input v-model="row.scriptName" size="small" placeholder="脚本名称" @blur="onObjectFieldScriptNameBlur(row)" />
                   </template>
                 </el-table-column>
                 <el-table-column prop="varType" label="类型" min-width="80" align="center">
-                  <template #default="{row}"><el-tag size="mini" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
+                  <template #default="{row}"><el-tag size="small" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
                 </el-table-column>
                 <el-table-column prop="refObjectCode" label="引用对象" min-width="110" show-overflow-tooltip>
                   <template #default="{row}"><span v-if="row.refObjectCode" class="badge badge-obj">{{ row.refObjectCode }}</span><span v-else style="color:#ccc;">—</span></template>
@@ -176,12 +176,12 @@
       <!-- Tab 3: 常量列表（与变量列表相同分页模型，必须有默认值） -->
       <el-tab-pane label="常量列表" name="constants">
         <div v-if="currentProjectId" class="tab-filter-row">
-          <el-select v-model="constQp.varType" clearable placeholder="数据类型" size="mini" style="width:110px;" @change="handleConstQuery">
+          <el-select v-model="constQp.varType" clearable placeholder="数据类型" size="small" style="width:110px;" @change="handleConstQuery">
             <el-option v-for="opt in varTypeFilterOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
-          <el-input v-model="constQp.keyword" placeholder="搜索编码或名称" size="mini" clearable style="width:180px;" @keyup.enter.native="handleConstQuery" />
-          <el-button size="mini" type="primary" @click="handleConstQuery">查询</el-button>
-          <el-button size="mini" @click="resetConstQuery">重置</el-button>
+          <el-input v-model="constQp.keyword" placeholder="搜索编码或名称" size="small" clearable style="width:180px;" @keyup.enter.native="handleConstQuery" />
+          <el-button size="small" type="primary" @click="handleConstQuery">查询</el-button>
+          <el-button size="small" @click="resetConstQuery">重置</el-button>
         </div>
         <el-empty v-if="!currentProjectId" :image-size="200">
           <template #image>
@@ -205,19 +205,19 @@
             <el-table-column prop="varLabel" label="名称" min-width="120" show-overflow-tooltip />
             <el-table-column label="脚本名称" min-width="130">
               <template #default="{row}">
-                <el-input v-model="row.scriptName" size="mini" placeholder="脚本名称" @blur="onVarScriptNameChange(row)" />
+                <el-input v-model="row.scriptName" size="small" placeholder="脚本名称" @blur="onVarScriptNameChange(row)" />
               </template>
             </el-table-column>
             <el-table-column prop="varType" label="类型" min-width="80" align="center">
-              <template #default="{ row }"><el-tag size="mini" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
+              <template #default="{ row }"><el-tag size="small" :type="typeTagColor(row.varType)">{{ typeLabel(row.varType) }}</el-tag></template>
             </el-table-column>
             <el-table-column label="常量值（默认）" min-width="160">
               <template #default="{row}">
-                <el-input v-model="row.defaultValue" size="mini" @blur="onConstDefaultBlur(row)" />
+                <el-input v-model="row.defaultValue" size="small" @blur="onConstDefaultBlur(row)" />
               </template>
             </el-table-column>
             <el-table-column prop="status" label="状态" min-width="60" align="center">
-              <template #default="{ row }"><el-tag :type="row.status===1?'success':'info'" size="mini">{{ row.status===1?'启用':'停用' }}</el-tag></template>
+              <template #default="{ row }"><el-tag :type="row.status===1?'success':'info'" size="small">{{ row.status===1?'启用':'停用' }}</el-tag></template>
             </el-table-column>
             <el-table-column label="操作" min-width="120" align="center">
               <template #default="{ row }">
@@ -289,10 +289,10 @@
       </div>
       <el-table :data="optionList" border size="small" style="width:100%;">
         <el-table-column label="选项值" min-width="160">
-          <template #default="{row}"><el-input v-model="row.optionValue" size="mini" placeholder="选项值" /></template>
+          <template #default="{row}"><el-input v-model="row.optionValue" size="small" placeholder="选项值" /></template>
         </el-table-column>
         <el-table-column label="选项标签（中文）" min-width="180">
-          <template #default="{row}"><el-input v-model="row.optionLabel" size="mini" placeholder="中文标签" /></template>
+          <template #default="{row}"><el-input v-model="row.optionLabel" size="small" placeholder="中文标签" /></template>
         </el-table-column>
         <el-table-column label="操作" width="80" align="center">
           <template #default="{$index}"><el-button type="text" size="small" style="color:#F56C6C;" @click="optionList.splice($index,1)">移除</el-button></template>
@@ -403,10 +403,10 @@
         <el-table-column prop="ruleCode" label="规则编码" min-width="120" show-overflow-tooltip />
         <el-table-column prop="modelType" label="模型" min-width="70" align="center" />
         <el-table-column label="编译" min-width="60" align="center">
-          <template #default="{row}"><el-tag :type="row.compileOk?'success':'danger'" size="mini">{{ row.compileOk?'通过':'失败' }}</el-tag></template>
+          <template #default="{row}"><el-tag :type="row.compileOk?'success':'danger'" size="small">{{ row.compileOk?'通过':'失败' }}</el-tag></template>
         </el-table-column>
         <el-table-column label="执行" min-width="60" align="center">
-          <template #default="{row}"><el-tag :type="row.executeOk?'success':'danger'" size="mini">{{ row.executeOk?'通过':'失败' }}</el-tag></template>
+          <template #default="{row}"><el-tag :type="row.executeOk?'success':'danger'" size="small">{{ row.executeOk?'通过':'失败' }}</el-tag></template>
         </el-table-column>
         <el-table-column prop="errorMsg" label="错误信息" min-width="200" show-overflow-tooltip />
       </el-table>

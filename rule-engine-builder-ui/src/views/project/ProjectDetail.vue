@@ -24,12 +24,12 @@
       </el-table-column>
       <el-table-column prop="modelType" label="模型类型" min-width="90" align="center" show-overflow-tooltip sortable>
         <template #default="{ row }">
-          <el-tag size="mini">{{ mtl(row.modelType) }}</el-tag>
+          <el-tag size="small">{{ mtl(row.modelType) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" min-width="70" align="center" sortable>
         <template #default="{ row }">
-          <el-tag :type="{ 0: 'info', 1: 'success', 2: 'warning' }[row.status]" size="mini">
+          <el-tag :type="{ 0: 'info', 1: 'success', 2: 'warning' }[row.status]" size="small">
             {{ ['草稿', '已发布', '已下线'][row.status] }}
           </el-tag>
         </template>
@@ -130,12 +130,12 @@
           </div>
         </el-form-item>
         <el-form-item v-if="copyTargetScopes.length" label="目标省份">
-          <el-table :data="copyTargetScopeRows" border size="mini" style="width:100%">
+          <el-table :data="copyTargetScopeRows" border size="small" style="width:100%">
             <el-table-column type="index" label="#" width="50" />
             <el-table-column prop="label" label="省份 / 组织" />
             <el-table-column label="操作" width="80" align="center">
               <template #default="{ $index }">
-                <el-button type="text" size="mini" style="color:#F56C6C" @click="removeCopyScope($index)">删除</el-button>
+                <el-button type="text" size="small" style="color:#F56C6C" @click="removeCopyScope($index)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>

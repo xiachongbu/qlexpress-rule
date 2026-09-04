@@ -53,7 +53,7 @@
         <el-table-column prop="hitPolicy" label="命中策略" width="110" align="center">
           <template #default="{ row }">
             <el-tooltip :content="hitPolicyDesc(row.hitPolicy)" placement="top" effect="light">
-              <el-tag size="mini" :type="{ ALL: 'info', FIRST: 'success', UNIQUE: 'warning' }[row.hitPolicy || 'ALL']">
+              <el-tag size="small" :type="{ ALL: 'info', FIRST: 'success', UNIQUE: 'warning' }[row.hitPolicy || 'ALL']">
                 {{ hitPolicyLabel(row.hitPolicy) }}
               </el-tag>
             </el-tooltip>
@@ -61,7 +61,7 @@
         </el-table-column>
         <el-table-column prop="status" label="状态" min-width="140" align="center" sortable>
           <template #default="{ row }">
-            <el-tag :type="{ 0: 'info', 1: 'success', 2: 'warning' }[row.status]" size="mini">
+            <el-tag :type="{ 0: 'info', 1: 'success', 2: 'warning' }[row.status]" size="small">
               {{ ['草稿', '已发布', '已下线'][row.status] }}
             </el-tag>
           </template>
@@ -118,9 +118,9 @@
             <el-table-column prop="ruleName" label="规则名称" min-width="140" />
             <el-table-column label="操作" width="300" align="center">
               <template #default="{ $index }">
-                <el-button type="text" size="mini" :disabled="$index === 0" @click="moveMember($index, -1)">上移</el-button>
-                <el-button type="text" size="mini" :disabled="$index === memberRows.length - 1" @click="moveMember($index, 1)">下移</el-button>
-                <el-button type="text" size="mini" style="color:#F56C6C" @click="removeMember($index)">移除</el-button>
+                <el-button type="text" size="small" :disabled="$index === 0" @click="moveMember($index, -1)">上移</el-button>
+                <el-button type="text" size="small" :disabled="$index === memberRows.length - 1" @click="moveMember($index, 1)">下移</el-button>
+                <el-button type="text" size="small" style="color:#F56C6C" @click="removeMember($index)">移除</el-button>
               </template>
             </el-table-column>
           </el-table>

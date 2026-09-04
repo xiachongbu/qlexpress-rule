@@ -58,7 +58,7 @@
       </el-table-column>
       <el-table-column prop="ruleCode" label="规则编码" min-width="140" show-overflow-tooltip sortable>
         <template #default="{row}">
-          <template v-if="row.modelType === 'RULE_SET'"><el-tag size="mini" type="warning" style="margin-right:4px">集</el-tag>{{ ruleSetMap[row.ruleCode] || row.ruleCode }}</template>
+          <template v-if="row.modelType === 'RULE_SET'"><el-tag size="small" type="warning" style="margin-right:4px">集</el-tag>{{ ruleSetMap[row.ruleCode] || row.ruleCode }}</template>
           <template v-else>{{ ruleMap[row.ruleCode] || row.ruleCode }}</template>
         </template>
       </el-table-column>
@@ -66,10 +66,10 @@
         <template #default="{row}">{{ modelTypeMap[row.modelType] || row.modelType }}</template>
       </el-table-column>
       <el-table-column prop="source" label="来源" min-width="80" align="center" sortable>
-        <template #default="{row}"><el-tag :type="row.source==='SERVER'?'':'success'" size="mini">{{ row.source==='SERVER'?'服务端':'客户端' }}</el-tag></template>
+        <template #default="{row}"><el-tag :type="row.source==='SERVER'?'':'success'" size="small">{{ row.source==='SERVER'?'服务端':'客户端' }}</el-tag></template>
       </el-table-column>
       <el-table-column prop="success" label="结果" min-width="70" align="center" sortable>
-        <template #default="{row}"><el-tag :type="row.success===1?'success':'danger'" size="mini">{{ row.success===1?'成功':'失败' }}</el-tag></template>
+        <template #default="{row}"><el-tag :type="row.success===1?'success':'danger'" size="small">{{ row.success===1?'成功':'失败' }}</el-tag></template>
       </el-table-column>
       <el-table-column prop="executeTimeMs" label="耗时(ms)" min-width="80" align="center" sortable />
       <el-table-column prop="clientAppName" label="客户端" min-width="110" show-overflow-tooltip sortable />
@@ -98,11 +98,11 @@
         <div class="log-summary-bar">
           <el-tag :type="detail.success === 1 ? 'success' : 'danger'" size="small">{{ detail.success === 1 ? '执行成功' : '执行失败' }}</el-tag>
           <span class="log-summary-cost"><i class="el-icon-timer" /> {{ detail.executeTimeMs != null ? detail.executeTimeMs : '-' }}<small> ms</small></span>
-          <span class="log-summary-item"><span class="lbl">模型</span><el-tag size="mini">{{ modelTypeMap[detail.modelType] || detail.modelType || '-' }}</el-tag></span>
+          <span class="log-summary-item"><span class="lbl">模型</span><el-tag size="small">{{ modelTypeMap[detail.modelType] || detail.modelType || '-' }}</el-tag></span>
           <span v-if="detail.ruleVersion != null" class="log-summary-item"><span class="lbl">版本</span><span class="val">v{{ detail.ruleVersion }}</span></span>
           <span class="log-summary-item">
             <span class="lbl">来源</span>
-            <el-tag :type="detail.source === 'SERVER' ? '' : 'success'" size="mini">{{ detail.source === 'SERVER' ? '服务端' : '客户端' }}</el-tag>
+            <el-tag :type="detail.source === 'SERVER' ? '' : 'success'" size="small">{{ detail.source === 'SERVER' ? '服务端' : '客户端' }}</el-tag>
             <span v-if="detail.clientAppName" class="val mono">{{ detail.clientAppName }}</span>
           </span>
           <span v-if="detail.businessId" class="log-summary-item">
@@ -185,7 +185,7 @@
                       <span class="rs-step-title">{{ ruleMap[step.ruleCode] || step.ruleCode }}</span>
                       <code class="rs-step-code">{{ step.ruleCode }}</code>
                       <span v-if="step.executeTimeMs != null" class="rs-step-cost" style="margin-left:auto">{{ step.executeTimeMs }} ms</span>
-                      <el-tag :type="step.success ? 'success' : 'danger'" size="mini" :style="step.executeTimeMs != null ? 'margin-left:8px' : 'margin-left:auto'">{{ step.success ? '成功' : '失败' }}</el-tag>
+                      <el-tag :type="step.success ? 'success' : 'danger'" size="small" :style="step.executeTimeMs != null ? 'margin-left:8px' : 'margin-left:auto'">{{ step.success ? '成功' : '失败' }}</el-tag>
                     </div>
                     <div v-if="step.result !== undefined && step.result !== null" class="rs-step-body">
                       <pre class="log-pre" style="max-height:120px">{{ formatStepResult(step.result) }}</pre>

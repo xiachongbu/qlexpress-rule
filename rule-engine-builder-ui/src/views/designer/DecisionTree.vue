@@ -9,31 +9,31 @@
       </div>
       <div class="toolbar-center">
         <span class="toolbar-label">选中节点后添加：</span>
-        <el-button size="mini" @click="toolbarAddDecision">
+        <el-button size="small" @click="toolbarAddDecision">
           <span class="node-dot" style="background:#fa8c16" />条件判断
         </el-button>
-        <el-button size="mini" @click="toolbarAddTask">
+        <el-button size="small" @click="toolbarAddTask">
           <span class="node-dot" style="background:#1890ff" />执行动作
         </el-button>
         <el-divider direction="vertical" />
-        <el-button size="mini" icon="el-icon-delete" :disabled="!hasSelection" @click="deleteSelected">删除选中</el-button>
+        <el-button size="small" icon="el-icon-delete" :disabled="!hasSelection" @click="deleteSelected">删除选中</el-button>
         <el-divider direction="vertical" />
         <el-button-group>
-          <el-button size="mini" icon="el-icon-refresh-left" :disabled="!canUndoTree" @click="undoTree">撤销</el-button>
-          <el-button size="mini" icon="el-icon-refresh-right" :disabled="!canRedoTree" @click="redoTree">重做</el-button>
+          <el-button size="small" icon="el-icon-refresh-left" :disabled="!canUndoTree" @click="undoTree">撤销</el-button>
+          <el-button size="small" icon="el-icon-refresh-right" :disabled="!canRedoTree" @click="redoTree">重做</el-button>
         </el-button-group>
       </div>
       <div class="toolbar-right">
-        <el-button size="mini" icon="el-icon-circle-check" @click="handleValidate">验证</el-button>
-        <el-button size="mini" icon="el-icon-document" @click="handleSave">保存</el-button>
+        <el-button size="small" icon="el-icon-circle-check" @click="handleValidate">验证</el-button>
+        <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
         <design-version-switcher
-          select-size="mini"
+          select-size="small"
           :definition-id="definitionId"
           :scope-comp-id="scopeCompId"
           @apply-model="onApplyDesignSnapshot"
         />
-        <el-button size="mini" type="warning" icon="el-icon-cpu" @click="handleCompile">编译</el-button>
-        <el-button size="mini" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
+        <el-button size="small" type="warning" icon="el-icon-cpu" @click="handleCompile">编译</el-button>
+        <el-button size="small" type="primary" icon="el-icon-video-play" @click="handleTest">测试</el-button>
       </div>
     </div>
 
@@ -73,7 +73,7 @@
             <div v-if="edgeSourceIsDecision" class="prop-section">
               <div class="section-title">
                 <span>条件表达式</span>
-                <el-radio-group v-model="edgeCondMode" size="mini">
+                <el-radio-group v-model="edgeCondMode" size="small">
                   <el-radio-button label="visual">可视化</el-radio-button>
                   <el-radio-button label="script">脚本</el-radio-button>
                 </el-radio-group>
@@ -86,14 +86,14 @@
                     :vars="varPickerOptions"
                     :value="edgeCondVisual.leftVar"
                     placeholder="选择或输入变量..."
-                    size="mini"
+                    size="small"
                     :exclude-constants="true"
                     @select="v => onEdgeCondVarSelect(v, 'left')"
                   />
                 </div>
                 <div class="cond-row">
                   <span class="cond-label">运算符</span>
-                  <el-select v-model="edgeCondVisual.operator" size="mini" style="width:100%">
+                  <el-select v-model="edgeCondVisual.operator" size="small" style="width:100%">
                     <el-option label="等于 (==)" value="==" />
                     <el-option label="不等于 (!=)" value="!=" />
                     <el-option label="大于 (>)" value=">" />
@@ -108,8 +108,8 @@
                 </div>
                 <div class="cond-row">
                   <span class="cond-label">值</span>
-                  <el-input v-model="edgeCondVisual.rightValue" size="mini" placeholder="比较值，如：100000">
-                    <template #prepend><el-select v-model="edgeCondVisual.rightType" style="width:70px" size="mini">
+                  <el-input v-model="edgeCondVisual.rightValue" size="small" placeholder="比较值，如：100000">
+                    <template #prepend><el-select v-model="edgeCondVisual.rightType" style="width:70px" size="small">
                       <el-option label="值" value="value" />
                       <el-option label="变量" value="var" />
                     </el-select></template>
@@ -121,11 +121,11 @@
                     :vars="varPickerOptions"
                     :value="edgeCondVisual.rightVar"
                     placeholder="选择或输入比较变量..."
-                    size="mini"
+                    size="small"
                     @select="v => onEdgeCondVarSelect(v, 'right')"
                   />
                 </div>
-                <el-button type="primary" size="mini" icon="el-icon-check" style="width:100%;margin-top:8px;" @click="applyEdgeCondVisual">
+                <el-button type="primary" size="small" icon="el-icon-check" style="width:100%;margin-top:8px;" @click="applyEdgeCondVisual">
                   生成表达式
                 </el-button>
                 <div v-if="edgeProps.conditionExpr" class="generated-expr">
@@ -162,7 +162,7 @@
                 <div class="hint-box" style="margin-top:6px;">
                   <i class="el-icon-warning-outline" /> 该连线已配置的条件不会生效，且会导致编译失败，请清除
                 </div>
-                <el-button type="warning" size="mini" icon="el-icon-delete" style="width:100%;margin-top:8px;" @click="clearInvalidEdgeCond">
+                <el-button type="warning" size="small" icon="el-icon-delete" style="width:100%;margin-top:8px;" @click="clearInvalidEdgeCond">
                   清除条件
                 </el-button>
               </template>
@@ -194,7 +194,7 @@
                     <span class="edge-idx">{{ ei + 1 }}</span>
                     <i class="el-icon-right edge-arrow" />
                     <span class="edge-name">{{ edgeLabel(edge) || '（点击配置条件）' }}</span>
-                    <el-tag v-if="!edgeLabel(edge)" size="mini" type="warning">未设置</el-tag>
+                    <el-tag v-if="!edgeLabel(edge)" size="small" type="warning">未设置</el-tag>
                   </div>
                   <div v-if="outEdges.length === 0" class="hint-box">
                     <i class="el-icon-info" /> 右键画布节点可添加分支
@@ -210,7 +210,7 @@
               <div class="prop-section">
                 <div class="section-title">
                   <span>动作配置</span>
-                  <el-radio-group v-model="actionMode" size="mini">
+                  <el-radio-group v-model="actionMode" size="small">
                     <el-radio-button label="visual">可视化</el-radio-button>
                     <el-radio-button label="script">脚本预览</el-radio-button>
                   </el-radio-group>

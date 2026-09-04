@@ -5,7 +5,7 @@
       <div class="se-title-area">
         <i class="el-icon-edit-outline se-title-icon" />
         <span class="se-title">QL脚本编辑器</span>
-        <el-tag size="mini" type="info" style="margin-left:8px;">{{ lineCount }} 行</el-tag>
+        <el-tag size="small" type="info" style="margin-left:8px;">{{ lineCount }} 行</el-tag>
       </div>
       <div class="se-toolbar">
         <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
@@ -32,7 +32,7 @@
           </div>
           <div v-else-if="varsLoadError" style="text-align:center;padding:20px;color:#F56C6C;">
             <i class="el-icon-warning" /> 加载失败
-            <el-button type="text" size="mini" style="display:block;margin:6px auto 0;" @click="loadProjectVars(definitionId)">重试</el-button>
+            <el-button type="text" size="small" style="display:block;margin:6px auto 0;" @click="loadProjectVars(definitionId)">重试</el-button>
           </div>
           <div v-else-if="varTree.length === 0" style="text-align:center;padding:20px;color:#bbb;">
             <i class="el-icon-folder-opened" /> 暂无项目变量
@@ -42,7 +42,7 @@
             <div class="se-var-search">
               <el-input
                 v-model="varSearchKey"
-                size="mini"
+                size="small"
                 placeholder="搜索变量..."
                 prefix-icon="el-icon-search"
                 clearable
@@ -66,7 +66,7 @@
                     :title="'双击插入: ' + v.varCode"
                     @dblclick="insertVar(v.varCode)"
                   >
-                    <el-tag :type="varTypeColor(v.varType)" size="mini" class="var-type-tag">{{ varTypeLabel(v.varType) }}</el-tag>
+                    <el-tag :type="varTypeColor(v.varType)" size="small" class="var-type-tag">{{ varTypeLabel(v.varType) }}</el-tag>
                     <span class="var-code">{{ v.varCode }}</span>
                     <span class="var-label">{{ v.varLabel }}</span>
                   </div>
@@ -87,7 +87,7 @@
                         :title="'双击插入: ' + v.varCode"
                         @dblclick="insertVar(v.varCode)"
                       >
-                        <el-tag :type="varTypeColor(v.varType)" size="mini" class="var-type-tag">{{ varTypeLabel(v.varType) }}</el-tag>
+                        <el-tag :type="varTypeColor(v.varType)" size="small" class="var-type-tag">{{ varTypeLabel(v.varType) }}</el-tag>
                         <span class="var-code">{{ v.varCode }}</span>
                         <span class="var-label">{{ v.varLabel }}</span>
                       </div>
@@ -123,7 +123,7 @@
             <el-input
               ref="searchInput"
               v-model="searchQuery"
-              size="mini"
+              size="small"
               placeholder="查找"
               prefix-icon="el-icon-search"
               clearable
@@ -131,8 +131,8 @@
               @input="highlightAll"
               @keydown.enter.native.prevent="findNext(false)"
             />
-            <el-button size="mini" @click="findNext(false)">下一个</el-button>
-            <el-button size="mini" @click="highlightAll">全部高亮显示</el-button>
+            <el-button size="small" @click="findNext(false)">下一个</el-button>
+            <el-button size="small" @click="highlightAll">全部高亮显示</el-button>
             <span class="se-search-spacer" />
             <el-checkbox v-model="showReplace" class="se-search-toggle">替换</el-checkbox>
             <i class="el-icon-close se-search-close" title="关闭 (Esc)" @click="closeSearch" />
@@ -140,13 +140,13 @@
           <div v-show="showReplace" class="se-search-row">
             <el-input
               v-model="replaceQuery"
-              size="mini"
+              size="small"
               placeholder="替换为"
               class="se-search-input"
               @keydown.enter.native.prevent="replaceCurrent"
             />
-            <el-button size="mini" @click="replaceCurrent">替换</el-button>
-            <el-button size="mini" @click="replaceAll">全部替换</el-button>
+            <el-button size="small" @click="replaceCurrent">替换</el-button>
+            <el-button size="small" @click="replaceAll">全部替换</el-button>
           </div>
         </div>
 

@@ -113,6 +113,14 @@ export default {
   async mounted() {
     await this.refreshAuthBar()
   },
+  watch: {
+    // 浏览器后退/前进离开设计器抽屉时关闭它，避免残留遮挡页面
+    '$route'() {
+      if (this.$store.state.designerDrawer.visible) {
+        this.$store.commit('designerDrawer/CLOSE')
+      }
+    }
+  },
   methods: {
     /**
      * 根据后端配置决定是否展示登录用户与退出按钮。

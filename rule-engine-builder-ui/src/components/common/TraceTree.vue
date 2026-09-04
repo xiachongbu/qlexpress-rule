@@ -284,7 +284,7 @@
         <div class="t-sec">
           <div class="t-hd">
             求值过程
-            <el-button class="fullscreen-btn" type="text" size="mini" @click="fullscreen = true">
+            <el-button class="fullscreen-btn" type="text" size="small" @click="fullscreen = true">
               <i class="el-icon-full-screen" /> 全屏查看
             </el-button>
           </div>

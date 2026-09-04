@@ -1,5 +1,20 @@
 @import './variables.scss';
 
+/**
+ * element-plus 主题色覆盖（替代 element-ui 的 $--color-primary SCSS 主题机制）。
+ * element-plus 使用 CSS 变量，色阶按其 mix 规则换算：
+ * light-N = mix(white, primary, N*10%)、dark-2 = mix(black, primary, 20%)
+ */
+:root {
+  --el-color-primary: #{$--color-primary};
+  --el-color-primary-light-3: #ca4d4d;
+  --el-color-primary-light-5: #d98080;
+  --el-color-primary-light-7: #e8b3b3;
+  --el-color-primary-light-8: #f0cccc;
+  --el-color-primary-light-9: #f7e6e6;
+  --el-color-primary-dark-2: #8f0000;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -25,8 +40,8 @@ body {
     width: 100% !important;
   }
 
-  .el-table th,
-  .el-table td {
+  /* element-plus 单元格 padding 在 .el-table__cell 上 */
+  .el-table .el-table__cell {
     padding: 8px 0;
   }
 }

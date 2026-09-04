@@ -18,18 +18,18 @@
       <el-table-column prop="funcName" label="函数名称" min-width="90" show-overflow-tooltip sortable />
       <el-table-column prop="returnType" label="返回类型" width="90" align="center" show-overflow-tooltip sortable>
         <template #default="{ row }">
-          <el-tag size="mini">{{ typeLabel(row.returnType) }}</el-tag>
+          <el-tag size="small">{{ typeLabel(row.returnType) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="implType" label="实现方式" width="110" align="center" show-overflow-tooltip sortable>
         <template #default="{ row }">
-          <el-tag :type="implTypeTagType(row.implType)" size="mini">{{ implTypeLabel(row.implType) }}</el-tag>
+          <el-tag :type="implTypeTagType(row.implType)" size="small">{{ implTypeLabel(row.implType) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="参数" min-width="150" sortable>
         <template #default="{ row }">
           <span v-if="row.paramsJson">
-            <el-tag v-for="(p, pi) in parseParams(row.paramsJson)" :key="pi" size="mini" type="info" style="margin:1px 2px;">
+            <el-tag v-for="(p, pi) in parseParams(row.paramsJson)" :key="pi" size="small" type="info" style="margin:1px 2px;">
               {{ p.name }}: {{ typeLabel(p.type) }}
             </el-tag>
           </span>
@@ -38,7 +38,7 @@
       </el-table-column>
       <el-table-column prop="status" label="状态" width="70" align="center" sortable>
         <template #default="{ row }">
-          <el-tag :type="row.status===1?'success':'info'" size="mini">{{ row.status===1?'启用':'停用' }}</el-tag>
+          <el-tag :type="row.status===1?'success':'info'" size="small">{{ row.status===1?'启用':'停用' }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="操作" width="190" align="center">
@@ -81,14 +81,14 @@
         </el-form-item>
         <el-form-item label="参数列表">
           <div v-for="(p, pi) in editParams" :key="pi" style="display:flex;gap:4px;margin-bottom:4px;">
-            <el-input v-model="p.name" size="mini" placeholder="参数名" style="width:100px" />
-            <el-select v-model="p.type" size="mini" style="width:150px" popper-append-to-body>
+            <el-input v-model="p.name" size="small" placeholder="参数名" style="width:100px" />
+            <el-select v-model="p.type" size="small" style="width:150px" popper-append-to-body>
               <el-option v-for="opt in varTypeFormOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
             </el-select>
-            <el-input v-model="p.label" size="mini" placeholder="中文名" style="flex:1" />
-            <el-button type="text" size="mini" icon="el-icon-delete" style="color:#F56C6C" @click="editParams.splice(pi, 1)" />
+            <el-input v-model="p.label" size="small" placeholder="中文名" style="flex:1" />
+            <el-button type="text" size="small" icon="el-icon-delete" style="color:#F56C6C" @click="editParams.splice(pi, 1)" />
           </div>
-          <el-button size="mini" icon="el-icon-plus" @click="editParams.push({name:'',type:'STRING',label:''})">添加参数</el-button>
+          <el-button size="small" icon="el-icon-plus" @click="editParams.push({name:'',type:'STRING',label:''})">添加参数</el-button>
         </el-form-item>
         <el-form-item label="实现方式">
           <el-radio-group v-model="editForm.implType">

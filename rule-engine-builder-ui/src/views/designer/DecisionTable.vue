@@ -5,7 +5,7 @@
       <div class="dt-title-area">
         <i class="el-icon-s-grid dt-title-icon" />
         <span class="dt-title">决策表配置</span>
-        <el-tag size="mini" type="info" style="margin-left:8px;">共 {{ model.rules.length }} 条规则</el-tag>
+        <el-tag size="small" type="info" style="margin-left:8px;">共 {{ model.rules.length }} 条规则</el-tag>
       </div>
       <div class="dt-toolbar">
         <el-button size="small" icon="el-icon-plus" @click="addRule">添加行</el-button>
@@ -49,8 +49,8 @@
         >
           <div class="dt-rule-toolbar">
             <span class="dt-rule-no">#{{ ri + 1 }}</span>
-            <el-button type="text" size="mini" @click="copyRule(ri)">复制</el-button>
-            <el-button type="text" size="mini" class="btn-del" @click="removeRule(ri)">删除</el-button>
+            <el-button type="text" size="small" @click="copyRule(ri)">复制</el-button>
+            <el-button type="text" size="small" class="btn-del" @click="removeRule(ri)">删除</el-button>
           </div>
           <div class="dt-rule-grid">
             <div class="dt-cond-panel">
@@ -65,7 +65,7 @@
               <div class="dt-act-panel-head">
                 <span class="dt-act-panel-title">动作 (THEN)</span>
                 <span class="dt-act-panel-hint">本条规则独立配置，可与其它行不同</span>
-                <el-button type="primary" size="mini" plain icon="el-icon-plus" @click="addRuleAction(ri)">添加动作</el-button>
+                <el-button type="primary" size="small" plain icon="el-icon-plus" @click="addRuleAction(ri)">添加动作</el-button>
               </div>
               <div class="dt-act-rows">
                 <div
@@ -90,7 +90,7 @@
                       v-if="act.varType === 'ENUM' && getEnumOptions(act).length"
                       v-model="act.value"
                       :disabled="isConstAction(act)"
-                      size="mini"
+                      size="small"
                       class="dt-act-value-ctl"
                       clearable
                     >
@@ -100,7 +100,7 @@
                       v-else-if="act.varType === 'BOOLEAN'"
                       v-model="act.value"
                       :disabled="isConstAction(act)"
-                      size="mini"
+                      size="small"
                       class="dt-act-value-ctl"
                     >
                       <el-option label="true" value="true" />
@@ -115,7 +115,7 @@
                       >
                         <el-input
                           v-model="act.value"
-                          size="mini"
+                          size="small"
                           class="dt-act-value-ctl"
                           disabled
                           placeholder="常量默认值（只读）"
@@ -125,7 +125,7 @@
                       <el-input
                         v-else
                         :value="act.value || ''"
-                        size="mini"
+                        size="small"
                         class="dt-act-value-ctl"
                         placeholder="赋值"
                         @input="act.value = $event"

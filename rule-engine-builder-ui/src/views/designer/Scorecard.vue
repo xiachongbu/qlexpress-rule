@@ -5,7 +5,7 @@
       <div class="sc-title-area">
         <i class="el-icon-data-line sc-title-icon" />
         <span class="sc-title">评分卡设计器</span>
-        <el-tag size="mini" type="info" style="margin-left:8px;">{{ model.scoreItems.length }} 个评分项</el-tag>
+        <el-tag size="small" type="info" style="margin-left:8px;">{{ model.scoreItems.length }} 个评分项</el-tag>
       </div>
       <div class="sc-toolbar">
         <el-button size="small" icon="el-icon-plus" @click="addScoreItem">添加评分项</el-button>

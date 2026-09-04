@@ -5,7 +5,7 @@
       <div class="ct-title-area">
         <i class="el-icon-data-analysis ct-title-icon" />
         <span class="ct-title">交叉表设计器</span>
-        <el-tag size="mini" type="info" style="margin-left:8px;">
+        <el-tag size="small" type="info" style="margin-left:8px;">
           {{ model.rowHeaders.length }} 行 × {{ model.colHeaders.length }} 列
         </el-tag>
       </div>
@@ -98,14 +98,14 @@
                 <div class="header-cell-inner">
                   <el-input
                     v-model="model.colHeaders[ci]"
-                    size="mini"
+                    size="small"
                     placeholder="列值"
                     class="header-input"
                   />
                   <el-tooltip content="删除此列" placement="top">
                     <el-button
                       type="text"
-                      size="mini"
+                      size="small"
                       icon="el-icon-close"
                       class="delete-col-btn"
                       @click="removeColumn(ci)"
@@ -115,7 +115,7 @@
               </th>
               <!-- 添加列按钮 -->
               <th class="add-col-cell">
-                <el-button type="text" size="mini" icon="el-icon-plus" style="color:#1890ff;" @click="addColumn" />
+                <el-button type="text" size="small" icon="el-icon-plus" style="color:#1890ff;" @click="addColumn" />
               </th>
             </tr>
           </thead>
@@ -126,14 +126,14 @@
                 <div class="row-header-inner">
                   <el-input
                     v-model="model.rowHeaders[ri]"
-                    size="mini"
+                    size="small"
                     placeholder="行值"
                     class="header-input"
                   />
                   <el-tooltip content="删除此行" placement="right">
                     <el-button
                       type="text"
-                      size="mini"
+                      size="small"
                       icon="el-icon-close"
                       class="delete-row-btn"
                       @click="removeRow(ri)"
@@ -149,7 +149,7 @@
               >
                 <el-input
                   v-model="model.cells[ri][ci]"
-                  size="mini"
+                  size="small"
                   :placeholder="model.resultVar.varType === 'NUMBER' ? '0' : ''"
                   class="cell-input"
                   @focus="focusedCell = ri + '_' + ci"
@@ -162,7 +162,7 @@
             <!-- 添加行按钮行 -->
             <tr>
               <td class="add-row-trigger" @click="addRow">
-                <el-button type="text" size="mini" icon="el-icon-plus" style="color:#1890ff;">添加行</el-button>
+                <el-button type="text" size="small" icon="el-icon-plus" style="color:#1890ff;">添加行</el-button>
               </td>
               <td v-for="(col, ci) in model.colHeaders" :key="'add-' + ci" class="add-row-trigger" @click="addRow" />
               <td class="add-row-trigger" />

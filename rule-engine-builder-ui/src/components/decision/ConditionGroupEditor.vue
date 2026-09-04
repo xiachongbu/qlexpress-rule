@@ -4,12 +4,12 @@
       <span v-if="depth === 0" class="cg-title">条件</span>
       <el-button-group class="cg-op">
         <el-button
-          size="mini"
+          size="small"
           :type="group.op === 'AND' ? 'primary' : 'default'"
           @click="setGroupOp('AND')"
         >与</el-button>
         <el-button
-          size="mini"
+          size="small"
           :type="group.op === 'OR' ? 'primary' : 'default'"
           @click="setGroupOp('OR')"
         >或</el-button>
@@ -17,7 +17,7 @@
       <el-button
         v-if="depth > 0"
         type="text"
-        size="mini"
+        size="small"
         class="cg-remove-group"
         @click="$emit('remove-group')"
       >删除组</el-button>
@@ -47,19 +47,19 @@
                 :vars="vars"
                 :value="child.varCode"
                 placeholder="选择字段..."
-                size="mini"
+                size="small"
                 width="100%"
                 :exclude-constants="true"
                 @select="v => onLeafLeftSelect(child, v)"
               />
             </div>
             <div class="cg-field cg-field--op">
-              <el-select v-model="child.operator" size="mini" class="cg-sel-full" @change="onOpChange(child)">
+              <el-select v-model="child.operator" size="small" class="cg-sel-full" @change="onOpChange(child)">
                 <el-option v-for="o in opOptions" :key="o.v" :label="o.l" :value="o.v" />
               </el-select>
             </div>
             <div class="cg-field cg-field--kind">
-              <el-select v-model="child.valueKind" size="mini" class="cg-sel-full" @change="onValueKindChange(child)">
+              <el-select v-model="child.valueKind" size="small" class="cg-sel-full" @change="onValueKindChange(child)">
                 <el-option label="常量" value="CONST" />
                 <el-option label="变量" value="VAR" />
               </el-select>
@@ -70,7 +70,7 @@
                   :vars="vars"
                   :value="child.value"
                   placeholder="右侧变量"
-                  size="mini"
+                  size="small"
                   width="100%"
                   @select="v => onLeafRightSelect(child, v)"
                 />
@@ -84,7 +84,7 @@
                 >
                   <el-input
                     v-model="child.value"
-                    size="mini"
+                    size="small"
                     class="cg-input-full"
                     disabled
                     placeholder="常量默认值（只读）"
@@ -95,7 +95,7 @@
                   <el-select
                     v-if="child.varType === 'ENUM' && enumOpts(child).length"
                     v-model="child.value"
-                    size="mini"
+                    size="small"
                     class="cg-sel-full"
                     clearable
                   >
@@ -104,7 +104,7 @@
                   <el-select
                     v-else-if="child.varType === 'BOOLEAN'"
                     v-model="child.value"
-                    size="mini"
+                    size="small"
                     class="cg-sel-full"
                   >
                     <el-option label="true" value="true" />
@@ -113,24 +113,24 @@
                   <el-input
                     v-else-if="child.varType === 'NUMBER'"
                     v-model="child.value"
-                    size="mini"
+                    size="small"
                     class="cg-input-full"
                     placeholder="数值"
                   />
-                  <el-input v-else v-model="child.value" size="mini" class="cg-input-full" placeholder="值" />
+                  <el-input v-else v-model="child.value" size="small" class="cg-input-full" placeholder="值" />
                 </template>
               </div>
             </template>
             <span v-else class="cg-field cg-field--any">任意</span>
             <div class="cg-field cg-field--actions">
-              <el-button type="text" size="mini" class="cg-del" @click="removeChild(idx)">删除</el-button>
+              <el-button type="text" size="small" class="cg-del" @click="removeChild(idx)">删除</el-button>
             </div>
           </div>
         </div>
 
         <div class="cg-footer-btns">
-          <el-button size="mini" round @click="addLeaf">加条件</el-button>
-          <el-button size="mini" round @click="addSubGroup">加条件组</el-button>
+          <el-button size="small" round @click="addLeaf">加条件</el-button>
+          <el-button size="small" round @click="addSubGroup">加条件组</el-button>
         </div>
       </div>
     </div>
@@ -342,7 +342,7 @@ export default {
   color: #333;
   margin-right: 4px;
 }
-.cg-op :deep(.el-button--mini ){
+.cg-op :deep(.el-button--small ){
   border-radius: 4px;
 }
 .cg-remove-group {
@@ -438,9 +438,6 @@ export default {
 .cg-field :deep(.el-select ){
   width: 100%;
   display: block;
-}
-.cg-field :deep(.el-select > .el-input ){
-  width: 100%;
 }
 .cg-field :deep(.el-input ){
   width: 100%;

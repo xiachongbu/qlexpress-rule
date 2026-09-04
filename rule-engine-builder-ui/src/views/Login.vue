@@ -334,20 +334,23 @@ $login-primary-soft: rgba(179, 0, 0, 0.12);
 :deep(.login-form .el-input__inner ){
   height: 44px;
   line-height: 44px;
-  border-radius: 12px;
-  border: 1px solid $login-border;
   font-size: 15px;
   color: $login-text;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-:deep(.login-form .el-input__inner:hover ){
-  border-color: #cbd5e1;
+/* element-plus 边框在 wrapper 上以 inset box-shadow 实现 */
+:deep(.login-form .el-input__wrapper ){
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px $login-border inset;
+  transition: box-shadow 0.2s ease;
 }
 
-:deep(.login-form .el-input__inner:focus ){
-  border-color: $login-primary;
-  box-shadow: 0 0 0 3px $login-primary-soft;
+:deep(.login-form .el-input__wrapper:hover ){
+  box-shadow: 0 0 0 1px #cbd5e1 inset;
+}
+
+:deep(.login-form .el-input__wrapper.is-focus ){
+  box-shadow: 0 0 0 1px $login-primary inset, 0 0 0 3px $login-primary-soft;
 }
 
 :deep(.login-form .el-input__inner::placeholder ){

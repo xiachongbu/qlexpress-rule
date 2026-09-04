@@ -6,7 +6,7 @@
     append-to-body
   >
     <div class="test-mode-bar">
-      <el-radio-group :value="mode" size="mini" @input="onModeChange">
+      <el-radio-group :value="mode" size="small" @input="onModeChange">
         <el-radio-button label="form">表单</el-radio-button>
         <el-radio-button label="json">JSON</el-radio-button>
       </el-radio-group>
