@@ -24,6 +24,7 @@
         </el-button-group>
       </div>
       <div class="toolbar-right">
+        <el-button size="small" @click="openOutputVarInitDialog"><i class="el-icon-setting" /> 输出变量初始值</el-button>
         <el-button size="small" @click="handleValidate"><i class="el-icon-circle-check" /> 验证</el-button>
         <el-button size="small" @click="handleSave"><i class="el-icon-document" /> 保存</el-button>
         <design-version-switcher
@@ -125,7 +126,7 @@
                     @select="v => onEdgeCondVarSelect(v, 'right')"
                   />
                 </div>
-                <el-button type="primary" size="small" style="width:100%;margin-top:8px;" @click="applyEdgeCondVisual"><i class="el-icon-check" /> 
+                <el-button type="primary" size="small" style="width:100%;margin-top:8px;" @click="applyEdgeCondVisual"><i class="el-icon-check" />
                   生成表达式
                 </el-button>
                 <div v-if="edgeProps.conditionExpr" class="generated-expr">
@@ -162,7 +163,7 @@
                 <div class="hint-box" style="margin-top:6px;">
                   <i class="el-icon-warning-outline" /> 该连线已配置的条件不会生效，且会导致编译失败，请清除
                 </div>
-                <el-button type="warning" size="small" style="width:100%;margin-top:8px;" @click="clearInvalidEdgeCond"><i class="el-icon-delete" /> 
+                <el-button type="warning" size="small" style="width:100%;margin-top:8px;" @click="clearInvalidEdgeCond"><i class="el-icon-delete" />
                   清除条件
                 </el-button>
               </template>
@@ -241,10 +242,10 @@
                 type="danger"
                 size="small"
                 plain
-               
+
                 style="width:100%;"
                 @click="deleteCurrentNode"
-              ><i class="el-icon-delete" /> 
+              ><i class="el-icon-delete" />
                 删除此节点
               </el-button>
             </div>
@@ -299,13 +300,20 @@
       </template>
     </test-execute-dialog>
 
+    <output-var-init-dialog
+      v-model:visible="outputVarInitDialogVisible"
+      :all-output-vars="allOutputVars"
+      :output-var-inits="outputVarInits"
+      @update:output-var-inits="outputVarInits = $event"
+    />
+
     <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
 
 <script>
 import {compileRule, getContent, saveContent} from '@/api/definition'
-import {generateScript} from '@/utils/actionDataCodegen'
+import {collectOutputVarsFromNodes, generateScript} from '@/utils/actionDataCodegen'
 import {buildQlConditionExpr, inferConstVarType, parseQlConditionExpr} from '@/utils/conditionExpr'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import designerTestMixin from '@/mixins/designerTestMixin'
@@ -314,6 +322,8 @@ import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
 import designerDefinitionIdMixin from '@/mixins/designerDefinitionIdMixin'
 import designerScopeMixin from '@/mixins/designerScopeMixin'
+import outputVarInitMixin from '@/mixins/outputVarInitMixin'
+import OutputVarInitDialog from '@/components/designer/OutputVarInitDialog.vue'
 import ActionBlockEditor from '@/components/flow/ActionBlockEditor.vue'
 import DesignSaveVersionDialog from '@/components/designer/DesignSaveVersionDialog.vue'
 import DesignVersionSwitcher from '@/components/designer/DesignVersionSwitcher.vue'
@@ -344,9 +354,10 @@ export default {
     DesignSaveVersionDialog,
     DesignVersionSwitcher,
     HorizontalDecisionTree,
-    TestExecuteDialog
+    TestExecuteDialog,
+    OutputVarInitDialog
   },
-  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin],
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin, outputVarInitMixin],
   data() {
     return {
       definitionId: null,
@@ -424,6 +435,12 @@ export default {
      */
     canRedoTree() {
       return this.redoStack.length > 0
+    },
+    /**
+     * 收集所有输出变量
+     */
+    allOutputVars() {
+      return Array.from(collectOutputVarsFromNodes(this.treeNodes))
     }
   },
   created() {
@@ -928,6 +945,7 @@ export default {
       const { nodes, edges } = extractTreeGraphFromModel(modelData)
       this.treeNodes = nodes
       this.treeEdges = edges
+      this.loadOutputVarInits(modelData)
       this.clearSelection()
     },
     onApplyDesignSnapshot(parsed) {
@@ -935,9 +953,9 @@ export default {
       this.applyParsedFlowModel(parsed)
     },
     /**
-     * 构建保存用 modelJson（仅 nodes + edges）
+     * 构建保存用 modelJson（nodes + edges + outputVarInits）
      */
-    buildBackendModel() {
+    buildModelJson() {
       if (this.activeElement && this.activeElement.kind === 'node' && this.activeElement.type === 'script-task') {
         this.treeNodes = patchNode(this.treeNodes, this.activeElement.id, {
           actionData: Array.isArray(this.currentActionData) ? this.currentActionData : []
@@ -957,10 +975,11 @@ export default {
         conditionExpression: e.conditionExpression || '',
         name: e.name || ''
       }))
-      return { nodes, edges }
+      const result = { nodes, edges }
+      return this.mergeOutputVarInitsToModel(result)
     },
     async persistModelSilent() {
-      const modelJson = JSON.stringify(this.buildBackendModel())
+      const modelJson = JSON.stringify(this.buildModelJson())
       await saveContent({
         definitionId: this.definitionId,
         scopeCompId: this.scopeCompId,
@@ -976,7 +995,7 @@ export default {
       } catch (e) {
         return
       }
-      const modelJson = JSON.stringify(this.buildBackendModel())
+      const modelJson = JSON.stringify(this.buildModelJson())
       // 后端“保存即编译”：校验失败回滚不落库（错误由统一拦截器弹出）；拦截器不 reject，须判返回码
       const res = await saveContent({
         definitionId: this.definitionId,
@@ -1007,7 +1026,7 @@ export default {
     /** 以后端模型（节点动作 + 边条件表达式）作为扫描测试变量的设计源 */
     getTestSourceText() {
       try {
-        return JSON.stringify(this.buildBackendModel())
+        return JSON.stringify(this.buildModelJson())
       } catch (e) {
         return ''
       }

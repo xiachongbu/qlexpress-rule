@@ -10,6 +10,7 @@
         </el-tag>
       </div>
       <div class="act-toolbar">
+        <el-button size="small" @click="openOutputVarInitDialog"><i class="el-icon-setting" /> 输出变量初始值</el-button>
         <el-button size="small" @click="handleSave"><i class="el-icon-document" /> 保存</el-button>
         <design-version-switcher
           :definition-id="definitionId"
@@ -261,6 +262,13 @@
       </template>
     </test-execute-dialog>
 
+    <output-var-init-dialog
+      v-model:visible="outputVarInitDialogVisible"
+      :all-output-vars="allOutputVars"
+      :output-var-inits="outputVarInits"
+      @update:output-var-inits="outputVarInits = $event"
+    />
+
     <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
@@ -270,6 +278,8 @@ import {compileRule, getContent, saveContent} from '@/api/definition'
 import {VAR_TYPE_FORM_OPTIONS} from '@/constants/varTypes'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import designerTestMixin from '@/mixins/designerTestMixin'
+import outputVarInitMixin from '@/mixins/outputVarInitMixin'
+import OutputVarInitDialog from '@/components/designer/OutputVarInitDialog.vue'
 import TestExecuteDialog from '@/components/designer/TestExecuteDialog.vue'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
@@ -280,8 +290,8 @@ import designerScopeMixin from '@/mixins/designerScopeMixin'
 
 export default {
   name: 'AdvancedCrossTable',
-  components: { VarPicker, ScriptPanel, DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog },
-  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin],
+  components: { VarPicker, ScriptPanel, DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog, OutputVarInitDialog },
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin, outputVarInitMixin],
   data() {
     return {
       definitionId: null,
@@ -372,6 +382,15 @@ export default {
         result.push(cells)
       }
       return result
+    },
+    /**
+     * 收集所有输出变量（复杂交叉表只有结果变量）
+     */
+    allOutputVars() {
+      if (this.model.resultVar && this.model.resultVar.varCode) {
+        return [this.model.resultVar.varCode]
+      }
+      return []
     }
   },
   watch: {
@@ -426,6 +445,7 @@ export default {
         const content = res && res.data ? res.data : res
         if (content && content.modelJson && content.modelJson !== '{}') {
           const parsed = JSON.parse(content.modelJson)
+          this.loadOutputVarInits(parsed)
           this.model = parsed
           if (parsed.cells) {
             this.cellData = this.flattenCells(parsed.cells)
@@ -478,16 +498,17 @@ export default {
     addSegment(dim) {
       dim.segments.push({ label: '', operator: '==', value: '' })
     },
-    buildSaveModel() {
+    buildModelJson() {
       const saveModel = JSON.parse(JSON.stringify(this.model))
       saveModel.cells = JSON.parse(JSON.stringify(this.cellData))
-      return saveModel
+      return this.mergeOutputVarInitsToModel(saveModel)
     },
     /**
      * 将历史快照写回复杂交叉表模型与单元格矩阵。
      */
     onApplyDesignSnapshot(parsed) {
       if (!parsed || typeof parsed !== 'object') return
+      this.loadOutputVarInits(parsed)
       this.model = parsed
       if (parsed.cells) {
         this.cellData = this.flattenCells(parsed.cells)
@@ -500,7 +521,7 @@ export default {
      * 静默保存（不写设计快照）。
      */
     async persistModelSilent() {
-      const saveModel = this.buildSaveModel()
+      const saveModel = this.buildModelJson()
       await saveContent({
         definitionId: this.definitionId,
         scopeCompId: this.scopeCompId,
@@ -520,7 +541,7 @@ export default {
       } catch (e) {
         return
       }
-      const saveModel = this.buildSaveModel()
+      const saveModel = this.buildModelJson()
       // 后端“保存即编译”：校验失败回滚不落库（错误由统一拦截器弹出）；拦截器不 reject，须判返回码
       const res = await saveContent({
         definitionId: this.definitionId,

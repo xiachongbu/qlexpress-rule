@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -92,7 +93,9 @@ public class DecisionTableCompiler implements RuleCompiler {
             }
 
             if (!outputVarCodes.isEmpty()) {
-                RuleScriptResultCollector.prependOutputNullInits(script, outputVarCodes);
+                // 解析输出变量初始值配置
+                Map<String, String> initValueMap = RuleScriptResultCollector.parseOutputVarInits(model);
+                RuleScriptResultCollector.prependOutputInits(script, outputVarCodes, initValueMap);
                 RuleScriptResultCollector.appendResultMapReturn(script, outputVarCodes);
             }
 

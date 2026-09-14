@@ -15,6 +15,7 @@
           <el-button size="small" @click="addColumn"><i class="el-icon-plus" /> 添加列</el-button>
         </el-button-group>
         <el-divider direction="vertical" />
+        <el-button size="small" @click="openOutputVarInitDialog"><i class="el-icon-setting" /> 输出变量初始值</el-button>
         <el-button size="small" @click="handleSave"><i class="el-icon-document" /> 保存</el-button>
         <design-version-switcher
           :definition-id="definitionId"
@@ -230,6 +231,13 @@
       </template>
     </test-execute-dialog>
 
+    <output-var-init-dialog
+      v-model:visible="outputVarInitDialogVisible"
+      :all-output-vars="allOutputVars"
+      :output-var-inits="outputVarInits"
+      @update:output-var-inits="outputVarInits = $event"
+    />
+
     <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
@@ -239,6 +247,8 @@ import {compileRule, getContent, saveContent} from '@/api/definition'
 import {VAR_TYPE_FORM_OPTIONS} from '@/constants/varTypes'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import designerTestMixin from '@/mixins/designerTestMixin'
+import outputVarInitMixin from '@/mixins/outputVarInitMixin'
+import OutputVarInitDialog from '@/components/designer/OutputVarInitDialog.vue'
 import TestExecuteDialog from '@/components/designer/TestExecuteDialog.vue'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
@@ -249,8 +259,8 @@ import designerScopeMixin from '@/mixins/designerScopeMixin'
 
 export default {
   name: 'CrossTable',
-  components: { VarPicker, ScriptPanel, DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog },
-  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin],
+  components: { VarPicker, ScriptPanel, DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog, OutputVarInitDialog },
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin, outputVarInitMixin],
   data() {
     return {
       definitionId: null,
@@ -293,6 +303,15 @@ export default {
         })
       }
       return fields
+    },
+    /**
+     * 收集所有输出变量（交叉表只有结果变量）
+     */
+    allOutputVars() {
+      if (this.model.resultVar && this.model.resultVar.varCode) {
+        return [this.model.resultVar.varCode]
+      }
+      return []
     }
   },
   created() {
@@ -354,7 +373,9 @@ export default {
         const res = await getContent(this.definitionId, this.scopeCompId)
         const content = res && res.data ? res.data : res
         if (content && content.modelJson && content.modelJson !== '{}') {
-          this.model = JSON.parse(content.modelJson)
+          const parsed = JSON.parse(content.modelJson)
+          this.loadOutputVarInits(parsed)
+          this.model = parsed
         }
       } catch (e) {
         this.$message.error('加载内容失败: ' + (e.message || '未知错误'))
@@ -421,6 +442,7 @@ export default {
      */
     onApplyDesignSnapshot(parsed) {
       if (!parsed || typeof parsed !== 'object') return
+      this.loadOutputVarInits(parsed)
       this.model = parsed
     },
 
@@ -431,7 +453,7 @@ export default {
       await saveContent({
         definitionId: this.definitionId,
         scopeCompId: this.scopeCompId,
-        modelJson: JSON.stringify(this.model),
+        modelJson: JSON.stringify(this.buildModelJson()),
         recordHistory: false
       })
     },
@@ -451,7 +473,7 @@ export default {
       const res = await saveContent({
         definitionId: this.definitionId,
         scopeCompId: this.scopeCompId,
-        modelJson: JSON.stringify(this.model),
+        modelJson: JSON.stringify(this.buildModelJson()),
         changeLog: changeLog || undefined,
         recordHistory: true
       })
@@ -474,6 +496,11 @@ export default {
       } else {
         this.$message.error('编译失败: ' + (res && res.data ? res.data.errorMessage : '未知错误'))
       }
+    },
+
+    buildModelJson() {
+      const result = JSON.parse(JSON.stringify(this.model))
+      return this.mergeOutputVarInitsToModel(result)
     }
   }
 }

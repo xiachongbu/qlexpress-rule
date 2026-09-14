@@ -58,6 +58,7 @@
         </el-select>
       </div>
       <div class="toolbar-right">
+        <el-button size="small" @click="openOutputVarInitDialog"><i class="el-icon-setting" /> 输出变量初始值</el-button>
         <el-button size="small" @click="handleValidate"><i class="el-icon-circle-check" /> 验证</el-button>
         <el-button size="small" @click="handleSave"><i class="el-icon-document" /> 保存</el-button>
         <design-version-switcher
@@ -161,7 +162,7 @@
                     @select="v => onEdgeCondVarSelect(v, 'right')"
                   />
                 </div>
-                <el-button type="primary" size="small" style="width:100%;margin-top:8px;" @click="applyEdgeCondVisual"><i class="el-icon-check" /> 
+                <el-button type="primary" size="small" style="width:100%;margin-top:8px;" @click="applyEdgeCondVisual"><i class="el-icon-check" />
                   生成表达式
                 </el-button>
                 <div v-if="edgeProps.conditionExpr" class="generated-expr">
@@ -199,7 +200,7 @@
                 <div class="hint-box" style="margin-top:6px;">
                   <i class="el-icon-warning-outline" /> 该连线已配置的条件不会生效，且会导致编译失败，请清除
                 </div>
-                <el-button type="warning" size="small" style="width:100%;margin-top:8px;" @click="clearInvalidEdgeCond"><i class="el-icon-delete" /> 
+                <el-button type="warning" size="small" style="width:100%;margin-top:8px;" @click="clearInvalidEdgeCond"><i class="el-icon-delete" />
                   清除条件
                 </el-button>
               </template>
@@ -287,7 +288,7 @@
 
             <!-- 操作按钮 -->
             <div class="prop-section" style="padding-top:4px;">
-              <el-button type="danger" size="small" plain style="width:100%;" @click="deleteCurrentNode"><i class="el-icon-delete" /> 
+              <el-button type="danger" size="small" plain style="width:100%;" @click="deleteCurrentNode"><i class="el-icon-delete" />
                 删除此节点
               </el-button>
             </div>
@@ -346,12 +347,19 @@
       </template>
     </test-execute-dialog>
 
+    <output-var-init-dialog
+      v-model:visible="outputVarInitDialogVisible"
+      :all-output-vars="allOutputVars"
+      :output-var-inits="outputVarInits"
+      @update:output-var-inits="outputVarInits = $event"
+    />
+
     <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
 
 <script>
-import { markRaw } from 'vue'
+import {markRaw} from 'vue'
 import LogicFlow from '@logicflow/core'
 import {Menu, SelectionSelect, Snapshot} from '@logicflow/extension'
 import '@logicflow/core/dist/style/index.css'
@@ -366,7 +374,7 @@ import {
   prepareLogicFlowDataForRender
 } from '@/components/flow/edgeLineType'
 import {compileRule, getContent, saveContent} from '@/api/definition'
-import {generateScript} from '@/utils/actionDataCodegen'
+import {collectOutputVarsFromNodes, generateScript} from '@/utils/actionDataCodegen'
 import {
   buildQlConditionExpr,
   constTypeFromVarType,
@@ -376,6 +384,8 @@ import {
 import {graphContainsDirectedCycle} from '@/utils/flowGraphCycle'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import designerTestMixin from '@/mixins/designerTestMixin'
+import outputVarInitMixin from '@/mixins/outputVarInitMixin'
+import OutputVarInitDialog from '@/components/designer/OutputVarInitDialog.vue'
 import TestExecuteDialog from '@/components/designer/TestExecuteDialog.vue'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
@@ -387,8 +397,8 @@ import DesignVersionSwitcher from '@/components/designer/DesignVersionSwitcher.v
 
 export default {
   name: 'DecisionFlow',
-  components: { VarPicker, ScriptPanel, ActionBlockEditor, DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog },
-  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin],
+  components: { VarPicker, ScriptPanel, ActionBlockEditor, DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog, OutputVarInitDialog },
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin, outputVarInitMixin],
   data() {
     return {
       definitionId: null,
@@ -405,6 +415,8 @@ export default {
       edgeCondVisual: { leftVar: '', leftLabel: '', leftVarType: '', operator: '==', rightValue: '', rightType: 'value', rightVar: '', rightConstType: '' },
       actionMode: 'visual',
       currentActionData: [],
+      /** 画布变更版本号，用于驱动 allOutputVars 等 computed 在 lf 数据变化时重新计算 */
+      graphVersion: 0,
       /** 工具栏全局默认连线类型（折线/直线/贝塞尔），新连线与「跟随全局」的边使用 */
       globalEdgeLineType: 'polyline'
     }
@@ -446,6 +458,24 @@ export default {
     },
     scriptPreview() {
       return generateScript(this.currentActionData)
+    },
+    /**
+     * 收集所有输出变量（从 LogicFlow 画布节点中提取）
+     */
+    allOutputVars() {
+      // 依赖 graphVersion 以在画布节点/actionData 变化时触发重新计算
+      void this.graphVersion
+      if (!this.lf) return []
+      try {
+        const graphData = this.lf.getGraphData()
+        const nodes = (graphData.nodes || []).map(n => ({
+          type: this.lfTypeToBackend(n.type),
+          actionData: (n.properties && n.properties.actionData) || []
+        }))
+        return Array.from(collectOutputVarsFromNodes(nodes))
+      } catch (e) {
+        return []
+      }
     }
   },
   created() {
@@ -540,7 +570,11 @@ export default {
         this.hasSelection = false
       })
       this.lf.on('node:dnd-add', ({ data }) => {
+        this.graphVersion++
         this.$nextTick(() => this.selectNodeData(data))
+      })
+      this.lf.on('node:delete', () => {
+        this.graphVersion++
       })
       this.lf.on('node:dbclick', ({ data }) => this.selectNodeData(data))
       this.lf.on('edge:dbclick', ({ data }) => this.selectEdgeData(data))
@@ -629,6 +663,7 @@ export default {
       if (this.lf && this.activeElement) {
         this.lf.setProperties(this.activeElement.id, { actionData: data })
       }
+      this.graphVersion++
     },
 
     /**
@@ -818,6 +853,8 @@ export default {
       migrateModelJsonForEdgeLineTypes(modelData)
       this.globalEdgeLineType = modelData.defaultEdgeLineType
       this.lf.setDefaultEdgeType(this.globalEdgeLineType)
+      this.loadOutputVarInits(modelData)
+      this.graphVersion++
       if (modelData.logicflow) {
         const prepared = prepareLogicFlowDataForRender(modelData.logicflow, this.globalEdgeLineType)
         this.lf.render(prepared)
@@ -883,7 +920,7 @@ export default {
       return map[lfType] || lfType
     },
 
-    buildBackendModel() {
+    buildModelJson() {
       // 保存前将当前编辑中的 actionData 同步到 LogicFlow 模型，确保配置不丢失
       if (this.activeElement && this.activeElement.baseType === 'node' && this.activeElement.type === 'script-task') {
         const model = this.lf.getNodeModelById(this.activeElement.id)
@@ -920,19 +957,20 @@ export default {
         base.properties = { ...(n.properties || {}), actionData: Array.isArray(actionData) ? actionData : [] }
         return base
       })
-      return {
+      const result = {
         nodes,
         edges,
         defaultEdgeLineType: this.globalEdgeLineType,
         logicflow: { nodes: logicflowNodes, edges: graphData.edges || [] }
       }
+      return this.mergeOutputVarInitsToModel(result)
     },
 
     /**
      * 静默保存当前流程模型（不写设计快照）。
      */
     async persistModelSilent() {
-      const modelJson = JSON.stringify(this.buildBackendModel())
+      const modelJson = JSON.stringify(this.buildModelJson())
       await saveContent({
         definitionId: this.definitionId,
         scopeCompId: this.scopeCompId,
@@ -952,7 +990,7 @@ export default {
       } catch (e) {
         return
       }
-      const modelJson = JSON.stringify(this.buildBackendModel())
+      const modelJson = JSON.stringify(this.buildModelJson())
       // 后端“保存即编译”：校验失败回滚不落库（错误由统一拦截器弹出）；拦截器不 reject，须判返回码
       const res = await saveContent({
         definitionId: this.definitionId,
@@ -986,7 +1024,7 @@ export default {
     /** 以后端模型（节点动作 + 边条件表达式）作为扫描测试变量的设计源 */
     getTestSourceText() {
       try {
-        return JSON.stringify(this.buildBackendModel())
+        return JSON.stringify(this.buildModelJson())
       } catch (e) {
         return ''
       }

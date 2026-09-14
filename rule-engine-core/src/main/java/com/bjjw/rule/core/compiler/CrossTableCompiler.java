@@ -5,6 +5,8 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
 import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class CrossTableCompiler implements RuleCompiler {
@@ -67,6 +69,13 @@ public class CrossTableCompiler implements RuleCompiler {
                 }
             }
             script.append("\n");
+
+            // 解析输出变量初始值配置，为结果变量添加初始化
+            Map<String, String> initValueMap = RuleScriptResultCollector.parseOutputVarInits(model);
+            LinkedHashSet<String> outputVars = new LinkedHashSet<>();
+            outputVars.add(resCode);
+            RuleScriptResultCollector.prependOutputInits(script, outputVars, initValueMap);
+            RuleScriptResultCollector.appendResultMapReturn(script, outputVars);
 
             // 常量赋值序言前置到脚本最前，使脚本内引用的常量解析为固化值
             if (constantPrefix != null && !constantPrefix.isEmpty()) {

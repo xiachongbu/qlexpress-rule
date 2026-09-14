@@ -96,9 +96,11 @@ public class DecisionTreeCompiler implements RuleCompiler {
             ActionDataOutputVarCollector.collectFromGraphTaskNodes(nodes, outputVars);
             // 常量不作为输出变量：不预声明为 null、不进结果 Map，避免覆盖常量序言
             outputVars.removeIf(vc -> ConstantPrefixBuilder.isConstantName(constantNames, vc));
+            // 解析输出变量初始值配置
+            Map<String, String> initValueMap = RuleScriptResultCollector.parseOutputVarInits(model);
             StringBuilder sb = new StringBuilder(script);
             if (!outputVars.isEmpty()) {
-                RuleScriptResultCollector.prependOutputNullInits(sb, outputVars);
+                RuleScriptResultCollector.prependOutputInits(sb, outputVars, initValueMap);
                 RuleScriptResultCollector.appendResultMapReturn(sb, outputVars);
             }
 

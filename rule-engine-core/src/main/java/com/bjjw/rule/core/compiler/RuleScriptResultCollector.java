@@ -1,7 +1,12 @@
 package com.bjjw.rule.core.compiler;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 
 /**
  * 将「多路赋值」场景的脚本包装为统一返回值：QLExpress 默认只返回最后一条表达式的值，
@@ -13,19 +18,28 @@ public final class RuleScriptResultCollector {
     }
 
     /**
-     * 在脚本最前面插入输出变量的 null 初始化，避免未命中分支时变量未定义而无法构建返回 Map。
+     * 在脚本最前面插入输出变量的初始化，支持自定义初始值。
+     * 如果 initValueMap 中某变量有配置初始值，则使用配置值；否则使用 null。
      *
-     * @param script   已生成的脚本正文
-     * @param varCodes 需要参与返回的变量名（去重、忽略空串）
+     * @param script       已生成的脚本正文
+     * @param varCodes     需要参与返回的变量名（去重、忽略空串）
+     * @param initValueMap 变量初始值映射（varCode -> initValue），可为 null
      */
-    public static void prependOutputNullInits(StringBuilder script, Collection<String> varCodes) {
+    public static void prependOutputInits(StringBuilder script, Collection<String> varCodes, Map<String, String> initValueMap) {
         LinkedHashSet<String> uniq = uniqueNonEmpty(varCodes);
         if (uniq.isEmpty()) {
             return;
         }
         StringBuilder head = new StringBuilder();
         for (String code : uniq) {
-            head.append(code).append(" = null\n");
+            head.append(code).append(" = ");
+            String initValue = (initValueMap != null) ? initValueMap.get(code) : null;
+            if (initValue != null && !initValue.trim().isEmpty()) {
+                head.append(initValue.trim());
+            } else {
+                head.append("null");
+            }
+            head.append("\n");
         }
         script.insert(0, head);
     }
@@ -78,5 +92,35 @@ public final class RuleScriptResultCollector {
             }
         }
         return uniq;
+    }
+
+    /**
+     * 解析 modelJson 中的 outputVarInits 数组，返回变量初始值映射。
+     * outputVarInits 格式：[{"varCode": "taxRate", "initValue": "0"}, ...]
+     *
+     * @param modelJson 模型 JSON 对象
+     * @return 变量初始值映射（varCode -> initValue），如果没有配置则返回空 Map
+     */
+    public static Map<String, String> parseOutputVarInits(JSONObject modelJson) {
+        Map<String, String> result = new HashMap<>();
+        if (modelJson == null) {
+            return result;
+        }
+        JSONArray outputVarInits = modelJson.getJSONArray("outputVarInits");
+        if (outputVarInits == null || outputVarInits.isEmpty()) {
+            return result;
+        }
+        for (int i = 0; i < outputVarInits.size(); i++) {
+            JSONObject item = outputVarInits.getJSONObject(i);
+            if (item == null) {
+                continue;
+            }
+            String varCode = item.getString("varCode");
+            String initValue = item.getString("initValue");
+            if (varCode != null && !varCode.trim().isEmpty()) {
+                result.put(varCode.trim(), initValue);
+            }
+        }
+        return result;
     }
 }

@@ -16,6 +16,11 @@
           :layout="layout.child"
           :selected-node-id="selectedNodeId"
           :selected-edge-id="selectedEdgeId"
+          @select-node="$emit('select-node', $event)"
+          @select-edge="$emit('select-edge', $event)"
+          @tree-command="$emit('tree-command', $event)"
+          @node-contextmenu="openNodeMenu($event.event, $event.nodeId, $event.backendKind)"
+          @edge-contextmenu="openEdgeMenu($event.event, $event.edgeId)"
         />
       </div>
     </template>
@@ -50,6 +55,11 @@
               :layout="br.child"
               :selected-node-id="selectedNodeId"
               :selected-edge-id="selectedEdgeId"
+              @select-node="$emit('select-node', $event)"
+              @select-edge="$emit('select-edge', $event)"
+              @tree-command="$emit('tree-command', $event)"
+              @node-contextmenu="openNodeMenu($event.event, $event.nodeId, $event.backendKind)"
+              @edge-contextmenu="openEdgeMenu($event.event, $event.edgeId)"
             />
           </div>
         </div>
@@ -73,6 +83,11 @@
           :layout="layout.next"
           :selected-node-id="selectedNodeId"
           :selected-edge-id="selectedEdgeId"
+          @select-node="$emit('select-node', $event)"
+          @select-edge="$emit('select-edge', $event)"
+          @tree-command="$emit('tree-command', $event)"
+          @node-contextmenu="openNodeMenu($event.event, $event.nodeId, $event.backendKind)"
+          @edge-contextmenu="openEdgeMenu($event.event, $event.edgeId)"
         />
       </div>
     </template>
@@ -102,12 +117,9 @@ export default {
     selectedNodeId: { type: String, default: '' },
     selectedEdgeId: { type: String, default: '' }
   },
-  beforeCreate() {
-    this.$options.components.HdtLayoutFragment = require('./HdtLayoutFragment.vue').default
-  },
   methods: {
     /**
-     * 打开节点右键菜单（转发为 tree-command / 显示菜单由父级统一处理时可改为仅 emit）
+     * 打开节点右键菜单
      */
     openNodeMenu(e, nodeId, backendKind) {
       this.$emit('node-contextmenu', { event: e, nodeId, backendKind })

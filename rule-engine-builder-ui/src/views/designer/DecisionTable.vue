@@ -10,6 +10,7 @@
       <div class="dt-toolbar">
         <el-button size="small" @click="addRule"><i class="el-icon-plus" /> 添加行</el-button>
         <el-divider direction="vertical" />
+        <el-button size="small" @click="openOutputVarInitDialog"><i class="el-icon-setting" /> 输出变量初始值</el-button>
         <el-button size="small" @click="handleSave"><i class="el-icon-document" /> 保存</el-button>
         <design-version-switcher
           :definition-id="definitionId"
@@ -245,6 +246,13 @@
       </template>
     </test-execute-dialog>
 
+    <output-var-init-dialog
+      v-model:visible="outputVarInitDialogVisible"
+      :all-output-vars="allOutputVars"
+      :output-var-inits="outputVarInits"
+      @update:output-var-inits="outputVarInits = $event"
+    />
+
     <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
@@ -259,6 +267,8 @@ import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
 import designerDefinitionIdMixin from '@/mixins/designerDefinitionIdMixin'
 import designerScopeMixin from '@/mixins/designerScopeMixin'
+import outputVarInitMixin from '@/mixins/outputVarInitMixin'
+import OutputVarInitDialog from '@/components/designer/OutputVarInitDialog.vue'
 import ConditionGroupEditor from '@/components/decision/ConditionGroupEditor.vue'
 import DesignSaveVersionDialog from '@/components/designer/DesignSaveVersionDialog.vue'
 import DesignVersionSwitcher from '@/components/designer/DesignVersionSwitcher.vue'
@@ -272,8 +282,8 @@ import {
 
 export default {
   name: 'DecisionTable',
-  components: { VarPicker, ScriptPanel, ConditionGroupEditor, DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog },
-  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin],
+  components: { VarPicker, ScriptPanel, ConditionGroupEditor, DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog, OutputVarInitDialog },
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin, outputVarInitMixin],
   data() {
     return {
       definitionId: null,
@@ -317,6 +327,22 @@ export default {
       const act = this.activeColDef
       if (!act || !act.varCode) return false
       return this.isConstRef((this.projectRefs || []).find(v => v.refCode === act.varCode))
+    },
+    /**
+     * 收集所有输出变量（从所有规则的动作中提取）
+     */
+    allOutputVars() {
+      const seen = new Set()
+      const result = []
+      ;(this.model.rules || []).forEach(r => {
+        ;(r.actions || []).forEach(act => {
+          if (act && act.varCode && !seen.has(act.varCode)) {
+            seen.add(act.varCode)
+            result.push(act.varCode)
+          }
+        })
+      })
+      return result
     }
   },
   created() {
@@ -338,6 +364,7 @@ export default {
         const content = res && res.data ? res.data : res
         if (content && content.modelJson && content.modelJson !== '{}') {
           this.model = JSON.parse(content.modelJson)
+          this.loadOutputVarInits(this.model)
           this.normalizeModel()
         }
       } catch (e) {
@@ -622,6 +649,7 @@ export default {
      */
     onApplyDesignSnapshot(parsed) {
       if (!parsed || typeof parsed !== 'object') return
+      this.loadOutputVarInits(parsed)
       this.model = parsed
       this.normalizeModel()
     },
@@ -634,7 +662,7 @@ export default {
       await saveContent({
         definitionId: this.definitionId,
         scopeCompId: this.scopeCompId,
-        modelJson: JSON.stringify(this.model),
+        modelJson: JSON.stringify(this.buildModelJson()),
         recordHistory: false
       })
     },
@@ -651,11 +679,11 @@ export default {
         return
       }
       this.normalizeModel()
-      // 后端“保存即编译”：校验失败回滚不落库（错误由统一拦截器弹出）；拦截器不 reject，须判返回码
+      // 后端”保存即编译”：校验失败回滚不落库（错误由统一拦截器弹出）；拦截器不 reject，须判返回码
       const res = await saveContent({
         definitionId: this.definitionId,
         scopeCompId: this.scopeCompId,
-        modelJson: JSON.stringify(this.model),
+        modelJson: JSON.stringify(this.buildModelJson()),
         changeLog: changeLog || undefined,
         recordHistory: true
       })
@@ -691,6 +719,14 @@ export default {
 
     onScriptModeChange(mode) {
       this.scriptMode = mode
+    },
+
+    /**
+     * 构建包含 outputVarInits 的模型 JSON
+     */
+    buildModelJson() {
+      const result = JSON.parse(JSON.stringify(this.model))
+      return this.mergeOutputVarInitsToModel(result)
     }
   }
 }
