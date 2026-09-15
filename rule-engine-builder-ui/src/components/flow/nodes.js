@@ -3,8 +3,8 @@
  * 节点类型：开始事件、结束事件、脚本任务、排他网关、聚合节点
  */
 
-import { CircleNode, CircleNodeModel, DiamondNode, DiamondNodeModel, h, RectNode, RectNodeModel } from '@logicflow/core'
-import { wouldCreateCycleFromNewEdge } from '@/utils/flowGraphCycle'
+import {CircleNode, CircleNodeModel, DiamondNode, DiamondNodeModel, h, RectNode, RectNodeModel} from '@logicflow/core'
+import {wouldCreateCycleFromNewEdge} from '@/utils/flowGraphCycle'
 
 // ============================================================
 // 工具函数
@@ -254,7 +254,7 @@ function ScriptTaskFactory(RectNode, RectNodeModel) {
       if (!data.properties.scriptMode) data.properties.scriptMode = 'visual'
       if (!data.properties.asyncExec) data.properties.asyncExec = false
       if (!data.properties.scriptContent) data.properties.scriptContent = ''
-      if (!data.properties.actions) data.properties.actions = []
+      if (!data.properties.actionData) data.properties.actionData = []
     }
     setAttributes() {
       this.text.value = ''

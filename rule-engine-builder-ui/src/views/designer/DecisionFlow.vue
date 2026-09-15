@@ -53,6 +53,7 @@
       </div>
       <div class="toolbar-right">
         <el-button size="mini" icon="el-icon-circle-check" @click="handleValidate">验证</el-button>
+        <el-button size="mini" icon="el-icon-setting" @click="openOutputVarInitDialog">输出变量初始值</el-button>
         <el-button size="mini" icon="el-icon-document" @click="handleSave">保存</el-button>
         <design-version-switcher
           select-size="mini"
@@ -340,6 +341,13 @@
       </template>
     </test-execute-dialog>
 
+    <output-var-init-dialog
+      :visible.sync="outputVarInitDialogVisible"
+      :all-output-vars="allOutputVarsList"
+      :output-var-inits="outputVarInits"
+      @update:output-var-inits="outputVarInits = $event"
+    />
+
     <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
@@ -359,7 +367,7 @@ import {
   prepareLogicFlowDataForRender
 } from '@/components/flow/edgeLineType'
 import {compileRule, getContent, saveContent} from '@/api/definition'
-import {generateScript} from '@/utils/actionDataCodegen'
+import {collectOutputVarsFromNodes, generateScript} from '@/utils/actionDataCodegen'
 import {
   buildQlConditionExpr,
   constTypeFromVarType,
@@ -369,7 +377,9 @@ import {
 import {graphContainsDirectedCycle} from '@/utils/flowGraphCycle'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import designerTestMixin from '@/mixins/designerTestMixin'
+import outputVarInitMixin from '@/mixins/outputVarInitMixin'
 import TestExecuteDialog from '@/components/designer/TestExecuteDialog.vue'
+import OutputVarInitDialog from '@/components/designer/OutputVarInitDialog.vue'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
 import designerDefinitionIdMixin from '@/mixins/designerDefinitionIdMixin'
@@ -380,8 +390,8 @@ import DesignVersionSwitcher from '@/components/designer/DesignVersionSwitcher.v
 
 export default {
   name: 'DecisionFlow',
-  components: { VarPicker, ScriptPanel, ActionBlockEditor, DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog },
-  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin],
+  components: { VarPicker, ScriptPanel, ActionBlockEditor, DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog, OutputVarInitDialog },
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin, outputVarInitMixin],
   data() {
     return {
       definitionId: null,
@@ -399,7 +409,9 @@ export default {
       actionMode: 'visual',
       currentActionData: [],
       /** 工具栏全局默认连线类型（折线/直线/贝塞尔），新连线与「跟随全局」的边使用 */
-      globalEdgeLineType: 'polyline'
+      globalEdgeLineType: 'polyline',
+      graphVersion: 0,
+      allOutputVarsList: []
     }
   },
   computed: {
@@ -467,6 +479,11 @@ export default {
     }
   },
   methods: {
+    openOutputVarInitDialog() {
+      this.allOutputVarsList = this.getAllOutputVars()
+      this.outputVarInitDialogVisible = true
+    },
+
     initLogicFlow() {
       LogicFlow.use(SelectionSelect)
       LogicFlow.use(Menu)
@@ -533,6 +550,7 @@ export default {
         this.hasSelection = false
       })
       this.lf.on('node:dnd-add', ({ data }) => {
+        this.graphVersion++
         this.$nextTick(() => this.selectNodeData(data))
       })
       this.lf.on('node:dbclick', ({ data }) => this.selectNodeData(data))
@@ -619,6 +637,7 @@ export default {
     },
     onActionDataUpdate(data) {
       this.currentActionData = data
+      this.graphVersion++
       if (this.lf && this.activeElement) {
         this.lf.setProperties(this.activeElement.id, { actionData: data })
       }
@@ -808,6 +827,7 @@ export default {
      * 将已解析的流程模型渲染到画布（初始加载与版本回滚共用）。
      */
     applyParsedFlowModel(modelData) {
+      this.loadOutputVarInits(modelData)
       migrateModelJsonForEdgeLineTypes(modelData)
       this.globalEdgeLineType = modelData.defaultEdgeLineType
       this.lf.setDefaultEdgeType(this.globalEdgeLineType)
@@ -829,6 +849,7 @@ export default {
     onApplyDesignSnapshot(parsed) {
       if (!parsed || typeof parsed !== 'object' || !this.lf) return
       this.applyParsedFlowModel(parsed)
+      this.graphVersion++
       this.updateZoom()
     },
 
@@ -876,7 +897,25 @@ export default {
       return map[lfType] || lfType
     },
 
-    buildBackendModel() {
+    getAllOutputVars() {
+      if (!this.lf) return []
+      try {
+        if (this.activeElement && this.activeElement.baseType === 'node' && this.activeElement.type === 'script-task') {
+          this.lf.setProperties(this.activeElement.id, { actionData: this.currentActionData || [] })
+        }
+        const graphData = this.lf.getGraphData()
+        const nodes = (graphData.nodes || []).map(n => ({
+          type: this.lfTypeToBackend(n.type),
+          actionData: (n.properties && n.properties.actionData) || []
+        }))
+        return Array.from(collectOutputVarsFromNodes(nodes))
+      } catch (e) {
+        console.error('[getAllOutputVars] error:', e)
+        return []
+      }
+    },
+
+    buildModelJson() {
       // 保存前将当前编辑中的 actionData 同步到 LogicFlow 模型，确保配置不丢失
       if (this.activeElement && this.activeElement.baseType === 'node' && this.activeElement.type === 'script-task') {
         const model = this.lf.getNodeModelById(this.activeElement.id)
@@ -913,19 +952,19 @@ export default {
         base.properties = { ...(n.properties || {}), actionData: Array.isArray(actionData) ? actionData : [] }
         return base
       })
-      return {
+      return this.mergeOutputVarInitsToModel({
         nodes,
         edges,
         defaultEdgeLineType: this.globalEdgeLineType,
         logicflow: { nodes: logicflowNodes, edges: graphData.edges || [] }
-      }
+      })
     },
 
     /**
      * 静默保存当前流程模型（不写设计快照）。
      */
     async persistModelSilent() {
-      const modelJson = JSON.stringify(this.buildBackendModel())
+      const modelJson = JSON.stringify(this.buildModelJson())
       await saveContent({
         definitionId: this.definitionId,
         scopeCompId: this.scopeCompId,
@@ -945,7 +984,7 @@ export default {
       } catch (e) {
         return
       }
-      const modelJson = JSON.stringify(this.buildBackendModel())
+      const modelJson = JSON.stringify(this.buildModelJson())
       // 后端“保存即编译”：校验失败回滚不落库（错误由统一拦截器弹出）；拦截器不 reject，须判返回码
       const res = await saveContent({
         definitionId: this.definitionId,
@@ -976,10 +1015,19 @@ export default {
       }
     },
 
-    /** 以后端模型（节点动作 + 边条件表达式）作为扫描测试变量的设计源 */
+    /** 轻量提取：仅取动作块 + 边条件供测试变量扫描，避免 JSON.stringify 遍历 LogicFlow 响应式实例 */
     getTestSourceText() {
+      if (!this.lf) return ''
       try {
-        return JSON.stringify(this.buildBackendModel())
+        const gd = this.lf.getGraphData()
+        return JSON.stringify({
+          nodes: (gd.nodes || []).map(n => ({
+            actionData: (n.properties && n.properties.actionData) || []
+          })),
+          edges: (gd.edges || []).map(e => ({
+            conditionExpression: (e.properties && e.properties.conditionExpr) || ''
+          }))
+        })
       } catch (e) {
         return ''
       }

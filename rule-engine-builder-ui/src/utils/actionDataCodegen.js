@@ -279,3 +279,65 @@ export const BLOCK_TYPES = [
   { type: 'in-check', label: 'IN 判断', icon: 'el-icon-finished', color: '#2f54eb' },
   { type: 'template-str', label: '动态字符串', icon: 'el-icon-document', color: '#8c8c8c' }
 ]
+
+/**
+ * 从 actionData 中递归收集所有输出变量（被赋值的目标变量）
+ * @param {Array} actionData 动作块数组
+ * @returns {Set<string>} 输出变量名集合
+ */
+export function collectOutputVars(actionData) {
+  const result = new Set()
+  if (!Array.isArray(actionData)) return result
+
+  function collectFromBlock(block) {
+    if (!block || !block.type) return
+    switch (block.type) {
+      case 'assign':
+      case 'func-call':
+      case 'http-call':
+      case 'ternary':
+      case 'in-check':
+      case 'template-str':
+        if (block.target) result.add(block.target)
+        break
+      case 'if-block':
+        if (Array.isArray(block.branches)) {
+          block.branches.forEach(b => {
+            if (Array.isArray(b.actions)) b.actions.forEach(collectFromBlock)
+          })
+        }
+        break
+      case 'switch-block':
+        if (Array.isArray(block.cases)) {
+          block.cases.forEach(c => {
+            if (Array.isArray(c.actions)) c.actions.forEach(collectFromBlock)
+          })
+        }
+        if (Array.isArray(block.defaultActions)) block.defaultActions.forEach(collectFromBlock)
+        break
+      case 'foreach':
+        if (Array.isArray(block.actions)) block.actions.forEach(collectFromBlock)
+        break
+    }
+  }
+
+  actionData.forEach(collectFromBlock)
+  return result
+}
+
+/**
+ * 从决策树/决策流的 nodes 中收集所有输出变量
+ * @param {Array} nodes 节点数组
+ * @returns {Set<string>} 输出变量名集合
+ */
+export function collectOutputVarsFromNodes(nodes) {
+  const result = new Set()
+  if (!Array.isArray(nodes)) return result
+  nodes.forEach(node => {
+    if (node.type === 'task' && Array.isArray(node.actionData)) {
+      const vars = collectOutputVars(node.actionData)
+      vars.forEach(v => result.add(v))
+    }
+  })
+  return result
+}

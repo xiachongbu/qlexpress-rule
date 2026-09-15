@@ -4,10 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * 复杂交叉表编译器：支持多维行/列交叉 + 区间匹配。
@@ -89,6 +86,13 @@ public class AdvancedCrossTableCompiler implements RuleCompiler {
             if (!first) {
                 script.append("\n");
             }
+
+            // 解析输出变量初始值配置，为结果变量添加初始化
+            Map<String, String> initValueMap = RuleScriptResultCollector.parseOutputVarInits(model);
+            LinkedHashSet<String> outputVars = new LinkedHashSet<>();
+            outputVars.add(resCode);
+            RuleScriptResultCollector.prependOutputInits(script, outputVars, initValueMap);
+            RuleScriptResultCollector.appendResultMapReturn(script, outputVars);
 
             // 常量赋值序言前置到脚本最前，使脚本内引用的常量解析为固化值
             if (constantPrefix != null && !constantPrefix.isEmpty()) {

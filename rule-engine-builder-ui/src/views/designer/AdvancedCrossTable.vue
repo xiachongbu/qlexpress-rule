@@ -10,6 +10,7 @@
         </el-tag>
       </div>
       <div class="act-toolbar">
+        <el-button size="small" icon="el-icon-setting" @click="openOutputVarInitDialog">输出变量初始值</el-button>
         <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
         <design-version-switcher
           :definition-id="definitionId"
@@ -253,6 +254,13 @@
       </template>
     </test-execute-dialog>
 
+    <output-var-init-dialog
+      :visible.sync="outputVarInitDialogVisible"
+      :all-output-vars="allOutputVars"
+      :output-var-inits="outputVarInits"
+      @update:output-var-inits="outputVarInits = $event"
+    />
+
     <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
@@ -269,11 +277,13 @@ import DesignSaveVersionDialog from '@/components/designer/DesignSaveVersionDial
 import DesignVersionSwitcher from '@/components/designer/DesignVersionSwitcher.vue'
 import designerDefinitionIdMixin from '@/mixins/designerDefinitionIdMixin'
 import designerScopeMixin from '@/mixins/designerScopeMixin'
+import outputVarInitMixin from '@/mixins/outputVarInitMixin'
+import OutputVarInitDialog from '@/components/designer/OutputVarInitDialog.vue'
 
 export default {
   name: 'AdvancedCrossTable',
-  components: { VarPicker, ScriptPanel, DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog },
-  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin],
+  components: { VarPicker, ScriptPanel, DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog, OutputVarInitDialog },
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin, outputVarInitMixin],
   data() {
     return {
       definitionId: null,
@@ -364,6 +374,10 @@ export default {
         result.push(cells)
       }
       return result
+    },
+    allOutputVars() {
+      const code = this.model.resultVar && this.model.resultVar.varCode
+      return code ? [code] : []
     }
   },
   watch: {
@@ -418,6 +432,7 @@ export default {
         const content = res && res.data ? res.data : res
         if (content && content.modelJson && content.modelJson !== '{}') {
           const parsed = JSON.parse(content.modelJson)
+          this.loadOutputVarInits(parsed)
           this.model = parsed
           if (parsed.cells) {
             this.cellData = this.flattenCells(parsed.cells)
@@ -473,13 +488,14 @@ export default {
     buildSaveModel() {
       const saveModel = JSON.parse(JSON.stringify(this.model))
       saveModel.cells = JSON.parse(JSON.stringify(this.cellData))
-      return saveModel
+      return this.mergeOutputVarInitsToModel(saveModel)
     },
     /**
      * 将历史快照写回复杂交叉表模型与单元格矩阵。
      */
     onApplyDesignSnapshot(parsed) {
       if (!parsed || typeof parsed !== 'object') return
+      this.loadOutputVarInits(parsed)
       this.model = parsed
       if (parsed.cells) {
         this.cellData = this.flattenCells(parsed.cells)

@@ -25,6 +25,7 @@
       </div>
       <div class="toolbar-right">
         <el-button size="mini" icon="el-icon-circle-check" @click="handleValidate">验证</el-button>
+        <el-button size="mini" icon="el-icon-setting" @click="openOutputVarInitDialog">输出变量初始值</el-button>
         <el-button size="mini" icon="el-icon-document" @click="handleSave">保存</el-button>
         <design-version-switcher
           select-size="mini"
@@ -299,17 +300,26 @@
       </template>
     </test-execute-dialog>
 
+    <output-var-init-dialog
+      :visible.sync="outputVarInitDialogVisible"
+      :all-output-vars="allOutputVars"
+      :output-var-inits="outputVarInits"
+      @update:output-var-inits="outputVarInits = $event"
+    />
+
     <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
 
 <script>
 import {compileRule, getContent, saveContent} from '@/api/definition'
-import {generateScript} from '@/utils/actionDataCodegen'
+import {collectOutputVarsFromNodes, generateScript} from '@/utils/actionDataCodegen'
 import {buildQlConditionExpr, inferConstVarType, parseQlConditionExpr} from '@/utils/conditionExpr'
 import varPickerMixin from '@/mixins/varPickerMixin'
 import designerTestMixin from '@/mixins/designerTestMixin'
+import outputVarInitMixin from '@/mixins/outputVarInitMixin'
 import TestExecuteDialog from '@/components/designer/TestExecuteDialog.vue'
+import OutputVarInitDialog from '@/components/designer/OutputVarInitDialog.vue'
 import VarPicker from '@/components/common/VarPicker.vue'
 import ScriptPanel from '@/components/common/ScriptPanel.vue'
 import designerDefinitionIdMixin from '@/mixins/designerDefinitionIdMixin'
@@ -344,9 +354,10 @@ export default {
     DesignSaveVersionDialog,
     DesignVersionSwitcher,
     HorizontalDecisionTree,
-    TestExecuteDialog
+    TestExecuteDialog,
+    OutputVarInitDialog
   },
-  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin],
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin, outputVarInitMixin],
   data() {
     return {
       definitionId: null,
@@ -424,6 +435,9 @@ export default {
      */
     canRedoTree() {
       return this.redoStack.length > 0
+    },
+    allOutputVars() {
+      return Array.from(collectOutputVarsFromNodes(this.treeNodes))
     }
   },
   created() {
@@ -924,6 +938,7 @@ export default {
      * 应用已解析 model（加载与版本回滚）
      */
     applyParsedFlowModel(modelData) {
+      this.loadOutputVarInits(modelData)
       this.clearTreeHistory()
       const { nodes, edges } = extractTreeGraphFromModel(modelData)
       this.treeNodes = nodes
@@ -937,7 +952,7 @@ export default {
     /**
      * 构建保存用 modelJson（仅 nodes + edges）
      */
-    buildBackendModel() {
+    buildModelJson() {
       if (this.activeElement && this.activeElement.kind === 'node' && this.activeElement.type === 'script-task') {
         this.treeNodes = patchNode(this.treeNodes, this.activeElement.id, {
           actionData: Array.isArray(this.currentActionData) ? this.currentActionData : []
@@ -957,10 +972,10 @@ export default {
         conditionExpression: e.conditionExpression || '',
         name: e.name || ''
       }))
-      return { nodes, edges }
+      return this.mergeOutputVarInitsToModel({ nodes, edges })
     },
     async persistModelSilent() {
-      const modelJson = JSON.stringify(this.buildBackendModel())
+      const modelJson = JSON.stringify(this.buildModelJson())
       await saveContent({
         definitionId: this.definitionId,
         scopeCompId: this.scopeCompId,
@@ -976,7 +991,7 @@ export default {
       } catch (e) {
         return
       }
-      const modelJson = JSON.stringify(this.buildBackendModel())
+      const modelJson = JSON.stringify(this.buildModelJson())
       // 后端“保存即编译”：校验失败回滚不落库（错误由统一拦截器弹出）；拦截器不 reject，须判返回码
       const res = await saveContent({
         definitionId: this.definitionId,
@@ -1007,7 +1022,7 @@ export default {
     /** 以后端模型（节点动作 + 边条件表达式）作为扫描测试变量的设计源 */
     getTestSourceText() {
       try {
-        return JSON.stringify(this.buildBackendModel())
+        return JSON.stringify(this.buildModelJson())
       } catch (e) {
         return ''
       }

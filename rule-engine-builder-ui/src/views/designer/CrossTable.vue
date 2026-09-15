@@ -15,6 +15,7 @@
           <el-button size="small" icon="el-icon-plus" @click="addColumn">添加列</el-button>
         </el-button-group>
         <el-divider direction="vertical" />
+        <el-button size="small" icon="el-icon-setting" @click="openOutputVarInitDialog">输出变量初始值</el-button>
         <el-button size="small" icon="el-icon-document" @click="handleSave">保存</el-button>
         <design-version-switcher
           :definition-id="definitionId"
@@ -224,6 +225,13 @@
       </template>
     </test-execute-dialog>
 
+    <output-var-init-dialog
+      :visible.sync="outputVarInitDialogVisible"
+      :all-output-vars="allOutputVars"
+      :output-var-inits="outputVarInits"
+      @update:output-var-inits="outputVarInits = $event"
+    />
+
     <design-save-version-dialog ref="designSaveVersionDialog" />
   </div>
 </template>
@@ -240,11 +248,13 @@ import DesignSaveVersionDialog from '@/components/designer/DesignSaveVersionDial
 import DesignVersionSwitcher from '@/components/designer/DesignVersionSwitcher.vue'
 import designerDefinitionIdMixin from '@/mixins/designerDefinitionIdMixin'
 import designerScopeMixin from '@/mixins/designerScopeMixin'
+import outputVarInitMixin from '@/mixins/outputVarInitMixin'
+import OutputVarInitDialog from '@/components/designer/OutputVarInitDialog.vue'
 
 export default {
   name: 'CrossTable',
-  components: { VarPicker, ScriptPanel, DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog },
-  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin],
+  components: { VarPicker, ScriptPanel, DesignSaveVersionDialog, DesignVersionSwitcher, TestExecuteDialog, OutputVarInitDialog },
+  mixins: [varPickerMixin, designerScopeMixin, designerDefinitionIdMixin, designerTestMixin, outputVarInitMixin],
   data() {
     return {
       definitionId: null,
@@ -287,6 +297,12 @@ export default {
         })
       }
       return fields
+    },
+    allOutputVars() {
+      if (this.model.resultVar && this.model.resultVar.varCode) {
+        return [this.model.resultVar.varCode]
+      }
+      return []
     }
   },
   created() {
@@ -348,7 +364,9 @@ export default {
         const res = await getContent(this.definitionId, this.scopeCompId)
         const content = res && res.data ? res.data : res
         if (content && content.modelJson && content.modelJson !== '{}') {
-          this.model = JSON.parse(content.modelJson)
+          const parsed = JSON.parse(content.modelJson)
+          this.loadOutputVarInits(parsed)
+          this.model = parsed
         }
       } catch (e) {
         this.$message.error('加载内容失败: ' + (e.message || '未知错误'))
@@ -415,6 +433,7 @@ export default {
      */
     onApplyDesignSnapshot(parsed) {
       if (!parsed || typeof parsed !== 'object') return
+      this.loadOutputVarInits(parsed)
       this.model = parsed
     },
 
@@ -425,7 +444,7 @@ export default {
       await saveContent({
         definitionId: this.definitionId,
         scopeCompId: this.scopeCompId,
-        modelJson: JSON.stringify(this.model),
+        modelJson: JSON.stringify(this.buildModelJson()),
         recordHistory: false
       })
     },
@@ -445,7 +464,7 @@ export default {
       const res = await saveContent({
         definitionId: this.definitionId,
         scopeCompId: this.scopeCompId,
-        modelJson: JSON.stringify(this.model),
+        modelJson: JSON.stringify(this.buildModelJson()),
         changeLog: changeLog || undefined,
         recordHistory: true
       })
@@ -468,6 +487,10 @@ export default {
       } else {
         this.$message.error('编译失败: ' + (res && res.data ? res.data.errorMessage : '未知错误'))
       }
+    },
+    buildModelJson() {
+      const result = JSON.parse(JSON.stringify(this.model))
+      return this.mergeOutputVarInitsToModel(result)
     }
   }
 }
