@@ -45,7 +45,7 @@
       </el-table-column>
     </el-table>
     <div class="hint-box" style="margin-top:10px;">
-      <i class="el-icon-info" /> 初始值会生成如 <code>taxRate = 0</code> 或 <code>result = "未匹配"</code> 的语句，留空则默认为 null
+      <i class="el-icon-info" /> 初始值会生成如 <code>taxRate = 0</code> 或 <code>result = ""</code> 的语句
     </div>
     <template #footer>
       <el-button size="small" @click="$emit('update:visible', false)">关闭</el-button>
@@ -89,8 +89,13 @@ export default {
       const typeMap = {}
       ;(this.outputVarInits || []).forEach(item => {
         if (item && item.varCode) {
-          initMap[item.varCode] = item.initValue
-          typeMap[item.varCode] = item.initType || this.inferType(item.initValue)
+          let val = item.initValue
+          const type = item.initType || this.inferType(val)
+          if (type === 'string' && typeof val === 'string' && val.length >= 2 && val.startsWith('"') && val.endsWith('"')) {
+            val = val.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+          }
+          initMap[item.varCode] = val
+          typeMap[item.varCode] = type
         }
       })
       this.tableData = this.allOutputVars.map(varCode => ({
@@ -115,7 +120,12 @@ export default {
     },
     emitUpdate() {
       const inits = this.tableData
-        .filter(row => row.initType !== 'null' && row.initValue !== '' && row.initValue !== null && row.initValue !== undefined)
+        .filter(row => {
+          if (row.initType === 'null') return false
+          if (row.initValue === null || row.initValue === undefined) return false
+          if (row.initValue === '' && row.initType !== 'string') return false
+          return true
+        })
         .map(row => ({
           varCode: row.varCode,
           initValue: this.formatInitValue(row),
@@ -124,13 +134,14 @@ export default {
       this.$emit('update:outputVarInits', inits)
     },
     formatInitValue(row) {
-      if (row.initType === 'null' || row.initValue === '') return ''
-      if (row.initType === 'number') return String(row.initValue)
-      if (row.initType === 'boolean') return row.initValue === 'true' ? 'true' : 'false'
+      if (row.initType === 'null') return ''
       if (row.initType === 'string') {
-        const val = String(row.initValue)
+        const val = String(row.initValue || '')
         return '"' + val.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
       }
+      if (row.initValue === '') return ''
+      if (row.initType === 'number') return String(row.initValue)
+      if (row.initType === 'boolean') return row.initValue === 'true' ? 'true' : 'false'
       return String(row.initValue)
     }
   }
